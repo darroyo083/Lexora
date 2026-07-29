@@ -1,30 +1,29 @@
-# PageAnalysis
+# Persisted PageAnalysis
 
-The central data model representing what Lexora understands about a page.
+`PageAnalysis` is the per-page OCR result stored as JSONB in `book_pages.analysis`. It describes text in source-image coordinates and never stores browser viewport pixels.
 
-## Schema
+## Persisted Shape
+
+The current FastAPI response persisted by Spring has this shape:
 
 ```json
 {
-  "schemaVersion": "0.1.0",
-  "pageNumber": 5,
-  "dimensions": {
-    "sourceWidth": 2480,
-    "sourceHeight": 3508
-  },
+  "pageNumber": 10,
+  "width": 2284,
+  "height": 3121,
   "language": "de",
   "textSpans": [
     {
-      "id": "span-5-0-0",
-      "text": "wahrscheinlich",
-      "confidence": 0.97,
+      "id": "span-10-0",
+      "text": "Ich bin, du hast, er möchte",
+      "confidence": 0.99,
       "confidenceScope": "line",
-      "parentLineId": "line-5-0",
+      "parentLineId": "line-10-0",
       "bbox": {
-        "x": 0.31,
-        "y": 0.42,
-        "width": 0.09,
-        "height": 0.018
+        "x": 0.13,
+        "y": 0.03,
+        "width": 0.39,
+        "height": 0.03
       }
     }
   ],
@@ -33,76 +32,69 @@ The central data model representing what Lexora understands about a page.
     "engineVersion": "3.7.0",
     "model": "PP-OCRv6",
     "language": "de",
-    "parameters": {"use_angle_cls": false},
-    "processedAt": "2026-07-29T10:00:00Z",
-    "durationMs": 350
+    "parameters": {
+      "use_doc_orientation_classify": false,
+      "use_doc_unwarping": false,
+      "use_textline_orientation": false,
+      "paddlepaddle": "3.2.2",
+      "word_boxes": "auto (line-level fallback)"
+    },
+    "processedAt": "2026-07-29T17:54:27Z",
+    "durationMs": 23000
   }
 }
 ```
 
-## Coordinate System
+`width` and `height` are the raster dimensions used by PaddleOCR. The example values are from the verified page 10 raster; they are not universal page constants.
 
-- **Origin:** top-left (0, 0)
-- **Range:** normalized [0, 1]
-- **Resolution independent:** same values across any DPI, zoom, or viewport
-- **Source dimensions** preserved for debug pixel reconstruction via `denormalizeBBox()`
+## Coordinate Model
 
-CSS absolute pixel positions for overlays are computed at render time:
+| Property | Contract |
+|---|---|
+| Origin | Top-left `(0,0)` |
+| Range | Each bbox component is normalized to `[0,1]` |
+| Source | Original PDFBox raster before OCR preprocessing |
+| Persistence | Resolution-independent values only |
+| Rendering | CSS percentages relative to the displayed PDF canvas wrapper |
 
-```
-viewportLeft = bbox.x * viewportPixelWidth
-viewportTop  = bbox.y * viewportPixelHeight
-viewportWidth  = bbox.width * viewportPixelWidth
-viewportHeight = bbox.height * viewportPixelHeight
-```
+For a source pixel box `(left, top, right, bottom)`:
 
-Never persist viewport-dependent coordinates.
-
-## TextSpan
-
-| Field | Type | Description |
-|---|---|---|
-| id | string | Unique span identifier (`span-{page}-{line}-{word}`) |
-| text | string | Recognized text |
-| confidence | float | Recognition confidence (0-1) |
-| confidenceScope | string | Granularity of the confidence value (`"line"`) |
-| parentLineId | string? | ID of the detected text line containing this span |
-| bbox | BBox | Normalized bounding box |
-
-## Confidence Scope
-
-PaddleOCR provides **line-level** recognition confidence. When CTC-derived word boxes are available, each word span inherits its parent line's confidence. This means:
-
-- Two words on the same line show identical confidence values
-- Confidence reflects recognition quality of the entire line, not individual words
-- The `confidenceScope` field explicitly records this lineage
-
-## Processor Metadata
-
-Enables traceability for page analysis reproduction:
-
-- `engine` / `engineVersion`: OCR engine identity
-- `model`: Specific model used (e.g., PP-OCRv6)
-- `language`: Language configuration
-- `parameters`: Non-default settings (angle classification disabled for clean scans)
-- `processedAt`: UTC timestamp
-- `durationMs`: Processing wall-clock time
-
-## Normalization Functions
-
-### Python
-
-```python
-def normalize_bbox(left, top, right, bottom, source_width, source_height) -> (x, y, w, h)
-def denormalize_bbox(x, y, w, h, source_width, source_height) -> (left, top, right, bottom)
+```text
+x      = left / sourceWidth
+y      = top / sourceHeight
+width  = (right - left) / sourceWidth
+height = (bottom - top) / sourceHeight
 ```
 
-### TypeScript
+The frontend renders `x`, `y`, `width`, and `height` directly as percentages. Canvas intrinsic dimensions may be scaled for `devicePixelRatio`, but canvas CSS dimensions and the overlay rectangle remain identical.
 
-```typescript
-function normalizeBBox(pixelLeft, pixelTop, pixelRight, pixelBottom, sw, sh): BBox
-function denormalizeBBox(bbox, sw, sh): { left, top, right, bottom }
-function documentToViewport(bbox, vpWidth, vpHeight): { left, top, width, height }
-```
+## Geometry Preservation
 
-Both implementations clamp values to [0, 1] and round-trip cleanly.
+PaddleOCR preprocessing that changes document geometry is disabled:
+
+- `use_doc_orientation_classify = false`
+- `use_doc_unwarping = false`
+- `use_textline_orientation = false`
+
+This is a correctness requirement. Normalizing boxes from a warped image against original raster dimensions produces systematic displacement even when both images report the same width and height.
+
+## Text and Confidence
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable identifier within the page result |
+| `text` | Recognized line or word text |
+| `confidence` | PaddleOCR recognition confidence in `[0,1]` |
+| `confidenceScope` | Currently `line` |
+| `parentLineId` | Source line for word-derived spans |
+| `bbox` | Normalized source rectangle |
+
+When PaddleOCR exposes word boxes, words inherit their parent line confidence. Otherwise Lexora stores a line-level fallback box.
+
+## Persistence and Reuse
+
+- A successful page is stored with `processing_status = READY` and its JSONB analysis.
+- Opening or returning to a `READY` page loads the stored JSON and never starts OCR.
+- A hard refresh restores the current book, PDF, selected page, and existing page analysis.
+- A `FAILED` page retains its failure reason and can be explicitly retried.
+- Missing pages remain unprocessed until the user chooses **Process**.

@@ -1,65 +1,60 @@
 # Roadmap
 
-## PoC 0 — OCR Overlay on Scanned Page ✅
+## PoC 0: OCR Overlay on Scanned Pages (Complete)
 
-- [x] Upload a scanned PDF
-- [x] Rasterize selected page via PDFBox
-- [x] OCR with PaddleOCR (German), obtain text spans and confidence
-- [x] Normalize bounding boxes to [0,1]
-- [x] Render original PDF with PDF.js
-- [x] Display OCR boxes as overlays with perfect alignment
-- [x] Click on a word/span to inspect text and confidence
-- [x] Zoom 75%, 100%, 125%, 150% with maintained alignment
-- [x] Reload without losing processed analysis (JSONB persistence)
-- [x] Coordinate transform tests (Python + TypeScript)
-- [x] Backend service and API tests
+- [x] Upload and persist a scanned PDF
+- [x] Render original pages with PDF.js
+- [x] Rasterize an explicitly selected page at 300 DPI
+- [x] Run local German OCR with PaddleOCR
+- [x] Preserve source geometry by disabling orientation and unwarping transforms
+- [x] Normalize OCR boxes to `[0,1]`
+- [x] Persist one JSONB analysis per processed page
+- [x] Reuse `READY` pages without rerunning OCR
+- [x] Retry `FAILED` pages
+- [x] Expose real coarse processing stages and deterministic stage progress
+- [x] Maintain overlay alignment at 75%, 100%, 125%, and 150%
+- [x] Inspect clickable spans and confidence data
+- [x] Restore the book, page, analysis, and OCR-box preference after refresh
+- [x] Show a PDF-area skeleton during restoration
+- [x] Run the complete local stack through Docker Compose
 
-## PoC 1 — Fill-in-the-Blank Exercise Detection
+PoC 0 processing remains intentionally explicit and per page. It does not automatically process a newly uploaded book or a page opened during navigation.
 
-Detect a fill-in-the-blank exercise on a real scanned page and convert the blank into an interactive HTML input positioned over the original gap.
+## PoC 1: Fill-in-the-Blank Exercise Detection (Not Started)
 
-- [ ] Semantic analysis of OCR results to identify exercises
-- [ ] AnswerArea detection with per-field geometry
-- [ ] Interactive input overlay on detected blanks
-- [ ] Persist exercise model alongside PageAnalysis
-- [ ] Zoom alignment maintained for exercise overlays
+- [ ] Detect exercise regions from page analysis
+- [ ] Detect answer areas and blank geometry
+- [ ] Overlay interactive inputs on the original page
+- [ ] Persist exercise models
+- [ ] Preserve exercise alignment across zoom levels
 
-## MVP — Complete Study Workflow
+## Planned Product Capabilities
 
-### Books
+### Learning tools
+
+- [ ] Click-to-translate
+- [ ] Contextual vocabulary persistence
+- [ ] Interactive fill-in-the-blank exercises
+- [ ] Exercise correction and explanations
+- [ ] Highlights and annotations
+
+### Analysis
+
+- [ ] Higher-level visual understanding
+- [ ] Optional VLM or Gemini-based analysis where useful
+- [ ] Additional exercise types
+
+### Books and processing
+
 - [ ] Book library UI
-- [ ] Upload flow with progress indication
-- [ ] Page navigation (thumbnails or scrolling)
+- [ ] Background multi-page processing
+- [ ] Page thumbnails or continuous navigation
+- [ ] Processing history and operational controls
 
-### Processing
-- [ ] Multi-page asynchronous processing
-- [ ] Processing status per page (PENDING → PROCESSING → READY → FAILED)
-- [ ] Retry failed pages
-- [ ] Processing progress indication
+### Later
 
-### Reader
-- [ ] Page rendering with all overlay layers
-- [ ] Text selection via OCR text layer
-- [ ] Highlight creation
-- [ ] Annotation persistence
-
-### Vocabulary
-- [ ] Word selection → translate via configurable provider
-- [ ] Save to vocabulary with context (page, sentence, position)
-- [ ] Vocabulary list with filtering
-- [ ] Known/learning status
-
-### Exercises
-- [ ] Fill-in-the-blank interactive inputs
-- [ ] Answer submission and persistence
-- [ ] Correction with explanation
-
-## Later
-
-- User authentication (Spring Security)
-- Multi-page processing pipeline
-- Advanced RAG-style chat (NotebookLM-like)
-- LinguaTint integration (semantic word coloring)
-- Additional exercise types (multiple choice, matching, ordering)
-- EPUB/DOCX support
-- Mobile adaptation
+- [ ] RAG or book chat
+- [ ] User authentication
+- [ ] Mobile adaptation
+- [ ] EPUB or DOCX support
+- [ ] LinguaTint integration

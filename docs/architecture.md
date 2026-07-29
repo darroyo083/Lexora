@@ -1,77 +1,99 @@
-# Architecture
+# PoC 0 Architecture
 
-## High-level
+Lexora PoC 0 is a four-service Docker Compose system that preserves the original PDF as the visual source of truth and adds persisted OCR geometry per page.
+
+## Runtime Topology
 
 ```mermaid
-graph TD
-    Browser[Browser: PDF.js + React] -->|REST /api| Spring[Spring Boot 4.1]
-    Spring -->|JDBC| PG[(PostgreSQL)]
-    Spring -->|HTTP internal| FastAPI[FastAPI]
-    FastAPI --> Paddle[PaddleOCR]
-    Spring --> FS[Local File System]
+flowchart LR
+    Browser[React + PDF.js] -->|REST /api| Backend[Spring Boot]
+    Backend -->|JDBC| Postgres[(PostgreSQL 18)]
+    Backend -->|shared storage| Storage[(lexora_storage)]
+    Backend -->|HTTP/1.1 internal API| AI[FastAPI]
+    AI -->|read raster| Storage
+    AI --> Paddle[PaddleOCR]
 ```
+
+Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring Boot and FastAPI share the `lexora_storage` volume so the internal analysis request can pass an absolute raster path without copying image bytes over HTTP.
 
 ## Responsibilities
 
 ### React Frontend
 
-- Renders the original PDF page via PDF.js canvas
-- Positions OCR text span overlays using normalized coordinates
-- Manages zoom (75%–150%) with transform utilities
-- Debug panel for inspecting selected spans
+- Restores the current book, selected page, source PDF, and OCR-box preference from local state.
+- Shows a `react-loading-skeleton` page placeholder while restoration requests complete.
+- Renders the original PDF page with PDF.js and a device-pixel-ratio backing store.
+- Positions normalized boxes as CSS percentages inside the exact displayed canvas wrapper.
+- Loads persisted page state whenever the selected page changes.
+- Starts processing only after an explicit user action.
+- Polls persisted coarse stages while the synchronous processing request runs.
+- Reuses `READY` analysis immediately, offers retry for `FAILED`, and never requests processing merely because a page was opened.
 
 ### Spring Boot Backend
 
-- Book upload, listing, and page navigation via REST API
-- PDF validation (MIME, extension, size, checksum)
-- PDF page rasterization via PDFBox for OCR input
-- Coordinates OCR processing: sends PNG to Python, persists PageAnalysis
-- Flyway migrations for `books` and `book_pages` tables
+- Validates and stores uploaded PDFs under UUID-based keys.
+- Reads PDF page count and rasterizes a selected page at 300 DPI with PDFBox.
+- Atomically claims an unprocessed or `FAILED` page before work begins.
+- Persists observable page stages before each real orchestration step.
+- Calls FastAPI over HTTP/1.1 and stores the returned analysis as PostgreSQL JSONB.
+- Returns an existing `READY` page without rasterization or OCR.
+- Streams the stored source PDF for browser restoration.
+- Applies Flyway migrations for books, pages, and legacy processing-status conversion.
 
-### Python AI Service
+### FastAPI AI Service
 
-- Receives page rasterization requests from Spring
-- Runs PaddleOCR with German language model
-- Normalizes pixel coordinates to [0,1] range
-- Returns PageAnalysis with text spans, confidence, bboxes, and processor metadata
+- Opens the PDFBox raster and records its source dimensions.
+- Runs PaddleOCR 3.7 with the German language configuration.
+- Converts detected line or word boxes to normalized `[0,1]` coordinates.
+- Returns text, confidence, geometry, and processor metadata.
+
+PaddleOCR document orientation classification, document unwarping, and text-line orientation are intentionally disabled. Those transforms can change pixel geometry even when output dimensions remain unchanged, which would detach OCR boxes from the original PDF page.
 
 ### PostgreSQL
 
-- Stores book metadata relationally
-- Stores PageAnalysis as JSONB in `book_pages.analysis`
-- Enables retrieval without reprocessing on page refresh
+- Stores book metadata relationally in `books`.
+- Stores one attempted/processed row per `(book_id, page_number)` in `book_pages`.
+- Stores analysis as JSONB in `book_pages.analysis`.
+- Makes page state and completed analysis available after navigation or refresh.
 
-## File Storage
+## Page Processing
 
-PDFs are stored locally under `storage/pdf/` with UUID-based keys. Never use the original filename as a filesystem path.
+Processing is explicit and synchronous at the HTTP boundary, but stage writes are committed separately and can be observed by frontend polling.
 
-## Service Contract
-
-Spring sends to Python's internal endpoint:
-
+```text
+PENDING (5%)
+  -> RASTERIZING (15%)
+  -> OCR (50%)
+  -> PERSISTING (95%)
+  -> READY (100%)
 ```
+
+Any orchestration failure produces `FAILED`. FastAPI performs both OCR and coordinate normalization during the `OCR` stage; there is no separate public `NORMALIZING` stage because Spring receives no real intermediate event from that synchronous call.
+
+The processing claim is idempotent:
+
+- `READY`: return the persisted page unchanged.
+- Active stage: return the current page; do not start concurrent OCR.
+- Missing page: create and claim it.
+- `FAILED`: clear the failed attempt and claim a retry.
+
+## Internal Contract
+
+Spring calls:
+
+```http
 POST /internal/document-analysis/pages
+Content-Type: application/json
+
 {
   "bookId": "uuid",
-  "pageNumber": 5,
-  "imagePath": "/app/storage/pdf/key-page5.png"
+  "pageNumber": 10,
+  "imagePath": "/app/storage/pdf/key-page10-300dpi.png"
 }
 ```
 
-Python responds with PageAnalysis JSON (see `docs/page-analysis.md`).
+The response body is persisted unchanged as JSONB. See [`page-analysis.md`](page-analysis.md).
 
-## OCR Choice
+## Current Boundaries
 
-PaddleOCR 3.7.0 was chosen over Surya, Docling, and Marker because:
-
-| Criterion | PaddleOCR | Surya | Docling | Marker |
-|---|---|---|---|---|
-| German support | Yes (PP-OCRv6 unified model) | Yes (89.7%) | Dependent on backend | Via Surya |
-| Word-level boxes | CTC-derived spans | Block-level only | Backend-dependent | Block-level only |
-| Local CPU | Yes | Requires llama.cpp server | Yes | Requires Surya server |
-| License | Apache-2.0 | Weight: OpenRAIL-M commercial restrictions | MIT (code) | Weight: OpenRAIL-M commercial restrictions |
-| Confidence | Line-level recognition confidence | Block-level token probability | Backend-dependent | None in normal output |
-
-PaddleOCR was the only option that directly returns clickable word-level geometry with documented confidence values from a fully local CPU pipeline with no VLM server requirement and a clean Apache-2.0 license.
-
-Known limitation: confidence is per-line, not per-word. Word spans inherit their parent line's recognition confidence.
+PoC 0 does not include exercise detection, interactive inputs, translation, vocabulary storage, VLM analysis, RAG, authentication, or background multi-page jobs.

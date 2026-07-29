@@ -22,7 +22,12 @@ def create_page_analysis(
     img = Image.open(image_path)
     source_width, source_height = img.size
 
-    ocr = PaddleOCR(lang="de")
+    ocr = PaddleOCR(
+        lang="de",
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=False,
+    )
 
     t0 = time.monotonic()
     result = ocr.predict(str(image_path))
@@ -111,7 +116,9 @@ def create_page_analysis(
             model="PP-OCRv6",
             language="de",
             parameters={
-                "use_angle_cls": False,
+                "use_doc_orientation_classify": False,
+                "use_doc_unwarping": False,
+                "use_textline_orientation": False,
                 "paddlepaddle": "3.2.2",
                 "word_boxes": "auto (line-level fallback)",
             },

@@ -1,7 +1,6 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { TextSpan } from './types';
-import { documentToViewport } from '../coordinates/transforms';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
@@ -26,9 +25,6 @@ export default function PageViewer({
   onSpanClick,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const [viewportDims, setViewportDims] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     let cancelled = false;
@@ -40,17 +36,15 @@ export default function PageViewer({
       if (cancelled) return;
       const page = await pdf.getPage(pageNumber);
       const viewport = page.getViewport({ scale: zoom });
-      setViewportDims({ width: viewport.width, height: viewport.height });
 
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.floor(viewport.width * dpr);
       canvas.height = Math.floor(viewport.height * dpr);
-      canvas.style.width = `${Math.floor(viewport.width)}px`;
-      canvas.style.height = `${Math.floor(viewport.height)}px`;
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
 
       const ctx = canvas.getContext('2d')!;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
       await page.render({ canvas, canvasContext: ctx, viewport }).promise;
     };
 
@@ -58,32 +52,22 @@ export default function PageViewer({
     return () => { cancelled = true; };
   }, [pdfData, pageNumber, zoom]);
 
-  const overlaySpans = useMemo(() => {
-    const vw = viewportDims.width;
-    const vh = viewportDims.height;
-    if (vw === 0 || vh === 0) return [];
-    return spans.map((s) => {
-      const pos = documentToViewport(s.bbox, vw, vh);
-      return { ...s, ...pos };
-    });
-  }, [spans, viewportDims]);
-
   return (
-    <div ref={containerRef} className="page-container">
+    <div className="page-container">
       <div className="page-stack">
         <canvas ref={canvasRef} className="page-canvas" />
-        <div className="page-overlay" style={{ pointerEvents: showBoxes ? 'auto' : 'auto' }}>
+        <div className="page-overlay">
           {showBoxes &&
-            overlaySpans.map((s) => (
+            spans.map((s) => (
               <div
                 key={s.id}
                 className="ocr-box"
                 title={`${s.text} (${(s.confidence * 100).toFixed(0)}%)`}
                 style={{
-                  left: s.left,
-                  top: s.top,
-                  width: s.width,
-                  height: s.height,
+                  left: `${s.bbox.x * 100}%`,
+                  top: `${s.bbox.y * 100}%`,
+                  width: `${s.bbox.width * 100}%`,
+                  height: `${s.bbox.height * 100}%`,
                 }}
                 onClick={(e) => {
                   e.stopPropagation();

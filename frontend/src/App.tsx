@@ -1,10 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import PageViewer from './reader/PageViewer';
 import DebugPanel from './reader/DebugPanel';
 import type { TextSpan } from './reader/types';
 import { fetchPageAnalysis, getPageAnalysis } from './api/client';
+import { readBooleanPreference, writeBooleanPreference } from './state/preferences';
 
-type Status = 'idle' | 'uploading' | 'processing' | 'ready';
+type Status = 'idle' | 'restoring' | 'uploading' | 'processing' | 'ready';
 
 interface BookInfo {
   id: string;
@@ -13,9 +16,12 @@ interface BookInfo {
 
 const CURRENT_BOOK_KEY = 'lexora.currentBookId';
 const CURRENT_PAGE_KEY = 'lexora.currentPage';
+const SHOW_BOXES_KEY = 'lexora.showOcrBoxes';
 
 export default function App() {
-  const [status, setStatus] = useState<Status>('idle');
+  const [status, setStatus] = useState<Status>(() => (
+    localStorage.getItem(CURRENT_BOOK_KEY) ? 'restoring' : 'idle'
+  ));
   const [book, setBook] = useState<BookInfo | null>(null);
   const [selectedPage, setSelectedPage] = useState(() => {
     const storedPage = Number(localStorage.getItem(CURRENT_PAGE_KEY));
@@ -23,7 +29,9 @@ export default function App() {
   });
   const [spans, setSpans] = useState<TextSpan[]>([]);
   const [selectedSpan, setSelectedSpan] = useState<TextSpan | null>(null);
-  const [showBoxes, setShowBoxes] = useState(false);
+  const [showBoxes, setShowBoxes] = useState(() => (
+    readBooleanPreference(SHOW_BOXES_KEY, false)
+  ));
   const [zoom, setZoom] = useState(1.0);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
 
@@ -32,7 +40,7 @@ export default function App() {
     if (!bookId) return;
 
     const restore = async () => {
-      setStatus('processing');
+      setStatus('restoring');
       try {
         const [bookRes, sourceRes, analysis] = await Promise.all([
           fetch(`/api/books/${bookId}`),
@@ -165,7 +173,10 @@ export default function App() {
             <input
               type="checkbox"
               checked={showBoxes}
-              onChange={(e) => setShowBoxes(e.target.checked)}
+              onChange={(e) => {
+                setShowBoxes(e.target.checked);
+                writeBooleanPreference(SHOW_BOXES_KEY, e.target.checked);
+              }}
             />
             Show OCR boxes
           </label>
@@ -176,7 +187,11 @@ export default function App() {
 
       <main className="reader-layout">
         <div className="page-area">
-          {pdfData ? (
+          {status === 'restoring' ? (
+            <div className="restoration-skeleton" aria-label="Restoring PDF">
+              <Skeleton width="100%" height="100%" />
+            </div>
+          ) : pdfData ? (
             <PageViewer
               pdfData={pdfData}
               pageNumber={selectedPage}

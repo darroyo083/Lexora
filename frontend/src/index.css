@@ -120,6 +120,19 @@ button:disabled {
   font-size: 16px;
 }
 
+.restoration-skeleton {
+  flex: none;
+  align-self: flex-start;
+  width: min(548px, 100%);
+  aspect-ratio: 2284 / 3121;
+}
+
+.restoration-skeleton > span,
+.restoration-skeleton .react-loading-skeleton {
+  display: block;
+  height: 100%;
+}
+
 .page-container {
   position: relative;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);

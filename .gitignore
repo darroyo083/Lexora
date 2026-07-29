@@ -1,0 +1,49 @@
+# System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Atl (local registry cache)
+.atl/
+
+# Node
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# Java
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# Python
+ai-service/__pycache__/
+ai-service/app/__pycache__/
+ai-service/app/**/__pycache__/
+ai-service/tests/__pycache__/
+ai-service/.venv/
+ai-service/.pytest_cache/
+ai-service/*.egg-info/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Environment
+.env
+.env.local
+
+# Storage (books are private)
+storage/books/
+storage/pdf/
+
+# Docker
+docker-compose.override.yml
+
+# OS
+*.log
+*.tmp

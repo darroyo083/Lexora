@@ -3,7 +3,9 @@ package com.lexora.book.domain;
 public enum ProcessingStatus {
     UPLOADED,
     PENDING,
-    PROCESSING,
+    RASTERIZING,
+    OCR,
+    PERSISTING,
     READY,
     FAILED
 }

@@ -1,31 +1,50 @@
 import type { PageAnalysis } from '../reader/types';
 
-const BASE = '';
+export type PageProcessingStatus =
+  | 'PENDING'
+  | 'RASTERIZING'
+  | 'OCR'
+  | 'PERSISTING'
+  | 'READY'
+  | 'FAILED';
 
-export async function fetchPageAnalysis(
-  bookId: string,
-  pageNumber: number
-): Promise<PageAnalysis> {
-  const res = await fetch(
-    `${BASE}/api/books/${bookId}/pages/${pageNumber}/process`,
-    { method: 'POST' }
-  );
-  if (!res.ok) {
-    throw new Error(`Processing failed: ${res.status}`);
-  }
-  const page = await res.json();
-  const analysis = JSON.parse(page.analysis);
-  return analysis;
+export interface BookPageResource {
+  id: string;
+  bookId: string;
+  pageNumber: number;
+  processingStatus: PageProcessingStatus;
+  analysis: PageAnalysis | null;
+  failureReason: string | null;
 }
 
-export async function getPageAnalysis(
-  bookId: string,
-  pageNumber: number
-): Promise<PageAnalysis | null> {
-  const res = await fetch(`${BASE}/api/books/${bookId}/pages/${pageNumber}`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Loading analysis failed: ${res.status}`);
+interface RawBookPage extends Omit<BookPageResource, 'analysis'> {
+  analysis: string | null;
+}
 
-  const page = await res.json();
-  return page.analysis ? JSON.parse(page.analysis) : null;
+function parsePage(page: RawBookPage): BookPageResource {
+  return {
+    ...page,
+    analysis: page.analysis ? JSON.parse(page.analysis) : null,
+  };
+}
+
+export async function getBookPages(
+  bookId: string,
+  signal?: AbortSignal,
+): Promise<BookPageResource[]> {
+  const res = await fetch(`/api/books/${bookId}/pages`, { signal });
+  if (!res.ok) throw new Error(`Loading pages failed: ${res.status}`);
+  const pages: RawBookPage[] = await res.json();
+  return pages.map(parsePage);
+}
+
+export async function processBookPage(
+  bookId: string,
+  pageNumber: number,
+): Promise<BookPageResource> {
+  const res = await fetch(`/api/books/${bookId}/pages/${pageNumber}/process`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`Processing failed: ${res.status}`);
+  return parsePage(await res.json());
 }

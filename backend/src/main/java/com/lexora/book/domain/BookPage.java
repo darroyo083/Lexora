@@ -35,6 +35,13 @@ public record BookPage(
         );
     }
 
+    public BookPage transitionTo(ProcessingStatus status) {
+        return new BookPage(
+            id, bookId, pageNumber, width, height,
+            status, analysis, processedAt, null
+        );
+    }
+
     public BookPage markFailed(String reason) {
         return new BookPage(
             id, bookId, pageNumber, width, height,

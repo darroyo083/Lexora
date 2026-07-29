@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -23,7 +22,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@Transactional
 public class BookService {
 
     private static final Logger log = LoggerFactory.getLogger(BookService.class);
@@ -96,29 +94,27 @@ public class BookService {
         var book = repository.findById(bookId)
             .orElseThrow(() -> new IllegalArgumentException("Book not found: " + bookId));
 
-        var existing = repository.findPage(bookId, pageNumber);
-        if (existing.isPresent() && existing.get().processingStatus() == ProcessingStatus.READY) {
-            return existing.get();
+        if (pageNumber < 1 || pageNumber > book.pageCount()) {
+            throw new IllegalArgumentException("Page out of range: " + pageNumber);
         }
 
-        var pdfPath = storageBasePath.resolve("pdf").resolve(book.storageKey());
-
-        var rasterizedPath = rasterizePage(pdfPath, pageNumber);
-
-        var page = BookPage.create(bookId, pageNumber, 0, 0);
-        page = repository.savePage(page);
-
-        repository.savePage(new BookPage(
-            page.id(), page.bookId(), page.pageNumber(),
-            page.width(), page.height(),
-            ProcessingStatus.PROCESSING, null, null, null
-        ));
+        var claimed = repository.startPageProcessing(bookId, pageNumber);
+        if (claimed.isEmpty()) {
+            return repository.findPage(bookId, pageNumber).orElseThrow();
+        }
+        var page = claimed.get();
 
         try {
+            page = repository.savePage(page.transitionTo(ProcessingStatus.RASTERIZING));
+            var pdfPath = storageBasePath.resolve("pdf").resolve(book.storageKey());
+            var rasterizedPath = rasterizePage(pdfPath, pageNumber);
+
+            page = repository.savePage(page.transitionTo(ProcessingStatus.OCR));
             var analysisJson = analysisClient.analyzePage(
                 bookId.toString(), pageNumber, rasterizedPath.toString()
             );
             log.info("page analyzed bookId={} page={}", bookId, pageNumber);
+            page = repository.savePage(page.transitionTo(ProcessingStatus.PERSISTING));
             return repository.savePage(page.markReady(analysisJson));
         } catch (Exception e) {
             log.error("page analysis failed bookId={} page={}", bookId, pageNumber, e);

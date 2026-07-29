@@ -4,6 +4,7 @@ Thumbs.db
 desktop.ini
 
 .atl/
+.dev/
 
 # Node
 node_modules/
@@ -37,8 +38,8 @@ ai-service/*.egg-info/
 .env.local
 
 # Storage (books are private)
-storage/books/
-storage/pdf/
+storage/
+backend/storage/
 
 # Docker
 docker-compose.override.yml

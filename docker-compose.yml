@@ -8,20 +8,50 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lexora}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lexora
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-lexora}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-lexora_dev}
+      AI_SERVICE_BASE_URL: http://ai-service:8000
+      LEXORA_STORAGE_PATH: /app/storage
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/src:/app/src
+      - backend_m2:/root/.m2
+      - lexora_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/books"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
   ai-service:
     build:
       context: ./ai-service
+      target: runtime
     ports:
       - "8000:8000"
     volumes:
-      - ai_models:/root/.paddleocr
+      - ./ai-service/app:/app/app
+      - ai_models:/root/.paddlex
+      - lexora_storage:/app/storage
     environment:
       PADDLE_PDX_MODEL_SOURCE: BOS
     healthcheck:
@@ -30,6 +60,37 @@ services:
       timeout: 5s
       retries: 5
 
+  ai-test:
+    build:
+      context: ./ai-service
+      target: test
+    profiles: ["test"]
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      VITE_BACKEND_PROXY_TARGET: http://backend:8080
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:5173"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
 volumes:
   pgdata:
   ai_models:
+  backend_m2:
+  frontend_node_modules:
+  lexora_storage:

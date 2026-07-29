@@ -35,7 +35,10 @@ ai-service/*.egg-info/
 
 # Environment
 .env
-.env.local
+.env.*
+!.env.example
+*.key
+*.pem
 
 # Storage (books are private)
 storage/
@@ -47,3 +50,6 @@ docker-compose.override.yml
 # OS
 *.log
 *.tmp
+
+# Browser tooling
+.playwright-mcp/

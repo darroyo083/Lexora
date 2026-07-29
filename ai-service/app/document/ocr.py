@@ -110,7 +110,11 @@ def create_page_analysis(
             engineVersion="3.7.0",
             model="PP-OCRv6",
             language="de",
-            parameters={"use_angle_cls": False},
+            parameters={
+                "use_angle_cls": False,
+                "paddlepaddle": "3.2.2",
+                "word_boxes": "auto (line-level fallback)",
+            },
             durationMs=elapsed_ms,
         ),
     )

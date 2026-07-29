@@ -27,9 +27,11 @@ class BookServiceTest {
     void setUp() {
         repository = mock(BookRepository.class);
         analysisClient = mock(DocumentAnalysisClient.class);
-        System.setProperty("lexora.storage.path",
-            System.getProperty("java.io.tmpdir") + "/lexora-test");
-        service = new BookService(repository, analysisClient);
+        service = new BookService(
+            repository,
+            analysisClient,
+            System.getProperty("java.io.tmpdir") + "/lexora-test"
+        );
     }
 
     @Test

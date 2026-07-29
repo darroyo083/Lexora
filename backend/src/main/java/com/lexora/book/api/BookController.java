@@ -6,6 +6,9 @@ import com.lexora.book.domain.BookPage;
 import com.lexora.shared.error.BookNotFoundException;
 import com.lexora.shared.error.PageNotFoundException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,6 +50,14 @@ public class BookController {
     public Book get(@PathVariable UUID bookId) {
         return service.getBook(bookId)
             .orElseThrow(() -> new BookNotFoundException(bookId));
+    }
+
+    @GetMapping(value = "/{bookId}/source", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<FileSystemResource> source(@PathVariable UUID bookId) throws IOException {
+        var source = new FileSystemResource(service.getBookSource(bookId));
+        return ResponseEntity.ok()
+            .contentLength(source.contentLength())
+            .body(source);
     }
 
     @GetMapping("/{bookId}/pages")

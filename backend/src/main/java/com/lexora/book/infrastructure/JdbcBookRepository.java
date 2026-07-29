@@ -85,7 +85,7 @@ class JdbcBookRepository implements BookRepository {
             """
             INSERT INTO book_pages (id, book_id, page_number, width, height,
                 processing_status, analysis, processed_at, failure_reason)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?)
             ON CONFLICT (book_id, page_number) DO UPDATE SET
                 processing_status = EXCLUDED.processing_status,
                 analysis = EXCLUDED.analysis,

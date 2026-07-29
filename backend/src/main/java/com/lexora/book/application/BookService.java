@@ -7,6 +7,7 @@ import com.lexora.book.infrastructure.BookRepository;
 import com.lexora.documentanalysis.client.DocumentAnalysisClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,12 +33,11 @@ public class BookService {
     private final Path storageBasePath;
 
     public BookService(BookRepository repository,
-                       DocumentAnalysisClient analysisClient) {
+                       DocumentAnalysisClient analysisClient,
+                       @Value("${lexora.storage.path:storage}") String storagePath) {
         this.repository = repository;
         this.analysisClient = analysisClient;
-        this.storageBasePath = Path.of(
-            System.getProperty("lexora.storage.path", "storage")
-        );
+        this.storageBasePath = Path.of(storagePath).toAbsolutePath().normalize();
         try {
             Files.createDirectories(storageBasePath.resolve("pdf"));
         } catch (IOException e) {
@@ -86,6 +86,12 @@ public class BookService {
         return repository.findPagesByBookId(bookId);
     }
 
+    public Path getBookSource(UUID bookId) {
+        var book = repository.findById(bookId)
+            .orElseThrow(() -> new IllegalArgumentException("Book not found: " + bookId));
+        return storageBasePath.resolve("pdf").resolve(book.storageKey());
+    }
+
     public BookPage processPage(UUID bookId, int pageNumber) throws IOException {
         var book = repository.findById(bookId)
             .orElseThrow(() -> new IllegalArgumentException("Book not found: " + bookId));
@@ -122,7 +128,9 @@ public class BookService {
 
     private Path rasterizePage(Path pdfPath, int pageNumber) throws IOException {
         var outputPath = storageBasePath.resolve("pdf").resolve(
-            pdfPath.getFileName().toString().replace(".pdf", "-page" + pageNumber + ".png")
+            pdfPath.getFileName().toString().replace(
+                ".pdf", "-page" + pageNumber + "-300dpi.png"
+            )
         );
         if (Files.exists(outputPath)) {
             return outputPath;
@@ -130,7 +138,7 @@ public class BookService {
 
         try (var document = org.apache.pdfbox.Loader.loadPDF(pdfPath.toFile())) {
             var renderer = new org.apache.pdfbox.rendering.PDFRenderer(document);
-            var bufferedImage = renderer.renderImage(pageNumber - 1);
+            var bufferedImage = renderer.renderImageWithDPI(pageNumber - 1, 300);
 
             javax.imageio.ImageIO.write(bufferedImage, "PNG", outputPath.toFile());
         }

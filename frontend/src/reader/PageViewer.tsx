@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { TextSpan } from './types';
 import { documentToViewport } from '../coordinates/transforms';
@@ -28,7 +28,7 @@ export default function PageViewer({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const viewportDims = useRef({ width: 0, height: 0 });
+  const [viewportDims, setViewportDims] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +40,7 @@ export default function PageViewer({
       if (cancelled) return;
       const page = await pdf.getPage(pageNumber);
       const viewport = page.getViewport({ scale: zoom });
-      viewportDims.current = { width: viewport.width, height: viewport.height };
+      setViewportDims({ width: viewport.width, height: viewport.height });
 
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.floor(viewport.width * dpr);
@@ -51,7 +51,7 @@ export default function PageViewer({
       const ctx = canvas.getContext('2d')!;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      await page.render({ canvasContext: ctx, viewport }).promise;
+      await page.render({ canvas, canvasContext: ctx, viewport }).promise;
     };
 
     load();
@@ -59,14 +59,14 @@ export default function PageViewer({
   }, [pdfData, pageNumber, zoom]);
 
   const overlaySpans = useMemo(() => {
-    const vw = viewportDims.current.width;
-    const vh = viewportDims.current.height;
+    const vw = viewportDims.width;
+    const vh = viewportDims.height;
     if (vw === 0 || vh === 0) return [];
     return spans.map((s) => {
       const pos = documentToViewport(s.bbox, vw, vh);
       return { ...s, ...pos };
     });
-  }, [spans, viewportDims.current.width, viewportDims.current.height]);
+  }, [spans, viewportDims]);
 
   return (
     <div ref={containerRef} className="page-container">

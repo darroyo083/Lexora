@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import PageViewer from './reader/PageViewer';
 import DebugPanel from './reader/DebugPanel';
 import type { TextSpan } from './reader/types';
-import { fetchPageAnalysis } from './api/client';
+import { fetchPageAnalysis, getPageAnalysis } from './api/client';
 
 type Status = 'idle' | 'uploading' | 'processing' | 'ready';
 
@@ -11,15 +11,50 @@ interface BookInfo {
   pageCount: number;
 }
 
+const CURRENT_BOOK_KEY = 'lexora.currentBookId';
+const CURRENT_PAGE_KEY = 'lexora.currentPage';
+
 export default function App() {
   const [status, setStatus] = useState<Status>('idle');
   const [book, setBook] = useState<BookInfo | null>(null);
-  const [selectedPage, setSelectedPage] = useState(1);
+  const [selectedPage, setSelectedPage] = useState(() => {
+    const storedPage = Number(localStorage.getItem(CURRENT_PAGE_KEY));
+    return storedPage > 0 ? storedPage : 1;
+  });
   const [spans, setSpans] = useState<TextSpan[]>([]);
   const [selectedSpan, setSelectedSpan] = useState<TextSpan | null>(null);
   const [showBoxes, setShowBoxes] = useState(false);
   const [zoom, setZoom] = useState(1.0);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+
+  useEffect(() => {
+    const bookId = localStorage.getItem(CURRENT_BOOK_KEY);
+    if (!bookId) return;
+
+    const restore = async () => {
+      setStatus('processing');
+      try {
+        const [bookRes, sourceRes, analysis] = await Promise.all([
+          fetch(`/api/books/${bookId}`),
+          fetch(`/api/books/${bookId}/source`),
+          getPageAnalysis(bookId, selectedPage),
+        ]);
+        if (!bookRes.ok || !sourceRes.ok) throw new Error('Stored book is unavailable');
+
+        const storedBook: BookInfo = await bookRes.json();
+        setBook(storedBook);
+        setPdfData(await sourceRes.arrayBuffer());
+        setSpans(analysis?.textSpans ?? []);
+        setStatus('ready');
+      } catch (error) {
+        localStorage.removeItem(CURRENT_BOOK_KEY);
+        setStatus('idle');
+        console.error('Restore failed:', error);
+      }
+    };
+
+    void restore();
+  }, []);
 
   const handleUpload = useCallback(async (file: File) => {
     setStatus('uploading');
@@ -28,24 +63,45 @@ export default function App() {
     form.append('language', 'de');
 
     const res = await fetch('/api/books', { method: 'POST', body: form });
+    if (!res.ok) {
+      setStatus('idle');
+      console.error('Upload failed:', res.status);
+      return;
+    }
     const info: BookInfo = await res.json();
+    if (!info || !info.id) {
+      setStatus('idle');
+      console.error('Upload returned invalid book info');
+      return;
+    }
     setBook(info);
+    localStorage.setItem(CURRENT_BOOK_KEY, info.id);
 
     const buffer = await file.arrayBuffer();
     setPdfData(buffer);
 
     setStatus('processing');
-    const analysis = await fetchPageAnalysis(info.id, selectedPage);
-    setSpans(analysis.textSpans);
-    setStatus('ready');
+    try {
+      const analysis = await fetchPageAnalysis(info.id, selectedPage);
+      setSpans(analysis.textSpans);
+      setStatus('ready');
+    } catch (e) {
+      setStatus('ready');
+      console.error('Processing failed:', e);
+    }
   }, [selectedPage]);
 
   const handleProcessPage = useCallback(async () => {
-    if (!book) return;
+    if (!book?.id) return;
     setStatus('processing');
-    const analysis = await fetchPageAnalysis(book.id, selectedPage);
-    setSpans(analysis.textSpans);
-    setStatus('ready');
+    try {
+      const analysis = await fetchPageAnalysis(book.id, selectedPage);
+      setSpans(analysis.textSpans);
+      setStatus('ready');
+    } catch (e) {
+      setStatus('ready');
+      console.error('Processing failed:', e);
+    }
   }, [book, selectedPage]);
 
   const handleSpanClick = useCallback((span: TextSpan) => {
@@ -79,7 +135,11 @@ export default function App() {
                   min={1}
                   max={book.pageCount}
                   value={selectedPage}
-                  onChange={(e) => setSelectedPage(Number(e.target.value))}
+                  onChange={(e) => {
+                    const page = Number(e.target.value);
+                    setSelectedPage(page);
+                    localStorage.setItem(CURRENT_PAGE_KEY, String(page));
+                  }}
                   className="page-input"
                 />
                 / {book.pageCount}

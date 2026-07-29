@@ -17,3 +17,15 @@ export async function fetchPageAnalysis(
   const analysis = JSON.parse(page.analysis);
   return analysis;
 }
+
+export async function getPageAnalysis(
+  bookId: string,
+  pageNumber: number
+): Promise<PageAnalysis | null> {
+  const res = await fetch(`${BASE}/api/books/${bookId}/pages/${pageNumber}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Loading analysis failed: ${res.status}`);
+
+  const page = await res.json();
+  return page.analysis ? JSON.parse(page.analysis) : null;
+}

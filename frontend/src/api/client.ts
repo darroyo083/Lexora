@@ -4,6 +4,7 @@ export type PageProcessingStatus =
   | 'PENDING'
   | 'RASTERIZING'
   | 'OCR'
+  | 'DETECTING_BLANKS'
   | 'PERSISTING'
   | 'READY'
   | 'FAILED';
@@ -21,11 +22,42 @@ interface RawBookPage extends Omit<BookPageResource, 'analysis'> {
   analysis: string | null;
 }
 
-function parsePage(page: RawBookPage): BookPageResource {
+export function normalizePageAnalysis(value: unknown): PageAnalysis {
+  const analysis = value as Partial<PageAnalysis> & {
+    dimensions?: { sourceWidth?: number; sourceHeight?: number };
+  };
+
+  return {
+    ...analysis,
+    schemaVersion: typeof analysis.schemaVersion === 'string'
+      ? analysis.schemaVersion
+      : 'legacy',
+    pageNumber: Number(analysis.pageNumber ?? 0),
+    width: Number(analysis.width ?? analysis.dimensions?.sourceWidth ?? 0),
+    height: Number(analysis.height ?? analysis.dimensions?.sourceHeight ?? 0),
+    language: typeof analysis.language === 'string' ? analysis.language : '',
+    textSpans: Array.isArray(analysis.textSpans) ? analysis.textSpans : [],
+    exerciseBlanks: Array.isArray(analysis.exerciseBlanks) ? analysis.exerciseBlanks : [],
+    blankDetection: analysis.blankDetection ?? null,
+    processor: analysis.processor as PageAnalysis['processor'],
+  };
+}
+
+export function parsePage(page: RawBookPage): BookPageResource {
   return {
     ...page,
-    analysis: page.analysis ? JSON.parse(page.analysis) : null,
+    analysis: page.analysis ? normalizePageAnalysis(JSON.parse(page.analysis)) : null,
   };
+}
+
+export type PageProcessAction = 'process' | 'update' | 'none';
+
+export function getPageProcessAction(page: BookPageResource | null): PageProcessAction {
+  if (page?.processingStatus !== 'READY') return 'process';
+  return page.analysis?.schemaVersion === '0.2.0'
+    && page.analysis.blankDetection !== null
+    ? 'none'
+    : 'update';
 }
 
 export async function getBookPages(
@@ -41,9 +73,13 @@ export async function getBookPages(
 export async function processBookPage(
   bookId: string,
   pageNumber: number,
+  refreshAnalysis = false,
+  signal?: AbortSignal,
 ): Promise<BookPageResource> {
-  const res = await fetch(`/api/books/${bookId}/pages/${pageNumber}/process`, {
+  const refresh = refreshAnalysis ? '?refreshAnalysis=true' : '';
+  const res = await fetch(`/api/books/${bookId}/pages/${pageNumber}/process${refresh}`, {
     method: 'POST',
+    signal,
   });
   if (!res.ok) throw new Error(`Processing failed: ${res.status}`);
   return parsePage(await res.json());

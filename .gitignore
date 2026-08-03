@@ -32,6 +32,9 @@ ai-service/*.egg-info/
 *.iml
 *.iws
 *.ipr
+.classpath
+.project
+.settings/
 
 # Environment
 .env

@@ -1,100 +1,85 @@
-# Persisted PageAnalysis
+# Persisted PageAnalysis v0.2
 
-`PageAnalysis` is the per-page OCR result stored as JSONB in `book_pages.analysis`. It describes text in source-image coordinates and never stores browser viewport pixels.
+`PageAnalysis` is the per-page document result stored as JSONB in `book_pages.analysis`. It stores OCR spans and graphical exercise blanks in source-image coordinates, never browser viewport pixels.
 
 ## Persisted Shape
 
-The current FastAPI response persisted by Spring has this shape:
-
 ```json
 {
-  "pageNumber": 10,
-  "width": 2284,
-  "height": 3121,
+  "schemaVersion": "0.2.0",
+  "pageNumber": 11,
+  "width": 2285,
+  "height": 3122,
   "language": "de",
-  "textSpans": [
+  "textSpans": [],
+  "exerciseBlanks": [
     {
-      "id": "span-10-0",
-      "text": "Ich bin, du hast, er möchte",
-      "confidence": 0.99,
-      "confidenceScope": "line",
-      "parentLineId": "line-10-0",
-      "bbox": {
-        "x": 0.13,
-        "y": 0.03,
-        "width": 0.39,
-        "height": 0.03
-      }
+      "id": "blank-11-1",
+      "kind": "fill-in-line",
+      "lineBbox": { "x": 0.21, "y": 0.10, "width": 0.09, "height": 0.001 },
+      "interactionBbox": { "x": 0.21, "y": 0.086, "width": 0.09, "height": 0.018 },
+      "detectionMethod": "horizontal-line-v1",
+      "candidateScore": 0.89,
+      "nearbyTextSpanIds": ["span-11-2", "span-11-3"]
     }
   ],
+  "blankDetection": {
+    "detectionMethod": "horizontal-line-v1",
+    "rawCandidateCount": 76,
+    "acceptedCount": 37,
+    "durationMs": 192
+  },
   "processor": {
     "engine": "PaddleOCR",
     "engineVersion": "3.7.0",
     "model": "PP-OCRv6",
     "language": "de",
-    "parameters": {
-      "use_doc_orientation_classify": false,
-      "use_doc_unwarping": false,
-      "use_textline_orientation": false,
-      "paddlepaddle": "3.2.2",
-      "word_boxes": "auto (line-level fallback)"
-    },
-    "processedAt": "2026-07-29T17:54:27Z",
-    "durationMs": 23000
+    "parameters": {},
+    "processedAt": "2026-07-30T17:04:00Z",
+    "durationMs": 18943
   }
 }
 ```
 
-`width` and `height` are the raster dimensions used by PaddleOCR. The example values are from the verified page 10 raster; they are not universal page constants.
+`width` and `height` are the PDFBox raster dimensions. They are validation and provenance values, not universal page constants.
 
-## Coordinate Model
+## Geometry
 
 | Property | Contract |
 |---|---|
 | Origin | Top-left `(0,0)` |
 | Range | Each bbox component is normalized to `[0,1]` |
-| Source | Original PDFBox raster before OCR preprocessing |
+| Reference | Original PDFBox raster before OCR or OpenCV pixel operations |
 | Persistence | Resolution-independent values only |
 | Rendering | CSS percentages relative to the displayed PDF canvas wrapper |
 
-For a source pixel box `(left, top, right, bottom)`:
+For source pixels `(left, top, right, bottom)`:
 
 ```text
-x      = left / sourceWidth
-y      = top / sourceHeight
-width  = (right - left) / sourceWidth
-height = (bottom - top) / sourceHeight
+x      = left / width
+y      = top / height
+width  = (right - left) / width
+height = (bottom - top) / height
 ```
 
-The frontend renders `x`, `y`, `width`, and `height` directly as percentages. Canvas intrinsic dimensions may be scaled for `devicePixelRatio`, but canvas CSS dimensions and the overlay rectangle remain identical.
+`lineBbox` describes the detected printed line. `interactionBbox` is taller and uses nearby OCR height; the physical line is positioned near the text baseline. Input width always follows the detected line width.
 
-## Geometry Preservation
+PaddleOCR orientation classification, document unwarping, and text-line orientation remain disabled. OpenCV changes pixel values only; it does not rotate, crop, resize, deskew, or perspective-correct the geometry reference.
 
-PaddleOCR preprocessing that changes document geometry is disabled:
+## Scores and Provenance
 
-- `use_doc_orientation_classify = false`
-- `use_doc_unwarping = false`
-- `use_textline_orientation = false`
+`candidateScore` is a deterministic heuristic score based on relative line width, aspect ratio, and nearby OCR evidence. It is not a probability and is not called confidence. `detectionMethod` identifies the heuristic version and can be either `horizontal-line-v1` (full-word blanks) or `short-suffix-line-v1` (conservative verb-ending blanks).
 
-This is a correctness requirement. Normalizing boxes from a warped image against original raster dimensions produces systematic displacement even when both images report the same width and height.
+`blankDetection` stores only concise operational metadata: raw and accepted counts plus duration. It does not contain images, contours, or large debug payloads.
 
-## Text and Confidence
+## Compatibility
 
-| Field | Meaning |
-|---|---|
-| `id` | Stable identifier within the page result |
-| `text` | Recognized line or word text |
-| `confidence` | PaddleOCR recognition confidence in `[0,1]` |
-| `confidenceScope` | Currently `line` |
-| `parentLineId` | Source line for word-derived spans |
-| `bbox` | Normalized source rectangle |
+- Missing `exerciseBlanks` normalizes to an empty list.
+- Missing `schemaVersion` is treated as `legacy`.
+- A legacy `READY` page remains readable and is not reprocessed automatically.
+- The frontend exposes **Update analysis** for legacy pages. This explicitly reuses the raster where available and runs the current OCR and blank pipeline.
+- A current v0.2 `READY` page restores through GET only.
 
-When PaddleOCR exposes word boxes, words inherit their parent line confidence. Otherwise Lexora stores a line-level fallback box.
+## Persistence
 
-## Persistence and Reuse
-
-- A successful page is stored with `processing_status = READY` and its JSONB analysis.
-- Opening or returning to a `READY` page loads the stored JSON and never starts OCR.
-- A hard refresh restores the current book, PDF, selected page, and existing page analysis.
-- A `FAILED` page retains its failure reason and can be explicitly retried.
-- Missing pages remain unprocessed until the user chooses **Process**.
+A successful final analysis is stored atomically with `processing_status = READY`. Refresh and page navigation load the same JSONB geometry without rasterization, OCR, or blank detection. A processing or detection exception stores `FAILED` with a technical `failureReason`; the existing Retry action claims a new attempt.

@@ -20,13 +20,21 @@
 
 PoC 0 processing remains intentionally explicit and per page. It does not automatically process a newly uploaded book or a page opened during navigation.
 
-## PoC 1: Fill-in-the-Blank Exercise Detection (Not Started)
+## PoC 1: Fill-in-the-Blank Exercise Detection (Complete)
 
-- [ ] Detect exercise regions from page analysis
-- [ ] Detect answer areas and blank geometry
-- [ ] Overlay interactive inputs on the original page
-- [ ] Persist exercise models
-- [ ] Preserve exercise alignment across zoom levels
+- [x] Detect graphical horizontal answer lines without a VLM
+- [x] Derive physical-line and interaction geometry
+- [x] Overlay interactive HTML inputs on the original page
+- [x] Persist blank geometry in `PageAnalysis` v0.2
+- [x] Preserve input and text alignment at 75%, 100%, 125%, 150%, 175%, and 200%
+- [x] Restore current analyses without rerunning OCR or OpenCV
+- [x] Offer explicit updates for legacy READY analyses
+- [x] Recover tiny verb-ending suffix blanks through a conservative short-suffix path
+- [x] Reject text-occupied structural grammar-table lines
+- [x] Persist exercise answers locally per browser, book, and page
+- [x] Replace the toolbar percentage bar with an in-page analysis overlay and real stage labels
+
+PoC 1 is intentionally heuristic. It validates horizontal graphical blanks, not general exercise understanding. Very dense table cells and a clean hyphen between words remain known edge cases.
 
 ## Planned Product Capabilities
 
@@ -34,7 +42,7 @@ PoC 0 processing remains intentionally explicit and per page. It does not automa
 
 - [ ] Click-to-translate
 - [ ] Contextual vocabulary persistence
-- [ ] Interactive fill-in-the-blank exercises
+- [x] Interactive graphical fill-in-the-blank placement
 - [ ] Exercise correction and explanations
 - [ ] Highlights and annotations
 

@@ -153,13 +153,21 @@ button:disabled {
 
 .page-container {
   position: relative;
+  align-self: flex-start;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   background: #fff;
   display: inline-block;
 }
 
-.page-stack {
-  position: relative;
+.page-container-loading {
+  visibility: hidden;
+  opacity: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.page-stack-processing .page-canvas {
+  filter: blur(5px) brightness(0.85) contrast(0.95);
 }
 
 .page-canvas {
@@ -174,6 +182,58 @@ button:disabled {
   height: 100%;
 }
 
+.blank-input {
+  position: absolute;
+  z-index: 2;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 1px;
+  outline: 0;
+  color: #172033;
+  background: transparent;
+  font-family: inherit;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  caret-color: #1d4ed8;
+}
+
+.blank-input:focus {
+  background: rgba(219, 234, 254, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.65);
+}
+
+.blank-line-debug,
+.blank-interaction-debug {
+  position: absolute;
+  pointer-events: none;
+}
+
+.blank-line-debug {
+  z-index: 3;
+  border: 1px solid rgba(217, 119, 6, 0.9);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.blank-interaction-debug {
+  z-index: 4;
+  border: 1px dashed rgba(5, 150, 105, 0.95);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.blank-interaction-debug span {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  padding: 1px 3px;
+  color: #f7faf9;
+  background: rgba(6, 78, 59, 0.9);
+  font-size: 9px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .ocr-box {
   position: absolute;
   border: 1px solid rgba(37, 99, 235, 0.6);
@@ -184,6 +244,395 @@ button:disabled {
 
 .ocr-box:hover {
   background: rgba(37, 99, 235, 0.2);
+}
+
+/* ==========================================================================
+   Lexora PDF Processing Loader — Halftone Wave Navy Card (ChatGPT Inspired)
+   ==========================================================================
+   A minimal, premium dark navy panel featuring a continuous diagonal wave sweep
+   across a halftone dot grid. Subtly communicates intelligent document analysis.
+   --------------------------------------------------------------------------
+   Configurable Parameters:
+   - --halftone-speed: Duration of 1 full diagonal sweep loop (e.g., 4.2s = smooth & calm)
+   - --halftone-angle: Direction of sweep (135deg = top-left to bottom-right)
+   - --dot-spacing: Distance between dots in grid (e.g., 14px)
+   - --dot-size-base: Diameter of inactive background dots (e.g., 1.5px)
+   - --dot-size-wave: Diameter of active wave dots (e.g., 2.2px)
+   - --navy-bg: Deep navy background tone (not pure black)
+   ========================================================================== */
+
+:root {
+  --halftone-speed: 4.2s;
+  --halftone-angle: 135deg;
+  --dot-spacing: 14px;
+  --dot-size-base: 1.5px;
+  --dot-size-wave: 2.2px;
+  --navy-bg: #0b1528;
+  --navy-border: rgba(255, 255, 255, 0.09);
+  --dot-color-base: rgba(148, 163, 184, 0.22);
+  --dot-color-wave: rgba(147, 197, 253, 0.95);
+}
+
+.page-processing {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.page-processing-content {
+  position: absolute;
+  left: var(--processing-center-x, 50%);
+  top: var(--processing-center-y, 50%);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 310px;
+  min-height: 76px;
+  height: 76px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 12px 18px;
+  pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Card Style 1: Minimal Light Glass (Apple Clean) */
+.card-minimal-light {
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 14px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow:
+    0 20px 40px -12px rgba(15, 23, 42, 0.15),
+    0 8px 16px -6px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.card-minimal-light .page-processing-title {
+  color: #0f172a;
+}
+
+.card-minimal-light .page-processing-detail {
+  color: #64748b;
+}
+
+/* Card Style 2: Slate Titanium Monochrome */
+.card-slate-mono {
+  background: rgba(30, 41, 59, 0.92);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  backdrop-filter: blur(20px) saturate(190%);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.5),
+    0 8px 16px -6px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.card-slate-mono .page-processing-title {
+  color: #f8fafc;
+}
+
+.card-slate-mono .page-processing-detail {
+  color: #94a3b8;
+}
+
+/* Card Style 3: Lexora Accent (Navy Cyan) */
+.card-lexora-cyan {
+  background: rgba(11, 19, 41, 0.94);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  backdrop-filter: blur(20px) saturate(190%);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 2px solid #38bdf8;
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.6),
+    0 0 20px -4px rgba(56, 189, 248, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.card-lexora-cyan .page-processing-title {
+  color: #f8fafc;
+}
+
+.card-lexora-cyan .page-processing-detail {
+  color: #cbd5e1;
+}
+
+/* Card Style 4: Borderless Floating Pill */
+.card-borderless-float {
+  background: rgba(15, 23, 42, 0.82);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 16px 36px -10px rgba(0, 0, 0, 0.45);
+}
+
+.card-borderless-float .page-processing-title {
+  color: #f8fafc;
+}
+
+.card-borderless-float .page-processing-detail {
+  color: #94a3b8;
+}
+
+/* Background halftone dot grid layers */
+.halftone-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.halftone-bg-full-page {
+  border-radius: 0;
+  z-index: 1;
+  background: rgba(11, 21, 40, 0.6);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+/* Inactive base dots layer */
+.halftone-grid-base {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle,
+    var(--dot-color-base) var(--dot-size-base),
+    transparent calc(var(--dot-size-base) + 0.5px)
+  );
+  background-size: var(--dot-spacing) var(--dot-spacing);
+  background-position: center;
+  opacity: 0.85;
+}
+
+/* Active wave sweep layer: larger, brighter dots modulated by moving diagonal mask */
+.halftone-grid-wave {
+  position: absolute;
+  inset: -100px;
+  background-image: radial-gradient(
+    circle,
+    var(--dot-color-wave) var(--dot-size-wave),
+    transparent calc(var(--dot-size-wave) + 0.6px)
+  );
+  background-size: var(--dot-spacing) var(--dot-spacing);
+  background-position: center;
+  mask-image: linear-gradient(
+    var(--halftone-angle),
+    transparent 0%,
+    transparent 25%,
+    rgba(0, 0, 0, 0.3) 40%,
+    #000 50%,
+    rgba(0, 0, 0, 0.3) 60%,
+    transparent 75%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    var(--halftone-angle),
+    transparent 0%,
+    transparent 25%,
+    rgba(0, 0, 0, 0.3) 40%,
+    #000 50%,
+    rgba(0, 0, 0, 0.3) 60%,
+    transparent 75%,
+    transparent 100%
+  );
+  mask-size: 260% 260%;
+  -webkit-mask-size: 260% 260%;
+  animation: halftone-sweep var(--halftone-speed) linear infinite;
+}
+
+@keyframes halftone-sweep {
+  0% {
+    mask-position: 0% 0%;
+    -webkit-mask-position: 0% 0%;
+  }
+  100% {
+    mask-position: 100% 100%;
+    -webkit-mask-position: 100% 100%;
+  }
+}
+
+/* Light Beam Variant styles */
+.page-scan-beam {
+  position: absolute;
+  left: -10%;
+  top: -160px;
+  width: 120%;
+  height: 160px;
+  animation: page-scan 4.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  transform: translateY(0);
+  pointer-events: none;
+}
+
+.page-scan-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0) 0%,
+    rgba(99, 102, 241, 0.04) 40%,
+    rgba(59, 130, 246, 0.16) 80%,
+    rgba(147, 51, 234, 0.26) 100%
+  );
+  filter: blur(14px);
+  opacity: 0.85;
+}
+
+.page-scan-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0) 0%,
+    rgba(96, 165, 250, 0.6) 15%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(129, 140, 248, 0.6) 85%,
+    rgba(99, 102, 241, 0) 100%
+  );
+  box-shadow:
+    0 0 12px 2px rgba(96, 165, 250, 0.75),
+    0 0 24px 6px rgba(139, 92, 246, 0.35);
+}
+
+@keyframes page-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  6% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  98%, 100% {
+    opacity: 0;
+    transform: translateY(calc(var(--processing-scan-distance, 100vh) + 200px));
+  }
+}
+
+/* Content layout on top of halftone background */
+.page-processing-body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  text-align: center;
+}
+
+.page-processing-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.status-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 8px #38bdf8;
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+    box-shadow: 0 0 3px #38bdf8;
+  }
+}
+
+.page-processing-title,
+.page-processing-detail {
+  display: block;
+}
+
+.page-processing-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.page-processing-detail {
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+.page-processing-detail-message {
+  display: block;
+  animation: page-processing-detail-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes page-processing-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halftone-grid-wave {
+    animation: none;
+    transition: none;
+    display: none;
+  }
+
+  .page-processing,
+  .page-processing * {
+    animation: none;
+    transition: none;
+  }
+
+  .page-processing-detail-message {
+    transform: none;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .debug-panel {

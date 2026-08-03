@@ -51,6 +51,35 @@ class BlankDetectionMetadata(BaseModel):
     durationMs: int = Field(ge=0)
 
 
+class ChoiceOption(BaseModel):
+    id: str
+    label: str
+
+
+class ChoiceGroup(BaseModel):
+    id: str
+    options: list[ChoiceOption] = Field(default_factory=list)
+
+
+class ChoiceTarget(BaseModel):
+    id: str
+    kind: Literal["choice"] = "choice"
+    targetBbox: BBox
+    interactionBbox: BBox
+    optionGroupId: str | None = None
+    detectionMethod: Literal["empty-ring-v1"] = "empty-ring-v1"
+    candidateScore: float = Field(ge=0, le=1)
+    nearbyTextSpanIds: list[str] = Field(default_factory=list)
+
+
+class ChoiceDetectionMetadata(BaseModel):
+    detectionMethod: Literal["empty-ring-v1"] = "empty-ring-v1"
+    rawCandidateCount: int = Field(ge=0)
+    acceptedCount: int = Field(ge=0)
+    groupCount: int = Field(ge=0)
+    durationMs: int = Field(ge=0)
+
+
 class PageAnalysis(BaseModel):
     schemaVersion: Literal["0.2.0"] = "0.2.0"
     pageNumber: int = Field(ge=1)
@@ -60,6 +89,9 @@ class PageAnalysis(BaseModel):
     textSpans: list[TextSpan] = Field(default_factory=list)
     exerciseBlanks: list[ExerciseBlank] = Field(default_factory=list)
     blankDetection: BlankDetectionMetadata | None = None
+    choiceGroups: list[ChoiceGroup] = Field(default_factory=list)
+    choiceTargets: list[ChoiceTarget] = Field(default_factory=list)
+    choiceDetection: ChoiceDetectionMetadata | None = None
     processor: ProcessorMetadata
 
 
@@ -69,7 +101,7 @@ class AnalyzePageRequest(BaseModel):
     imagePath: str
 
 
-class DetectExerciseBlanksRequest(BaseModel):
+class DetectInteractionsRequest(BaseModel):
     imagePath: str
     analysis: PageAnalysis
 

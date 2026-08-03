@@ -106,14 +106,14 @@ class BookServiceTest {
             )
         ));
         when(analysisClient.analyzePage(any(), eq(1), any())).thenReturn(ocr);
-        when(analysisClient.detectExerciseBlanks(any(), eq(ocr))).thenReturn(completed);
+        when(analysisClient.detectInteractions(any(), eq(ocr))).thenReturn(completed);
 
         var result = service.processPage(book.id(), 1);
 
         assertThat(result.processingStatus()).isEqualTo(ProcessingStatus.READY);
         verify(repository).startPageProcessing(book.id(), 1, false);
         verify(analysisClient).analyzePage(eq(book.id().toString()), eq(1), any());
-        verify(analysisClient).detectExerciseBlanks(any(), eq(ocr));
+        verify(analysisClient).detectInteractions(any(), eq(ocr));
         assertThat(result.analysis()).contains("\"schemaVersion\":\"0.2.0\"");
         assertThat(result.analysis()).contains("\"exerciseBlanks\":[{");
 
@@ -124,7 +124,7 @@ class BookServiceTest {
             .containsExactly(
                 ProcessingStatus.RASTERIZING,
                 ProcessingStatus.OCR,
-                ProcessingStatus.DETECTING_BLANKS,
+                ProcessingStatus.DETECTING_INTERACTIONS,
                 ProcessingStatus.PERSISTING,
                 ProcessingStatus.READY
             );
@@ -141,7 +141,7 @@ class BookServiceTest {
         when(repository.savePage(any())).thenAnswer(invocation -> invocation.getArgument(0));
         var analysis = analysis(List.of());
         when(analysisClient.analyzePage(any(), eq(1), any())).thenReturn(analysis);
-        when(analysisClient.detectExerciseBlanks(any(), eq(analysis))).thenReturn(analysis);
+        when(analysisClient.detectInteractions(any(), eq(analysis))).thenReturn(analysis);
 
         var result = service.processPage(book.id(), 1, true);
 
@@ -188,7 +188,7 @@ class BookServiceTest {
         assertThat(result.processingStatus()).isEqualTo(ProcessingStatus.FAILED);
         assertThat(result.failureReason()).isEqualTo("OCR unavailable");
         verify(analysisClient).analyzePage(any(), eq(1), any());
-        verify(analysisClient, never()).detectExerciseBlanks(any(), any());
+        verify(analysisClient, never()).detectInteractions(any(), any());
     }
 
     @Test
@@ -202,20 +202,21 @@ class BookServiceTest {
         when(repository.savePage(any())).thenAnswer(invocation -> invocation.getArgument(0));
         var ocr = analysis(List.of());
         when(analysisClient.analyzePage(any(), eq(1), any())).thenReturn(ocr);
-        when(analysisClient.detectExerciseBlanks(any(), eq(ocr)))
+        when(analysisClient.detectInteractions(any(), eq(ocr)))
             .thenThrow(new RuntimeException("Blank detector unavailable"));
 
         var result = service.processPage(book.id(), 1);
 
         assertThat(result.processingStatus()).isEqualTo(ProcessingStatus.FAILED);
         assertThat(result.failureReason()).isEqualTo("Blank detector unavailable");
-        verify(analysisClient).detectExerciseBlanks(any(), eq(ocr));
+        verify(analysisClient).detectInteractions(any(), eq(ocr));
     }
 
     private static PageAnalysis analysis(List<PageAnalysis.ExerciseBlank> blanks) {
         return new PageAnalysis(
             "0.2.0", 1, 800, 600, "de", List.of(), blanks,
             new PageAnalysis.BlankDetectionMetadata("horizontal-line-v1", 1, blanks.size(), 1),
+            List.of(), List.of(), null,
             new PageAnalysis.ProcessorMetadata("test", "1", "model", "de", Map.of(), null, 1)
         );
     }

@@ -41,6 +41,9 @@ class TestAnalyzePage:
         assert data["processor"]["engine"] == "FakeOCR"
         assert data["exerciseBlanks"] == []
         assert data["blankDetection"] is None
+        assert data["choiceTargets"] == []
+        assert data["choiceGroups"] == []
+        assert data["choiceDetection"] is None
 
     def test_rejects_empty_body(self):
         response = client.post(
@@ -80,8 +83,8 @@ class TestAnalyzePage:
         assert response.status_code != 422
 
 
-class TestAnalyzeExerciseBlanks:
-    @patch("app.api.main._get_blank_detector")
+class TestAnalyzeInteractions:
+    @patch("app.api.main._get_interaction_detector")
     def test_returns_enriched_page_analysis(
         self, mock_get_detector, fake_analysis
     ):
@@ -97,7 +100,7 @@ class TestAnalyzeExerciseBlanks:
         mock_get_detector.return_value.return_value = enriched
 
         response = client.post(
-            "/internal/document-analysis/pages/exercise-blanks",
+            "/internal/document-analysis/pages/interactions",
             json={
                 "imagePath": "/data/page.png",
                 "analysis": fake_analysis.model_dump(mode="json"),
@@ -109,14 +112,14 @@ class TestAnalyzeExerciseBlanks:
         detector = mock_get_detector.return_value
         assert detector.call_args.args[0] == "/data/page.png"
 
-    @patch("app.api.main._get_blank_detector")
+    @patch("app.api.main._get_interaction_detector")
     def test_maps_invalid_image_to_bad_request(
         self, mock_get_detector, fake_analysis
     ):
         mock_get_detector.return_value.side_effect = ValueError("bad image")
 
         response = client.post(
-            "/internal/document-analysis/pages/exercise-blanks",
+            "/internal/document-analysis/pages/interactions",
             json={
                 "imagePath": "/data/page.png",
                 "analysis": fake_analysis.model_dump(mode="json"),

@@ -47,11 +47,11 @@ public class DocumentAnalysisClient {
         );
     }
 
-    public PageAnalysis detectExerciseBlanks(String imagePath, PageAnalysis analysis) {
-        log.info("requesting exercise blank detection page={}", analysis.pageNumber());
+    public PageAnalysis detectInteractions(String imagePath, PageAnalysis analysis) {
+        log.info("requesting interaction detection page={}", analysis.pageNumber());
         return post(
-            "/internal/document-analysis/pages/exercise-blanks",
-            new DetectExerciseBlanksRequest(imagePath, analysis),
+            "/internal/document-analysis/pages/interactions",
+            new DetectInteractionsRequest(imagePath, analysis),
             PageAnalysis.class
         );
     }
@@ -98,7 +98,7 @@ public class DocumentAnalysisClient {
         String imagePath
     ) {}
 
-    private record DetectExerciseBlanksRequest(
+    private record DetectInteractionsRequest(
         String imagePath,
         PageAnalysis analysis
     ) {}

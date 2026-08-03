@@ -22,7 +22,7 @@ class DocumentAnalysisClientIntegrationTest {
     private final AtomicReference<String> capturedContentType = new AtomicReference<>();
     private final AtomicReference<String> capturedContentLength = new AtomicReference<>();
     private final AtomicReference<String> capturedMethod = new AtomicReference<>();
-    private final AtomicReference<String> capturedBlankBody = new AtomicReference<>();
+    private final AtomicReference<String> capturedInteractionBody = new AtomicReference<>();
 
     @BeforeEach
     void startServer() throws IOException {
@@ -51,8 +51,8 @@ class DocumentAnalysisClientIntegrationTest {
             }
         });
 
-        server.createContext("/internal/document-analysis/pages/exercise-blanks", exchange -> {
-            capturedBlankBody.set(
+        server.createContext("/internal/document-analysis/pages/interactions", exchange -> {
+            capturedInteractionBody.set(
                 new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)
             );
             var response = """
@@ -108,13 +108,13 @@ class DocumentAnalysisClientIntegrationTest {
     }
 
     @Test
-    void sendsImagePathAndOcrAnalysisForBlankDetection() {
+    void sendsImagePathAndOcrAnalysisForInteractionDetection() {
         var client = new DocumentAnalysisClient("http://localhost:" + port);
         var ocr = client.analyzePage("id", 1, "/data/page.png");
 
-        var result = client.detectExerciseBlanks("/data/page.png", ocr);
+        var result = client.detectInteractions("/data/page.png", ocr);
 
-        var request = JsonMapper.builder().build().readTree(capturedBlankBody.get());
+        var request = JsonMapper.builder().build().readTree(capturedInteractionBody.get());
         assertThat(request.get("imagePath").asString()).isEqualTo("/data/page.png");
         assertThat(request.get("analysis").get("schemaVersion").asString()).isEqualTo("0.2.0");
         assertThat(result.exerciseBlanks()).hasSize(1);

@@ -12,12 +12,17 @@ public record PageAnalysis(
     List<TextSpan> textSpans,
     List<ExerciseBlank> exerciseBlanks,
     BlankDetectionMetadata blankDetection,
+    List<ChoiceGroup> choiceGroups,
+    List<ChoiceTarget> choiceTargets,
+    ChoiceDetectionMetadata choiceDetection,
     ProcessorMetadata processor
 ) {
     public PageAnalysis {
         schemaVersion = schemaVersion == null ? "legacy" : schemaVersion;
         textSpans = textSpans == null ? List.of() : List.copyOf(textSpans);
         exerciseBlanks = exerciseBlanks == null ? List.of() : List.copyOf(exerciseBlanks);
+        choiceGroups = choiceGroups == null ? List.of() : List.copyOf(choiceGroups);
+        choiceTargets = choiceTargets == null ? List.of() : List.copyOf(choiceTargets);
     }
 
     public record BBox(double x, double y, double width, double height) {}
@@ -50,6 +55,44 @@ public record PageAnalysis(
         String detectionMethod,
         int rawCandidateCount,
         int acceptedCount,
+        long durationMs
+    ) {}
+
+    public record ChoiceOption(
+        String id,
+        String label
+    ) {}
+
+    public record ChoiceGroup(
+        String id,
+        List<ChoiceOption> options
+    ) {
+        public ChoiceGroup {
+            options = options == null ? List.of() : List.copyOf(options);
+        }
+    }
+
+    public record ChoiceTarget(
+        String id,
+        String kind,
+        BBox targetBbox,
+        BBox interactionBbox,
+        String optionGroupId,
+        String detectionMethod,
+        double candidateScore,
+        List<String> nearbyTextSpanIds
+    ) {
+        public ChoiceTarget {
+            nearbyTextSpanIds = nearbyTextSpanIds == null
+                ? List.of() : List.copyOf(nearbyTextSpanIds);
+        }
+    }
+
+    public record ChoiceDetectionMetadata(
+        String detectionMethod,
+        int rawCandidateCount,
+        int acceptedCount,
+        int groupCount,
         long durationMs
     ) {}
 

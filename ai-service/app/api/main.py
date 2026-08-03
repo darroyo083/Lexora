@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from app.schemas.page_analysis import (
     AnalyzePageRequest,
     AnalyzePageResponse,
-    DetectExerciseBlanksRequest,
+    DetectInteractionsRequest,
     PageAnalysis,
 )
 
@@ -22,10 +22,10 @@ def _get_ocr():
     return create_page_analysis
 
 
-def _get_blank_detector():
-    from app.document.blank_detection import detect_exercise_blanks
+def _get_interaction_detector():
+    from app.document.interaction_detection import detect_interactions
 
-    return detect_exercise_blanks
+    return detect_interactions
 
 
 @app.post("/internal/document-analysis/pages", response_model=AnalyzePageResponse)
@@ -38,11 +38,11 @@ def analyze_page(request: AnalyzePageRequest):
 
 
 @app.post(
-    "/internal/document-analysis/pages/exercise-blanks",
+    "/internal/document-analysis/pages/interactions",
     response_model=PageAnalysis,
 )
-def analyze_exercise_blanks(request: DetectExerciseBlanksRequest):
+def analyze_interactions(request: DetectInteractionsRequest):
     try:
-        return _get_blank_detector()(request.imagePath, request.analysis)
+        return _get_interaction_detector()(request.imagePath, request.analysis)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error

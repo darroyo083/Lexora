@@ -120,8 +120,8 @@ public class BookService {
             var analysis = analysisClient.analyzePage(
                 bookId.toString(), pageNumber, rasterizedPath.toString()
             );
-            page = repository.savePage(page.transitionTo(ProcessingStatus.DETECTING_BLANKS));
-            var finalAnalysis = analysisClient.detectExerciseBlanks(
+            page = repository.savePage(page.transitionTo(ProcessingStatus.DETECTING_INTERACTIONS));
+            var finalAnalysis = analysisClient.detectInteractions(
                 rasterizedPath.toString(), analysis
             );
             log.info("page analyzed bookId={} page={}", bookId, pageNumber);

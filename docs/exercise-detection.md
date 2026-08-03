@@ -1,6 +1,13 @@
 # Graphical Exercise Detection
 
-PoC 1 detects printed horizontal answer lines locally. OCR recognizes nearby language; OpenCV finds the graphical line itself. No Gemini, VLM, cloud OCR, external model, or remote image analysis is used.
+Lexora detects printed exercise interactions locally with OpenCV. OCR recognizes nearby language; OpenCV finds the graphical structures themselves. No Gemini, VLM, cloud OCR, external model, or remote image analysis is used.
+
+Two detector families exist today:
+
+- **Fill-in blanks** (this document): printed horizontal answer lines.
+- **Choice markers** ([`choice-interactions.md`](choice-interactions.md)): hollow circular answer targets with numbered option legends.
+
+Both run in the same FastAPI interaction-detection operation against the same unmodified 300 DPI raster and OCR result.
 
 ## Pipeline
 

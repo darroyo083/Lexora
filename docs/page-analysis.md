@@ -1,6 +1,8 @@
 # Persisted PageAnalysis v0.2
 
-`PageAnalysis` is the per-page document result stored as JSONB in `book_pages.analysis`. It stores OCR spans and graphical exercise blanks in source-image coordinates, never browser viewport pixels.
+`PageAnalysis` is the per-page document result stored as JSONB in `book_pages.analysis`. It stores OCR spans, graphical exercise blanks, and choice-marker targets in source-image coordinates, never browser viewport pixels.
+
+The schema version remains `0.2.0`; PoC 2 added choice fields **additively**. A v0.2 analysis without choice fields (or with `choiceDetection: null`) is a pre-PoC 2 analysis: it still loads and renders blanks, and the frontend offers an explicit **Update analysis** action to add choice detection.
 
 ## Persisted Shape
 
@@ -29,6 +31,9 @@
     "acceptedCount": 37,
     "durationMs": 192
   },
+  "choiceGroups": [],
+  "choiceTargets": [],
+  "choiceDetection": null,
   "processor": {
     "engine": "PaddleOCR",
     "engineVersion": "3.7.0",
@@ -72,13 +77,19 @@ PaddleOCR orientation classification, document unwarping, and text-line orientat
 
 `blankDetection` stores only concise operational metadata: raw and accepted counts plus duration. It does not contain images, contours, or large debug payloads.
 
+## Choice-Marker Fields
+
+PoC 2 adds `choiceGroups`, `choiceTargets`, and `choiceDetection` with the same conventions: normalized geometry, a deterministic `candidateScore`, and `empty-ring-v1` provenance. `choiceTargets[].targetBbox` is the printed circle; `interactionBbox` is the derived click area. See [`choice-interactions.md`](choice-interactions.md) for the full contract.
+
 ## Compatibility
 
 - Missing `exerciseBlanks` normalizes to an empty list.
+- Missing `choiceGroups` / `choiceTargets` normalize to empty lists; missing `choiceDetection` to `null`.
 - Missing `schemaVersion` is treated as `legacy`.
 - A legacy `READY` page remains readable and is not reprocessed automatically.
-- The frontend exposes **Update analysis** for legacy pages. This explicitly reuses the raster where available and runs the current OCR and blank pipeline.
-- A current v0.2 `READY` page restores through GET only.
+- A v0.2 `READY` page with `blankDetection` but without `choiceDetection` (pre-PoC 2) also remains readable; the frontend exposes **Update analysis** to add choice-marker detection.
+- A current v0.2 `READY` page (both detections present) restores through GET only.
+- The frontend exposes **Update analysis** for legacy pages. This explicitly reuses the raster where available and runs the current OCR and interaction pipeline.
 
 ## Persistence
 

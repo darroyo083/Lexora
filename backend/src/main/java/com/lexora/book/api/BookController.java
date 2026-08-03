@@ -72,7 +72,11 @@ public class BookController {
     }
 
     @PostMapping("/{bookId}/pages/{pageNumber}/process")
-    public BookPage processPage(@PathVariable UUID bookId, @PathVariable int pageNumber) throws IOException {
-        return service.processPage(bookId, pageNumber);
+    public BookPage processPage(
+        @PathVariable UUID bookId,
+        @PathVariable int pageNumber,
+        @RequestParam(defaultValue = "false") boolean refreshAnalysis
+    ) throws IOException {
+        return service.processPage(bookId, pageNumber, refreshAnalysis);
     }
 }

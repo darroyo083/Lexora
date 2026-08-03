@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from app.schemas.page_analysis import (
     PageAnalysis,
-    Dimensions,
     ProcessorMetadata,
     TextSpan,
     BBox,
@@ -14,7 +13,8 @@ from app.schemas.page_analysis import (
 def fake_analysis():
     return PageAnalysis(
         pageNumber=1,
-        dimensions=Dimensions(sourceWidth=800, sourceHeight=600),
+        width=800,
+        height=600,
         language="de",
         textSpans=[
             TextSpan(

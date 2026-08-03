@@ -8,10 +8,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class BookControllerTest {
@@ -34,5 +37,26 @@ class BookControllerTest {
 
         mvc.perform(get("/api/books"))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    void processPageDefaultsRefreshToFalse() throws Exception {
+        var bookId = UUID.randomUUID();
+
+        mvc.perform(post("/api/books/{bookId}/pages/1/process", bookId))
+            .andExpect(status().isOk());
+
+        verify(bookService).processPage(bookId, 1, false);
+    }
+
+    @Test
+    void processPageAcceptsExplicitRefresh() throws Exception {
+        var bookId = UUID.randomUUID();
+
+        mvc.perform(post("/api/books/{bookId}/pages/1/process", bookId)
+                .queryParam("refreshAnalysis", "true"))
+            .andExpect(status().isOk());
+
+        verify(bookService).processPage(bookId, 1, true);
     }
 }

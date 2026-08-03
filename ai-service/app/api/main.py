@@ -1,7 +1,14 @@
-from fastapi import FastAPI
-from app.schemas.page_analysis import AnalyzePageRequest, AnalyzePageResponse
+from fastapi import FastAPI, HTTPException
 
-app = FastAPI(title="Lexora AI Service", version="0.1.0")
+from app.schemas.page_analysis import (
+    AnalyzePageRequest,
+    AnalyzePageResponse,
+    DetectExerciseBlanksRequest,
+    PageAnalysis,
+)
+
+
+app = FastAPI(title="Lexora AI Service", version="0.2.0")
 
 
 @app.get("/health")
@@ -15,30 +22,27 @@ def _get_ocr():
     return create_page_analysis
 
 
+def _get_blank_detector():
+    from app.document.blank_detection import detect_exercise_blanks
+
+    return detect_exercise_blanks
+
+
 @app.post("/internal/document-analysis/pages", response_model=AnalyzePageResponse)
 def analyze_page(request: AnalyzePageRequest):
-    create_page_analysis = _get_ocr()
-    analysis = create_page_analysis(
+    return _get_ocr()(
         book_id=request.bookId,
         page_number=request.pageNumber,
         image_path=request.imagePath,
     )
 
-    return AnalyzePageResponse(
-        pageNumber=analysis.pageNumber,
-        width=analysis.dimensions.sourceWidth,
-        height=analysis.dimensions.sourceHeight,
-        language=analysis.language,
-        textSpans=[
-            {
-                "id": s.id,
-                "text": s.text,
-                "confidence": s.confidence,
-                "confidenceScope": s.confidenceScope,
-                "parentLineId": s.parentLineId,
-                "bbox": s.bbox.model_dump(),
-            }
-            for s in analysis.textSpans
-        ],
-        processor=analysis.processor.model_dump(mode="json"),
-    )
+
+@app.post(
+    "/internal/document-analysis/pages/exercise-blanks",
+    response_model=PageAnalysis,
+)
+def analyze_exercise_blanks(request: DetectExerciseBlanksRequest):
+    try:
+        return _get_blank_detector()(request.imagePath, request.analysis)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error

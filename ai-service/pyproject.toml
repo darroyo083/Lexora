@@ -10,6 +10,7 @@ dependencies = [
     "uvicorn==0.52.0",
     "paddleocr==3.7.0",
     "paddlepaddle==3.2.2",
+    "opencv-contrib-python==4.10.0.84",
     "python-multipart==0.0.32",
     "pillow>=11.0.0",
 ]

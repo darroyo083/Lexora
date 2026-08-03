@@ -17,7 +17,7 @@ def test_disables_geometry_changing_preprocessing():
         image_open.return_value.size = (200, 100)
         paddle_ocr.return_value.predict.return_value = [page_result]
 
-        create_page_analysis("book", 1, "page.png")
+        analysis = create_page_analysis("book", 1, "page.png")
 
     paddle_ocr.assert_called_once_with(
         lang="de",
@@ -25,3 +25,7 @@ def test_disables_geometry_changing_preprocessing():
         use_doc_unwarping=False,
         use_textline_orientation=False,
     )
+    assert analysis.schemaVersion == "0.2.0"
+    assert (analysis.width, analysis.height) == (200, 100)
+    assert analysis.exerciseBlanks == []
+    assert analysis.blankDetection is None

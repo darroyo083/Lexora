@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 from app.api.main import app
+from app.schemas.page_analysis import BlankDetectionMetadata
 from tests.conftest import fake_analysis
 
 
@@ -31,10 +32,15 @@ class TestAnalyzePage:
         assert response.status_code == 200
         data = response.json()
         assert data["pageNumber"] == 1
+        assert data["schemaVersion"] == "0.2.0"
+        assert data["width"] == 800
+        assert data["height"] == 600
         assert data["language"] == "de"
         assert len(data["textSpans"]) == 1
         assert data["textSpans"][0]["text"] == "Test"
         assert data["processor"]["engine"] == "FakeOCR"
+        assert data["exerciseBlanks"] == []
+        assert data["blankDetection"] is None
 
     def test_rejects_empty_body(self):
         response = client.post(
@@ -72,3 +78,50 @@ class TestAnalyzePage:
         # 200 only if OCR mock is active — without mock, this hits real OCR
         # which isn't available in CI. We test the validation passes (not 422).
         assert response.status_code != 422
+
+
+class TestAnalyzeExerciseBlanks:
+    @patch("app.api.main._get_blank_detector")
+    def test_returns_enriched_page_analysis(
+        self, mock_get_detector, fake_analysis
+    ):
+        enriched = fake_analysis.model_copy(
+            update={
+                "blankDetection": BlankDetectionMetadata(
+                    rawCandidateCount=0,
+                    acceptedCount=0,
+                    durationMs=1,
+                )
+            }
+        )
+        mock_get_detector.return_value.return_value = enriched
+
+        response = client.post(
+            "/internal/document-analysis/pages/exercise-blanks",
+            json={
+                "imagePath": "/data/page.png",
+                "analysis": fake_analysis.model_dump(mode="json"),
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["blankDetection"]["acceptedCount"] == 0
+        detector = mock_get_detector.return_value
+        assert detector.call_args.args[0] == "/data/page.png"
+
+    @patch("app.api.main._get_blank_detector")
+    def test_maps_invalid_image_to_bad_request(
+        self, mock_get_detector, fake_analysis
+    ):
+        mock_get_detector.return_value.side_effect = ValueError("bad image")
+
+        response = client.post(
+            "/internal/document-analysis/pages/exercise-blanks",
+            json={
+                "imagePath": "/data/page.png",
+                "analysis": fake_analysis.model_dump(mode="json"),
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "bad image"

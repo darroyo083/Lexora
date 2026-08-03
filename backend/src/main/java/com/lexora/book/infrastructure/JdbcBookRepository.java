@@ -103,21 +103,21 @@ class JdbcBookRepository implements BookRepository {
     }
 
     @Override
-    public Optional<BookPage> startPageProcessing(UUID bookId, int pageNumber) {
+    public Optional<BookPage> startPageProcessing(UUID bookId, int pageNumber, boolean refreshAnalysis) {
         var pages = jdbc.query(
             """
             INSERT INTO book_pages (id, book_id, page_number, processing_status)
             VALUES (?, ?, ?, 'PENDING')
             ON CONFLICT (book_id, page_number) DO UPDATE SET
                 processing_status = 'PENDING',
-                analysis = NULL,
                 processed_at = NULL,
                 failure_reason = NULL
             WHERE book_pages.processing_status = 'FAILED'
+               OR (? AND book_pages.processing_status = 'READY')
             RETURNING *
             """,
             PAGE_MAPPER,
-            UUID.randomUUID(), bookId, pageNumber
+            UUID.randomUUID(), bookId, pageNumber, refreshAnalysis
         );
         return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
     }

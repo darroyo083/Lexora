@@ -1,5 +1,6 @@
 package com.lexora.documentanalysis.client;
 
+import com.lexora.documentanalysis.contract.PageAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,14 +11,18 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
 public class DocumentAnalysisClient {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentAnalysisClient.class);
-    private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final JsonMapper JSON = JsonMapper.builder()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
 
     private final String baseUrl;
     private final HttpClient httpClient;
@@ -29,21 +34,37 @@ public class DocumentAnalysisClient {
         this.baseUrl = baseUrl;
         this.httpClient = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(Duration.ofSeconds(10))
             .build();
     }
 
-    public String analyzePage(String bookId, int pageNumber, String imagePath) {
-        var payload = JSON.writeValueAsString(
-            new AnalyzePageRequest(bookId, pageNumber, imagePath)
-        );
-
+    public PageAnalysis analyzePage(String bookId, int pageNumber, String imagePath) {
         log.info("requesting page analysis bookId={} page={}", bookId, pageNumber);
+        return post(
+            "/internal/document-analysis/pages",
+            new AnalyzePageRequest(bookId, pageNumber, imagePath),
+            PageAnalysis.class
+        );
+    }
+
+    public PageAnalysis detectExerciseBlanks(String imagePath, PageAnalysis analysis) {
+        log.info("requesting exercise blank detection page={}", analysis.pageNumber());
+        return post(
+            "/internal/document-analysis/pages/exercise-blanks",
+            new DetectExerciseBlanksRequest(imagePath, analysis),
+            PageAnalysis.class
+        );
+    }
+
+    private <T> T post(String path, Object body, Class<T> responseType) {
+        var payload = JSON.writeValueAsString(body);
 
         try {
             var request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/internal/document-analysis/pages"))
+                .uri(URI.create(baseUrl + path))
                 .version(HttpClient.Version.HTTP_1_1)
                 .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(10))
                 .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
                 .build();
 
@@ -51,8 +72,7 @@ public class DocumentAnalysisClient {
                 request, HttpResponse.BodyHandlers.ofString()
             );
 
-            log.info("page analysis response bookId={} page={} status={}",
-                bookId, pageNumber, response.statusCode());
+            log.info("document analysis response path={} status={}", path, response.statusCode());
 
             if (response.statusCode() >= 400) {
                 throw new RuntimeException(
@@ -61,10 +81,12 @@ public class DocumentAnalysisClient {
                 );
             }
 
-            return response.body();
+            return JSON.readValue(response.body(), responseType);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Analysis request interrupted", e);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Analysis request failed", e);
         }
@@ -74,5 +96,10 @@ public class DocumentAnalysisClient {
         String bookId,
         int pageNumber,
         String imagePath
+    ) {}
+
+    private record DetectExerciseBlanksRequest(
+        String imagePath,
+        PageAnalysis analysis
     ) {}
 }

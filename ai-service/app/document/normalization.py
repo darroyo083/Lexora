@@ -10,10 +10,14 @@ def normalize_bbox(
     if source_width <= 0 or source_height <= 0:
         raise ValueError("source_width and source_height must be positive")
 
-    x = max(0.0, min(1.0, pixel_left / source_width))
-    y = max(0.0, min(1.0, pixel_top / source_height))
-    w = max(0.0, min(1.0, (pixel_right - pixel_left) / source_width))
-    h = max(0.0, min(1.0, (pixel_bottom - pixel_top) / source_height))
+    left = max(0.0, min(source_width, pixel_left))
+    top = max(0.0, min(source_height, pixel_top))
+    right = max(left, min(source_width, pixel_right))
+    bottom = max(top, min(source_height, pixel_bottom))
+    x = left / source_width
+    y = top / source_height
+    w = (right - left) / source_width
+    h = (bottom - top) / source_height
     return (x, y, w, h)
 
 

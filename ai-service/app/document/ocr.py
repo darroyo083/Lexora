@@ -1,15 +1,18 @@
+import logging
 import time
-from pathlib import Path
+
 from paddleocr import PaddleOCR  # type: ignore[import-untyped]
 
 from app.schemas.page_analysis import (
     BBox,
-    Dimensions,
     TextSpan,
     PageAnalysis,
     ProcessorMetadata,
 )
 from app.document.normalization import normalize_bbox
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_page_analysis(
@@ -21,6 +24,8 @@ def create_page_analysis(
 
     img = Image.open(image_path)
     source_width, source_height = img.size
+
+    logger.info("OCR started page=%s image=%s", page_number, image_path)
 
     ocr = PaddleOCR(
         lang="de",
@@ -102,14 +107,14 @@ def create_page_analysis(
         for s in raw_spans
     ]
 
-    return PageAnalysis(
+    analysis = PageAnalysis(
         pageNumber=page_number,
-        dimensions=Dimensions(
-            sourceWidth=source_width,
-            sourceHeight=source_height,
-        ),
+        width=source_width,
+        height=source_height,
         language="de",
         textSpans=spans,
+        exerciseBlanks=[],
+        blankDetection=None,
         processor=ProcessorMetadata(
             engine="PaddleOCR",
             engineVersion="3.7.0",
@@ -125,3 +130,10 @@ def create_page_analysis(
             durationMs=elapsed_ms,
         ),
     )
+    logger.info(
+        "OCR completed page=%s spans=%s duration_ms=%s",
+        page_number,
+        len(spans),
+        elapsed_ms,
+    )
+    return analysis

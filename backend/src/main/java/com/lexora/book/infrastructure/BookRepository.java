@@ -13,7 +13,7 @@ public interface BookRepository {
     List<Book> findAll();
 
     BookPage savePage(BookPage page);
-    Optional<BookPage> startPageProcessing(UUID bookId, int pageNumber);
+    Optional<BookPage> startPageProcessing(UUID bookId, int pageNumber, boolean refreshAnalysis);
     Optional<BookPage> findPage(UUID bookId, int pageNumber);
     List<BookPage> findPagesByBookId(UUID bookId);
 }

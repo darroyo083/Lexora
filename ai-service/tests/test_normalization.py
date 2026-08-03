@@ -28,6 +28,11 @@ class TestNormalizeBBox:
         with pytest.raises(ValueError):
             normalize_bbox(0, 0, 100, 100, 0, 0)
 
+    def test_clips_right_and_bottom_edges(self):
+        x, y, w, h = normalize_bbox(790, 590, 810, 620, 800, 600)
+        assert x + w == pytest.approx(1.0)
+        assert y + h == pytest.approx(1.0)
+
 
 class TestDenormalizeBBox:
     def test_basic(self):

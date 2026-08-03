@@ -5,6 +5,7 @@ public enum ProcessingStatus {
     PENDING,
     RASTERIZING,
     OCR,
+    DETECTING_BLANKS,
     PERSISTING,
     READY,
     FAILED

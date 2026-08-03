@@ -21,10 +21,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import tools.jackson.databind.json.JsonMapper;
+
 @Service
 public class BookService {
 
     private static final Logger log = LoggerFactory.getLogger(BookService.class);
+    private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private final BookRepository repository;
     private final DocumentAnalysisClient analysisClient;
@@ -91,6 +94,10 @@ public class BookService {
     }
 
     public BookPage processPage(UUID bookId, int pageNumber) throws IOException {
+        return processPage(bookId, pageNumber, false);
+    }
+
+    public BookPage processPage(UUID bookId, int pageNumber, boolean refreshAnalysis) throws IOException {
         var book = repository.findById(bookId)
             .orElseThrow(() -> new IllegalArgumentException("Book not found: " + bookId));
 
@@ -98,7 +105,7 @@ public class BookService {
             throw new IllegalArgumentException("Page out of range: " + pageNumber);
         }
 
-        var claimed = repository.startPageProcessing(bookId, pageNumber);
+        var claimed = repository.startPageProcessing(bookId, pageNumber, refreshAnalysis);
         if (claimed.isEmpty()) {
             return repository.findPage(bookId, pageNumber).orElseThrow();
         }
@@ -110,12 +117,16 @@ public class BookService {
             var rasterizedPath = rasterizePage(pdfPath, pageNumber);
 
             page = repository.savePage(page.transitionTo(ProcessingStatus.OCR));
-            var analysisJson = analysisClient.analyzePage(
+            var analysis = analysisClient.analyzePage(
                 bookId.toString(), pageNumber, rasterizedPath.toString()
+            );
+            page = repository.savePage(page.transitionTo(ProcessingStatus.DETECTING_BLANKS));
+            var finalAnalysis = analysisClient.detectExerciseBlanks(
+                rasterizedPath.toString(), analysis
             );
             log.info("page analyzed bookId={} page={}", bookId, pageNumber);
             page = repository.savePage(page.transitionTo(ProcessingStatus.PERSISTING));
-            return repository.savePage(page.markReady(analysisJson));
+            return repository.savePage(page.markReady(JSON.writeValueAsString(finalAnalysis)));
         } catch (Exception e) {
             log.error("page analysis failed bookId={} page={}", bookId, pageNumber, e);
             return repository.savePage(page.markFailed(e.getMessage()));

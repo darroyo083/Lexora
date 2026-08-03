@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -7,11 +9,6 @@ class BBox(BaseModel):
     y: float = Field(ge=0, le=1)
     width: float = Field(ge=0, le=1)
     height: float = Field(ge=0, le=1)
-
-
-class Dimensions(BaseModel):
-    sourceWidth: int = Field(gt=0)
-    sourceHeight: int = Field(gt=0)
 
 
 class TextSpan(BaseModel):
@@ -32,15 +29,37 @@ class ProcessorMetadata(BaseModel):
     processedAt: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
-    durationMs: int
+    durationMs: int = Field(ge=0)
+
+
+class ExerciseBlank(BaseModel):
+    id: str
+    kind: Literal["fill-in-line"] = "fill-in-line"
+    lineBbox: BBox
+    interactionBbox: BBox
+    detectionMethod: Literal[
+        "horizontal-line-v1", "short-suffix-line-v1"
+    ] = "horizontal-line-v1"
+    candidateScore: float = Field(ge=0, le=1)
+    nearbyTextSpanIds: list[str] = Field(default_factory=list)
+
+
+class BlankDetectionMetadata(BaseModel):
+    detectionMethod: Literal["horizontal-line-v1"] = "horizontal-line-v1"
+    rawCandidateCount: int = Field(ge=0)
+    acceptedCount: int = Field(ge=0)
+    durationMs: int = Field(ge=0)
 
 
 class PageAnalysis(BaseModel):
-    schemaVersion: str = "0.1.0"
+    schemaVersion: Literal["0.2.0"] = "0.2.0"
     pageNumber: int = Field(ge=1)
-    dimensions: Dimensions
+    width: int = Field(gt=0)
+    height: int = Field(gt=0)
     language: str
     textSpans: list[TextSpan] = Field(default_factory=list)
+    exerciseBlanks: list[ExerciseBlank] = Field(default_factory=list)
+    blankDetection: BlankDetectionMetadata | None = None
     processor: ProcessorMetadata
 
 
@@ -50,10 +69,9 @@ class AnalyzePageRequest(BaseModel):
     imagePath: str
 
 
-class AnalyzePageResponse(BaseModel):
-    pageNumber: int
-    width: int
-    height: int
-    language: str
-    textSpans: list[dict] = Field(default_factory=list)
-    processor: dict
+class DetectExerciseBlanksRequest(BaseModel):
+    imagePath: str
+    analysis: PageAnalysis
+
+
+AnalyzePageResponse = PageAnalysis

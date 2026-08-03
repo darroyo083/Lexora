@@ -1,20 +1,21 @@
-import type { BBox, ExerciseBlank, TextSpan } from './types';
+import type { BBox, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
 
 interface Props {
   span: TextSpan | null;
   blank: ExerciseBlank | null;
+  choice: ChoiceTarget | null;
 }
 
 function BboxValue({ bbox }: { bbox: BBox }) {
   return <>x={bbox.x.toFixed(4)} y={bbox.y.toFixed(4)} w={bbox.width.toFixed(4)} h={bbox.height.toFixed(4)}</>;
 }
 
-export default function DebugPanel({ span, blank }: Props) {
-  if (!span && !blank) {
+export default function DebugPanel({ span, blank, choice }: Props) {
+  if (!span && !blank && !choice) {
     return (
       <aside className="debug-panel">
         <h2>Debug</h2>
-        <p className="debug-hint">Click an OCR word or focus a blank to inspect it</p>
+        <p className="debug-hint">Click an OCR word or focus an interaction to inspect it</p>
       </aside>
     );
   }
@@ -23,6 +24,27 @@ export default function DebugPanel({ span, blank }: Props) {
     <aside className="debug-panel">
       <h2>Debug</h2>
       <dl>
+        {choice && (
+          <>
+            <dt>Target ID</dt>
+            <dd><code>{choice.id}</code></dd>
+            <dt>Kind</dt>
+            <dd>{choice.kind}</dd>
+            <dt>Score</dt>
+            <dd>{choice.candidateScore.toFixed(3)}</dd>
+            <dt>Detection</dt>
+            <dd>{choice.detectionMethod}</dd>
+            <dt>Option group</dt>
+            <dd>{choice.optionGroupId ?? 'None'}</dd>
+            <dt>Physical target</dt>
+            <dd><BboxValue bbox={choice.targetBbox} /></dd>
+            <dt>Interaction</dt>
+            <dd><BboxValue bbox={choice.interactionBbox} /></dd>
+            <dt>Nearby spans</dt>
+            <dd>{choice.nearbyTextSpanIds.join(', ') || 'None'}</dd>
+          </>
+        )}
+
         {blank && (
           <>
             <dt>Blank ID</dt>

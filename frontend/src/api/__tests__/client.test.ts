@@ -97,6 +97,9 @@ describe('page API client', () => {
         textSpans,
         exerciseBlanks: [],
         blankDetection: {},
+        choiceGroups: [],
+        choiceTargets: [],
+        choiceDetection: {},
         processor: {},
       }),
     };
@@ -109,5 +112,55 @@ describe('page API client', () => {
 
     expect(getPageProcessAction(restored)).toBe('none');
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers an explicit update for v0.2 pages without choice analysis', async () => {
+    const prePoc2Page = {
+      ...rawPage,
+      analysis: JSON.stringify({
+        schemaVersion: '0.2.0',
+        pageNumber: 10,
+        width: 1200,
+        height: 1600,
+        language: 'de',
+        textSpans,
+        exerciseBlanks: [],
+        blankDetection: {},
+        processor: {},
+      }),
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([prePoc2Page]), { status: 200 }),
+    ));
+
+    const [restored] = await getBookPages('book-id');
+
+    expect(getPageProcessAction(restored)).toBe('update');
+  });
+
+  it('normalizes missing choice fields to empty collections', async () => {
+    const prePoc2Page = {
+      ...rawPage,
+      analysis: JSON.stringify({
+        schemaVersion: '0.2.0',
+        pageNumber: 10,
+        width: 1200,
+        height: 1600,
+        language: 'de',
+        textSpans,
+        exerciseBlanks: [],
+        blankDetection: {},
+        processor: {},
+      }),
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([prePoc2Page]), { status: 200 }),
+    ));
+
+    const [restored] = await getBookPages('book-id');
+
+    expect(restored.analysis?.choiceTargets).toEqual([]);
+    expect(restored.analysis?.choiceGroups).toEqual([]);
+    expect(restored.analysis?.choiceDetection).toBeNull();
   });
 });

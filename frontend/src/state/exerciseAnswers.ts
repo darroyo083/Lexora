@@ -1,11 +1,12 @@
-import type { ExerciseBlank } from '../reader/types';
+import type { ChoiceTarget, ExerciseBlank } from '../reader/types';
 
 export const EXERCISE_ANSWERS_KEY = 'lexora.exerciseAnswers.v1';
 export const EXERCISE_ANSWERS_VERSION = 1;
 
 export interface StoredAnswer {
   fingerprint: string;
-  text: string;
+  kind: 'fill-blank' | 'choice';
+  value: string;
   updatedAt: string;
 }
 
@@ -31,6 +32,18 @@ export function blankFingerprint(blank: ExerciseBlank, schemaVersion: string): s
   ].join('|');
 }
 
+export function choiceFingerprint(target: ChoiceTarget, schemaVersion: string): string {
+  return [
+    schemaVersion,
+    target.detectionMethod,
+    target.targetBbox.x.toFixed(4),
+    target.targetBbox.y.toFixed(4),
+    target.targetBbox.width.toFixed(4),
+    target.targetBbox.height.toFixed(4),
+    target.optionGroupId ?? '',
+  ].join('|');
+}
+
 export function loadAnswerStore(
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): AnswerStore {
@@ -47,7 +60,7 @@ export function loadAnswerStore(
   }
 }
 
-function findBlanksByPage(
+function findAnswersByPage(
   store: AnswerStore,
   bookId: string,
   pageNumber: number,
@@ -59,19 +72,31 @@ export function readAnswersForPage(
   bookId: string,
   pageNumber: number,
   blanks: ExerciseBlank[],
+  choices: ChoiceTarget[],
   schemaVersion: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): Record<string, string> {
   const store = loadAnswerStore(storage);
-  const byPage = findBlanksByPage(store, bookId, pageNumber);
+  const byPage = findAnswersByPage(store, bookId, pageNumber);
   if (!byPage) return {};
-  const current = new Map(blanks.map((blank) => [blank.id, blank]));
+  const blankIds = new Map(blanks.map((blank) => [blank.id, blank]));
+  const choiceIds = new Map(choices.map((choice) => [choice.id, choice]));
   const result: Record<string, string> = {};
-  for (const [blankId, stored] of Object.entries(byPage)) {
-    const blank = current.get(blankId);
-    if (!blank) continue;
-    if (stored.fingerprint !== blankFingerprint(blank, schemaVersion)) continue;
-    result[blankId] = stored.text;
+  for (const [interactionId, stored] of Object.entries(byPage)) {
+    const blank = blankIds.get(interactionId);
+    if (blank) {
+      if (stored.fingerprint !== blankFingerprint(blank, schemaVersion)) continue;
+      const legacy = stored as StoredAnswer & { text?: string };
+      result[interactionId] = stored.kind === 'choice'
+        ? stored.value
+        : legacy.text ?? stored.value;
+      continue;
+    }
+    const choice = choiceIds.get(interactionId);
+    if (choice) {
+      if (stored.fingerprint !== choiceFingerprint(choice, schemaVersion)) continue;
+      if (stored.kind === 'choice') result[interactionId] = stored.value;
+    }
   }
   return result;
 }
@@ -81,23 +106,41 @@ export function writeAnswersForPage(
   pageNumber: number,
   answers: Record<string, string>,
   blanks: ExerciseBlank[],
+  choices: ChoiceTarget[],
   schemaVersion: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): void {
   const store = loadAnswerStore(storage);
-  const current = new Map(blanks.map((blank) => [blank.id, blank]));
+  const blanksById = new Map(blanks.map((blank) => [blank.id, blank]));
+  const choicesById = new Map(choices.map((choice) => [choice.id, choice]));
   const nextPage: PageAnswers = {};
-  const ids = new Set([...Object.keys(findBlanksByPage(store, bookId, pageNumber) ?? {}), ...Object.keys(answers)]);
-  for (const blankId of ids) {
-    const text = answers[blankId];
-    if (!text) continue;
-    const blank = current.get(blankId);
-    if (!blank) continue;
-    nextPage[blankId] = {
-      fingerprint: blankFingerprint(blank, schemaVersion),
-      text,
-      updatedAt: new Date().toISOString(),
-    };
+  const previous = findAnswersByPage(store, bookId, pageNumber) ?? {};
+  const ids = new Set([
+    ...Object.keys(previous),
+    ...Object.keys(answers),
+  ]);
+  for (const interactionId of ids) {
+    const value = answers[interactionId];
+    if (!value) continue;
+    const blank = blanksById.get(interactionId);
+    if (blank) {
+      nextPage[interactionId] = {
+        fingerprint: blankFingerprint(blank, schemaVersion),
+        kind: 'fill-blank',
+        value,
+        updatedAt: new Date().toISOString(),
+      };
+      continue;
+    }
+    const choice = choicesById.get(interactionId);
+    if (choice) {
+      nextPage[interactionId] = {
+        fingerprint: choiceFingerprint(choice, schemaVersion),
+        kind: 'choice',
+        value,
+        updatedAt: new Date().toISOString(),
+      };
+    }
   }
   const book = { ...(store.answers[bookId] ?? {}) };
   if (Object.keys(nextPage).length === 0) {

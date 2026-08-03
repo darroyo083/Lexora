@@ -41,6 +41,35 @@ export interface BlankDetectionMetadata {
   durationMs: number;
 }
 
+export interface ChoiceOption {
+  id: string;
+  label: string;
+}
+
+export interface ChoiceGroup {
+  id: string;
+  options: ChoiceOption[];
+}
+
+export interface ChoiceTarget {
+  id: string;
+  kind: 'choice';
+  targetBbox: BBox;
+  interactionBbox: BBox;
+  optionGroupId: string | null;
+  detectionMethod: 'empty-ring-v1';
+  candidateScore: number;
+  nearbyTextSpanIds: string[];
+}
+
+export interface ChoiceDetectionMetadata {
+  detectionMethod: 'empty-ring-v1';
+  rawCandidateCount: number;
+  acceptedCount: number;
+  groupCount: number;
+  durationMs: number;
+}
+
 export interface PageAnalysis {
   schemaVersion: string;
   pageNumber: number;
@@ -50,5 +79,8 @@ export interface PageAnalysis {
   textSpans: TextSpan[];
   exerciseBlanks: ExerciseBlank[];
   blankDetection: BlankDetectionMetadata | null;
+  choiceGroups: ChoiceGroup[];
+  choiceTargets: ChoiceTarget[];
+  choiceDetection: ChoiceDetectionMetadata | null;
   processor: ProcessorMetadata;
 }

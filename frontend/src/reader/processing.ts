@@ -1,7 +1,7 @@
 import type { PageProcessingStatus } from '../api/client';
 
 export const ACTIVE_STAGES: PageProcessingStatus[] = [
-  'PENDING', 'RASTERIZING', 'OCR', 'DETECTING_BLANKS', 'PERSISTING',
+  'PENDING', 'RASTERIZING', 'OCR', 'DETECTING_INTERACTIONS', 'PERSISTING',
 ];
 
 export const PROCESSING_MESSAGE_INTERVAL_MS = 3000;
@@ -70,7 +70,7 @@ export const PROCESSING_STAGE_COPY: Record<PageProcessingStatus, ProcessingStage
       'Recognizing the page structure',
     ],
   },
-  DETECTING_BLANKS: {
+  DETECTING_INTERACTIONS: {
     title: 'Finding interactions',
     messages: [
       'Locating answer areas',

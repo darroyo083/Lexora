@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentLoadingTask, RenderTask } from 'pdfjs-dist';
-import type { ExerciseBlank, TextSpan } from './types';
-import { bboxPercentageStyle, blankInputStyle } from './overlay';
+import type { ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
+import { bboxPercentageStyle, blankInputStyle, choiceHitStyle, choiceValueStyle } from './overlay';
+import ChoiceSelector from './ChoiceSelector';
 import {
   isProcessingStage,
   PROCESSING_MESSAGE_INTERVAL_MS,
@@ -71,16 +72,23 @@ interface Props {
   pageNumber: number;
   spans: TextSpan[];
   blanks: ExerciseBlank[];
+  choices: ChoiceTarget[];
+  choiceGroups: Record<string, ChoiceGroup>;
   answers: Record<string, string>;
   zoom: number;
   showBoxes: boolean;
   showBlankDetection: boolean;
+  showChoiceDetection: boolean;
+  selectedChoice: ChoiceTarget | null;
   processingStage: PageProcessingStatus | null;
   loaderVariant?: LoaderVariant;
   cardStyle?: CardStyle;
   onSpanClick: (span: TextSpan) => void;
   onBlankClick: (blank: ExerciseBlank) => void;
   onAnswerChange: (blankId: string, value: string) => void;
+  onChoiceClick: (choice: ChoiceTarget) => void;
+  onChoiceSelect: (choiceId: string, optionId: string) => void;
+  onChoiceClose: () => void;
 }
 
 export default function PageViewer({
@@ -88,16 +96,23 @@ export default function PageViewer({
   pageNumber,
   spans,
   blanks,
+  choices,
+  choiceGroups,
   answers,
   zoom,
   showBoxes,
   showBlankDetection,
+  showChoiceDetection,
+  selectedChoice,
   processingStage,
   loaderVariant = 'halftone-page',
   cardStyle = 'card-minimal-light',
   onSpanClick,
   onBlankClick,
   onAnswerChange,
+  onChoiceClick,
+  onChoiceSelect,
+  onChoiceClose,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pageStackRef = useRef<HTMLDivElement>(null);
@@ -289,6 +304,70 @@ export default function PageViewer({
                 style={bboxPercentageStyle(blank.interactionBbox)}
               >
                 <span>{blank.id} | {blank.candidateScore.toFixed(2)}</span>
+              </div>
+            </div>
+          ))}
+          {choices.map((choice) => {
+            const group = choice.optionGroupId ? choiceGroups[choice.optionGroupId] : undefined;
+            const selectedOptionId = answers[choice.id];
+            const selectedLabel = group
+              ?.options.find((option) => option.id === selectedOptionId)?.label;
+            return (
+              <Fragment key={choice.id}>
+                <button
+                  type="button"
+                  className="choice-hit"
+                  aria-label={`Answer target near ${choice.nearbyTextSpanIds
+                    .map((id) => spans.find((span) => span.id === id)?.text)
+                    .filter(Boolean)
+                    .join(' ') || choice.id}`}
+                  style={choiceHitStyle(choice)}
+                  disabled={processing}
+                  aria-expanded={selectedChoice?.id === choice.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onChoiceClick(choice);
+                  }}
+                />
+                {selectedLabel != null && (
+                  <span
+                    className="choice-value"
+                    aria-hidden="true"
+                    style={choiceValueStyle(choice, viewportHeight)}
+                  >
+                    {selectedLabel}
+                  </span>
+                )}
+              </Fragment>
+            );
+          })}
+          {selectedChoice && (() => {
+            const group = selectedChoice.optionGroupId
+              ? choiceGroups[selectedChoice.optionGroupId]
+              : undefined;
+            if (!group) return null;
+            return (
+              <ChoiceSelector
+                group={group}
+                target={selectedChoice}
+                viewportHeight={viewportHeight}
+                selectedOptionId={answers[selectedChoice.id] ?? null}
+                onSelect={(optionId) => onChoiceSelect(selectedChoice.id, optionId)}
+                onClose={onChoiceClose}
+              />
+            );
+          })()}
+          {showChoiceDetection && choices.map((choice) => (
+            <div key={`debug-choice-${choice.id}`} className="choice-debug-group">
+              <div className="choice-target-debug" style={bboxPercentageStyle(choice.targetBbox)} />
+              <div
+                className="choice-interaction-debug"
+                style={bboxPercentageStyle(choice.interactionBbox)}
+              >
+                <span>
+                  {choice.id} | {choice.candidateScore.toFixed(2)}
+                  {choice.optionGroupId ? ` | ${choice.optionGroupId}` : ' | no group'}
+                </span>
               </div>
             </div>
           ))}

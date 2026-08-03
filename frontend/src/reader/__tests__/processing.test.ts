@@ -33,7 +33,7 @@ describe('processing stage UI', () => {
       PENDING: 'Preparing the page',
       RASTERIZING: 'Preparing the page',
       OCR: 'Reading the page',
-      DETECTING_BLANKS: 'Finding interactions',
+      DETECTING_INTERACTIONS: 'Finding interactions',
       PERSISTING: 'Finalizing the page',
     });
   });

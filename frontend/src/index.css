@@ -234,6 +234,135 @@ button:disabled {
   white-space: nowrap;
 }
 
+.choice-hit {
+  position: absolute;
+  z-index: 2;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  outline: 0;
+}
+
+.choice-hit:disabled {
+  cursor: default;
+}
+
+.choice-hit:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(147, 51, 234, 0.85);
+}
+
+.choice-hit:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px rgba(147, 51, 234, 0.45);
+}
+
+.choice-value {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #172033;
+  font-family: inherit;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.choice-selector {
+  position: absolute;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 1px 4px rgba(23, 32, 51, 0.25), 0 0 0 1px rgba(147, 51, 234, 0.35);
+}
+
+.choice-option {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #172033;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.choice-option:hover {
+  background: rgba(147, 51, 234, 0.12);
+}
+
+.choice-option-selected {
+  background: rgba(147, 51, 234, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(147, 51, 234, 0.7);
+}
+
+.choice-option:focus-visible,
+.choice-clear:focus-visible {
+  outline: 2px solid rgba(147, 51, 234, 0.85);
+  outline-offset: 1px;
+}
+
+.choice-clear {
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid rgba(23, 32, 51, 0.18);
+  border-radius: 999px;
+  background: transparent;
+  color: #172033;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.choice-clear:hover {
+  background: rgba(23, 32, 51, 0.08);
+}
+
+.choice-target-debug,
+.choice-interaction-debug {
+  position: absolute;
+  pointer-events: none;
+}
+
+.choice-target-debug {
+  z-index: 5;
+  border: 1px solid rgba(190, 24, 93, 0.9);
+  background: rgba(236, 72, 153, 0.08);
+}
+
+.choice-interaction-debug {
+  z-index: 5;
+  border: 1px dashed rgba(124, 58, 237, 0.95);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.choice-interaction-debug span {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  padding: 1px 3px;
+  color: #faf5ff;
+  background: rgba(76, 29, 149, 0.9);
+  font-size: 9px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .ocr-box {
   position: absolute;
   border: 1px solid rgba(37, 99, 235, 0.6);

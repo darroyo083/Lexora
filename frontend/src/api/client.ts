@@ -4,7 +4,7 @@ export type PageProcessingStatus =
   | 'PENDING'
   | 'RASTERIZING'
   | 'OCR'
-  | 'DETECTING_BLANKS'
+  | 'DETECTING_INTERACTIONS'
   | 'PERSISTING'
   | 'READY'
   | 'FAILED';
@@ -39,6 +39,9 @@ export function normalizePageAnalysis(value: unknown): PageAnalysis {
     textSpans: Array.isArray(analysis.textSpans) ? analysis.textSpans : [],
     exerciseBlanks: Array.isArray(analysis.exerciseBlanks) ? analysis.exerciseBlanks : [],
     blankDetection: analysis.blankDetection ?? null,
+    choiceGroups: Array.isArray(analysis.choiceGroups) ? analysis.choiceGroups : [],
+    choiceTargets: Array.isArray(analysis.choiceTargets) ? analysis.choiceTargets : [],
+    choiceDetection: analysis.choiceDetection ?? null,
     processor: analysis.processor as PageAnalysis['processor'],
   };
 }
@@ -54,10 +57,15 @@ export type PageProcessAction = 'process' | 'update' | 'none';
 
 export function getPageProcessAction(page: BookPageResource | null): PageProcessAction {
   if (page?.processingStatus !== 'READY') return 'process';
-  return page.analysis?.schemaVersion === '0.2.0'
-    && page.analysis.blankDetection !== null
-    ? 'none'
-    : 'update';
+  const analysis = page.analysis;
+  if (
+    analysis?.schemaVersion === '0.2.0'
+    && analysis.blankDetection !== null
+    && analysis.choiceDetection !== null
+  ) {
+    return 'none';
+  }
+  return 'update';
 }
 
 export async function getBookPages(

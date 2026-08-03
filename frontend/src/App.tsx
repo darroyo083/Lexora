@@ -3,9 +3,11 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import PageViewer from './reader/PageViewer';
 import DebugPanel from './reader/DebugPanel';
-import type { ExerciseBlank, TextSpan } from './reader/types';
+import type { ChoiceTarget, ExerciseBlank, TextSpan } from './reader/types';
 import {
   emptyPageInteractionState,
+  indexChoiceGroups,
+  sortChoiceTargets,
   sortExerciseBlanks,
   type PageInteractionState,
 } from './reader/overlay';
@@ -32,6 +34,7 @@ interface PendingPersist {
   pageNumber: number;
   answers: Record<string, string>;
   blanks: ExerciseBlank[];
+  choices: ChoiceTarget[];
   schemaVersion: string;
 }
 
@@ -39,6 +42,7 @@ const CURRENT_BOOK_KEY = 'lexora.currentBookId';
 const CURRENT_PAGE_KEY = 'lexora.currentPage';
 const SHOW_BOXES_KEY = 'lexora.showOcrBoxes';
 const SHOW_BLANK_DETECTION_KEY = 'lexora.showBlankDetection';
+const SHOW_CHOICE_DETECTION_KEY = 'lexora.showChoiceDetection';
 
 export default function App() {
   const [status, setStatus] = useState<Status>(() => (
@@ -57,6 +61,9 @@ export default function App() {
   ));
   const [showBlankDetection, setShowBlankDetection] = useState(() => (
     readBooleanPreference(SHOW_BLANK_DETECTION_KEY, false)
+  ));
+  const [showChoiceDetection, setShowChoiceDetection] = useState(() => (
+    readBooleanPreference(SHOW_CHOICE_DETECTION_KEY, false)
   ));
   const [zoom, setZoom] = useState(1.0);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
@@ -84,6 +91,7 @@ export default function App() {
       pending.pageNumber,
       pending.answers,
       pending.blanks,
+      pending.choices,
       pending.schemaVersion,
     );
   }, []);
@@ -108,17 +116,22 @@ export default function App() {
       ? nextPage.analysis
       : null;
     const blanks = sortExerciseBlanks(analysis?.exerciseBlanks ?? []);
+    const choices = sortChoiceTargets(analysis?.choiceTargets ?? []);
+    const choiceGroups = indexChoiceGroups(analysis?.choiceGroups ?? []);
     const schemaVersion = analysis?.schemaVersion ?? '';
     const restoredAnswers = nextPage && analysis
-      ? readAnswersForPage(bookId, nextPage.pageNumber, blanks, schemaVersion)
+      ? readAnswersForPage(bookId, nextPage.pageNumber, blanks, choices, schemaVersion)
       : {};
     setInteraction({
       spans: analysis?.textSpans ?? [],
       blanks,
+      choices,
+      choiceGroups,
       answers: restoredAnswers,
       schemaVersion,
       selectedSpan: null,
       selectedBlank: null,
+      selectedChoice: null,
     });
   }, []);
 
@@ -275,8 +288,41 @@ export default function App() {
       ...current,
       selectedSpan: null,
       selectedBlank: blank,
+      selectedChoice: null,
     }));
   }, []);
+
+  const handleChoiceClick = useCallback((choice: ChoiceTarget) => {
+    setInteraction((current) => ({
+      ...current,
+      selectedSpan: null,
+      selectedBlank: null,
+      selectedChoice: choice,
+    }));
+  }, []);
+
+  const handleChoiceClose = useCallback(() => {
+    setInteraction((current) => ({ ...current, selectedChoice: null }));
+  }, []);
+
+  const handleChoiceSelect = useCallback((choiceId: string, optionId: string) => {
+    const bookId = bookIdRef.current;
+    if (!bookId) return;
+    const answers = { ...interaction.answers, [choiceId]: optionId };
+    setInteraction((current) => ({
+      ...current,
+      answers,
+      selectedChoice: null,
+    }));
+    scheduleAnswerPersist({
+      bookId,
+      pageNumber: activePage.current,
+      answers,
+      blanks: interaction.blanks,
+      choices: interaction.choices,
+      schemaVersion: interaction.schemaVersion,
+    });
+  }, [interaction, scheduleAnswerPersist]);
 
   const handleAnswerChange = useCallback((blankId: string, value: string) => {
     const bookId = bookIdRef.current;
@@ -288,6 +334,7 @@ export default function App() {
       pageNumber: activePage.current,
       answers,
       blanks: interaction.blanks,
+      choices: interaction.choices,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -376,6 +423,18 @@ export default function App() {
             Show blank detection
           </label>
 
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={showChoiceDetection}
+              onChange={(event) => {
+                setShowChoiceDetection(event.target.checked);
+                writeBooleanPreference(SHOW_CHOICE_DETECTION_KEY, event.target.checked);
+              }}
+            />
+            Show choice detection
+          </label>
+
           {pageStage === 'FAILED' && (
             <span className="status status-error">Failed. Retry is available.</span>
           )}
@@ -395,20 +454,31 @@ export default function App() {
               pageNumber={selectedPage}
               spans={interaction.spans}
               blanks={interaction.blanks}
+              choices={interaction.choices}
+              choiceGroups={interaction.choiceGroups}
               answers={interaction.answers}
               zoom={zoom}
               showBoxes={showBoxes}
               showBlankDetection={showBlankDetection}
+              showChoiceDetection={showChoiceDetection}
+              selectedChoice={interaction.selectedChoice}
               processingStage={pageStage}
               onSpanClick={handleSpanClick}
               onBlankClick={handleBlankClick}
               onAnswerChange={handleAnswerChange}
+              onChoiceClick={handleChoiceClick}
+              onChoiceSelect={handleChoiceSelect}
+              onChoiceClose={handleChoiceClose}
             />
           ) : (
             <div className="empty-state">Upload a scanned PDF to begin</div>
           )}
         </div>
-        <DebugPanel span={interaction.selectedSpan} blank={interaction.selectedBlank} />
+        <DebugPanel
+          span={interaction.selectedSpan}
+          blank={interaction.selectedBlank}
+          choice={interaction.selectedChoice}
+        />
       </main>
     </div>
   );

@@ -1,4 +1,5 @@
 import type { BBox, ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
+import { rotateBBox, type PageRotation } from './rotation';
 
 export interface PageInteractionState {
   spans: TextSpan[];
@@ -48,12 +49,13 @@ export function indexChoiceGroups(groups: ChoiceGroup[]): Record<string, ChoiceG
   return Object.fromEntries(groups.map((group) => [group.id, group]));
 }
 
-export function bboxPercentageStyle(bbox: BBox) {
+export function bboxPercentageStyle(bbox: BBox, rotation: PageRotation = 0) {
+  const rotated = rotateBBox(bbox, rotation);
   return {
-    left: `${percent(bbox.x)}%`,
-    top: `${percent(bbox.y)}%`,
-    width: `${percent(bbox.width)}%`,
-    height: `${percent(bbox.height)}%`,
+    left: `${percent(rotated.x)}%`,
+    top: `${percent(rotated.y)}%`,
+    width: `${percent(rotated.width)}%`,
+    height: `${percent(rotated.height)}%`,
   };
 }
 
@@ -61,47 +63,67 @@ function percent(value: number): number {
   return Math.round(value * 100 * 10000) / 10000;
 }
 
-export function blankInputStyle(blank: ExerciseBlank, viewportHeight: number) {
+export function blankInputStyle(
+  blank: ExerciseBlank,
+  viewportHeight: number,
+  rotation: PageRotation = 0,
+) {
+  const interaction = rotateBBox(blank.interactionBbox, rotation);
   return {
-    ...bboxPercentageStyle(blank.interactionBbox),
-    fontSize: `${blank.interactionBbox.height * viewportHeight * 0.72}px`,
+    ...bboxPercentageStyle(interaction),
+    fontSize: `${interaction.height * viewportHeight * 0.72}px`,
   };
 }
 
-export function choiceHitStyle(choice: ChoiceTarget) {
-  return bboxPercentageStyle(choice.interactionBbox);
+export function choiceHitStyle(choice: ChoiceTarget, rotation: PageRotation = 0) {
+  return bboxPercentageStyle(choice.interactionBbox, rotation);
 }
 
-export function choiceValueStyle(choice: ChoiceTarget, viewportHeight: number) {
+export function choiceValueStyle(
+  choice: ChoiceTarget,
+  viewportHeight: number,
+  rotation: PageRotation = 0,
+) {
+  const target = rotateBBox(choice.targetBbox, rotation);
   return {
-    ...bboxPercentageStyle(choice.targetBbox),
-    fontSize: `${choice.targetBbox.height * viewportHeight * 0.8}px`,
-    lineHeight: `${choice.targetBbox.height * viewportHeight}px`,
+    ...bboxPercentageStyle(target),
+    fontSize: `${target.height * viewportHeight * 0.8}px`,
+    lineHeight: `${target.height * viewportHeight}px`,
   };
 }
 
-export function choiceSelectorStyle(choice: ChoiceTarget, viewportHeight: number) {
-  const centerX = choice.targetBbox.x + choice.targetBbox.width / 2;
-  const openBelow = choice.targetBbox.y + choice.targetBbox.height < 0.72;
+export function choiceSelectorStyle(
+  choice: ChoiceTarget,
+  viewportHeight: number,
+  rotation: PageRotation = 0,
+) {
+  const target = rotateBBox(choice.targetBbox, rotation);
+  const centerX = target.x + target.width / 2;
+  const openBelow = target.y + target.height < 0.72;
   const gap = 4 / Math.max(viewportHeight, 1);
   return {
     left: `${percent(centerX)}%`,
     ...(openBelow
-      ? { top: `${percent(choice.targetBbox.y + choice.targetBbox.height + gap)}%` }
-      : { bottom: `${percent(1 - choice.targetBbox.y)}%` }),
+      ? { top: `${percent(target.y + target.height + gap)}%` }
+      : { bottom: `${percent(1 - target.y)}%` }),
     transform: 'translateX(-50%)',
   };
 }
 
-export function gridCellHitStyle(cell: ChoiceGridCell) {
-  return bboxPercentageStyle(cell.interactionBbox);
+export function gridCellHitStyle(cell: ChoiceGridCell, rotation: PageRotation = 0) {
+  return bboxPercentageStyle(cell.interactionBbox, rotation);
 }
 
-export function gridMarkStyle(cell: ChoiceGridCell, viewportHeight: number) {
+export function gridMarkStyle(
+  cell: ChoiceGridCell,
+  viewportHeight: number,
+  rotation: PageRotation = 0,
+) {
+  const cellBbox = rotateBBox(cell.cellBbox, rotation);
   return {
-    ...bboxPercentageStyle(cell.cellBbox),
-    fontSize: `${Math.round(cell.cellBbox.height * viewportHeight * 0.72 * 100) / 100}px`,
-    lineHeight: `${Math.round(cell.cellBbox.height * viewportHeight * 100) / 100}px`,
+    ...bboxPercentageStyle(cellBbox),
+    fontSize: `${Math.round(cellBbox.height * viewportHeight * 0.72 * 100) / 100}px`,
+    lineHeight: `${Math.round(cellBbox.height * viewportHeight * 100) / 100}px`,
   };
 }
 

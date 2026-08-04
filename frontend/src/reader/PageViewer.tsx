@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import type { PDFDocumentLoadingTask, RenderTask } from 'pdfjs-dist';
+import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
 import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
 import { bboxPercentageStyle, blankInputStyle, choiceHitStyle, choiceValueStyle, gridCellHitStyle, gridMarkStyle } from './overlay';
+import { normalizeRotation, type PageRotation } from './rotation';
 import ChoiceSelector from './ChoiceSelector';
 import {
   isProcessingStage,
@@ -70,6 +71,7 @@ export type CardStyle = 'card-minimal-light' | 'card-slate-mono' | 'card-lexora-
 interface Props {
   pdfData: ArrayBuffer;
   pageNumber: number;
+  rotation: PageRotation;
   spans: TextSpan[];
   blanks: ExerciseBlank[];
   choices: ChoiceTarget[];
@@ -97,6 +99,7 @@ interface Props {
 export default function PageViewer({
   pdfData,
   pageNumber,
+  rotation,
   spans,
   blanks,
   choices,
@@ -125,24 +128,38 @@ export default function PageViewer({
   const processingContentRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(readPrefersReducedMotion);
 
   useEffect(() => {
     let cancelled = false;
-    let loadingTask: PDFDocumentLoadingTask | null = null;
+    setPdfDoc(null);
+    const loadingTask = pdfjsLib.getDocument({ data: pdfData.slice(0) });
+    loadingTask.promise
+      .then((doc) => {
+        if (!cancelled) setPdfDoc(doc);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) console.error('PDF document loading failed:', error);
+      });
+    return () => {
+      cancelled = true;
+      void loadingTask.destroy();
+    };
+  }, [pdfData]);
+
+  useEffect(() => {
+    if (!pdfDoc) return;
+    let cancelled = false;
     let renderTask: RenderTask | null = null;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    setIsCanvasReady(false);
-
-    const load = async () => {
-      loadingTask = pdfjsLib.getDocument({ data: pdfData.slice(0) });
-      const pdf = await loadingTask.promise;
+    const render = async () => {
+      const page = await pdfDoc.getPage(pageNumber);
       if (cancelled) return;
-      const page = await pdf.getPage(pageNumber);
-      if (cancelled) return;
-      const viewport = page.getViewport({ scale: zoom });
+      const effectiveRotation = normalizeRotation(page.rotate + rotation);
+      const viewport = page.getViewport({ scale: zoom, rotation: effectiveRotation });
       setViewportHeight(viewport.height);
 
       const dpr = window.devicePixelRatio || 1;
@@ -160,7 +177,7 @@ export default function PageViewer({
       }
     };
 
-    void load().catch((error: unknown) => {
+    void render().catch((error: unknown) => {
       if (!cancelled && (error as { name?: string }).name !== 'RenderingCancelledException') {
         console.error('PDF page rendering failed:', error);
       }
@@ -168,9 +185,12 @@ export default function PageViewer({
     return () => {
       cancelled = true;
       renderTask?.cancel();
-      void loadingTask?.destroy();
     };
-  }, [pdfData, pageNumber, zoom]);
+  }, [pdfDoc, pageNumber, zoom, rotation]);
+
+  useLayoutEffect(() => {
+    setIsCanvasReady(false);
+  }, [pdfDoc, pageNumber, zoom, rotation]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
@@ -261,7 +281,7 @@ export default function PageViewer({
     // viewportHeight updates after the async PDF canvas sizing. Re-running here
     // guarantees remeasurement even when ResizeObserver is unavailable; the
     // effect never sets state, so this dependency cannot create a loop.
-  }, [pageNumber, processing, viewportHeight, zoom]);
+  }, [pageNumber, processing, rotation, viewportHeight, zoom]);
 
   return (
     <div className={`page-container${!isCanvasReady ? ' page-container-loading' : ''}`}>
@@ -278,7 +298,7 @@ export default function PageViewer({
                 key={s.id}
                 className="ocr-box"
                 title={`${s.text} (${(s.confidence * 100).toFixed(0)}%)`}
-                style={bboxPercentageStyle(s.bbox)}
+                style={bboxPercentageStyle(s.bbox, rotation)}
                 onClick={(e) => {
                   e.stopPropagation();
                   onSpanClick(s);
@@ -294,7 +314,7 @@ export default function PageViewer({
                 .filter(Boolean)
                 .join(' ') || blank.id}`}
               value={answers[blank.id] ?? ''}
-              style={blankInputStyle(blank, viewportHeight)}
+              style={blankInputStyle(blank, viewportHeight, rotation)}
               disabled={processing}
               onFocus={() => onBlankClick(blank)}
               onChange={(event) => onAnswerChange(blank.id, event.target.value)}
@@ -304,10 +324,10 @@ export default function PageViewer({
           ))}
           {showBlankDetection && blanks.map((blank) => (
             <div key={`debug-${blank.id}`} className="blank-debug-group">
-              <div className="blank-line-debug" style={bboxPercentageStyle(blank.lineBbox)} />
+              <div className="blank-line-debug" style={bboxPercentageStyle(blank.lineBbox, rotation)} />
               <div
                 className="blank-interaction-debug"
-                style={bboxPercentageStyle(blank.interactionBbox)}
+                style={bboxPercentageStyle(blank.interactionBbox, rotation)}
               >
                 <span>{blank.id} | {blank.candidateScore.toFixed(2)}</span>
               </div>
@@ -327,7 +347,7 @@ export default function PageViewer({
                     .map((id) => spans.find((span) => span.id === id)?.text)
                     .filter(Boolean)
                     .join(' ') || choice.id}`}
-                  style={choiceHitStyle(choice)}
+                  style={choiceHitStyle(choice, rotation)}
                   disabled={processing}
                   aria-expanded={selectedChoice?.id === choice.id}
                   onClick={(event) => {
@@ -339,7 +359,7 @@ export default function PageViewer({
                   <span
                     className="choice-value"
                     aria-hidden="true"
-                    style={choiceValueStyle(choice, viewportHeight)}
+                    style={choiceValueStyle(choice, viewportHeight, rotation)}
                   >
                     {selectedLabel}
                   </span>
@@ -357,6 +377,7 @@ export default function PageViewer({
                 group={group}
                 target={selectedChoice}
                 viewportHeight={viewportHeight}
+                rotation={rotation}
                 selectedOptionId={answers[selectedChoice.id] ?? null}
                 onSelect={(optionId) => onChoiceSelect(selectedChoice.id, optionId)}
                 onClose={onChoiceClose}
@@ -365,10 +386,10 @@ export default function PageViewer({
           })()}
           {showChoiceDetection && choices.map((choice) => (
             <div key={`debug-choice-${choice.id}`} className="choice-debug-group">
-              <div className="choice-target-debug" style={bboxPercentageStyle(choice.targetBbox)} />
+              <div className="choice-target-debug" style={bboxPercentageStyle(choice.targetBbox, rotation)} />
               <div
                 className="choice-interaction-debug"
-                style={bboxPercentageStyle(choice.interactionBbox)}
+                style={bboxPercentageStyle(choice.interactionBbox, rotation)}
               >
                 <span>
                   {choice.id} | {choice.candidateScore.toFixed(2)}
@@ -397,7 +418,7 @@ export default function PageViewer({
                         type="radio"
                         name={row.id}
                         className="grid-cell-radio"
-                        style={gridCellHitStyle(cell)}
+                        style={gridCellHitStyle(cell, rotation)}
                         disabled={processing}
                         checked={checked}
                         aria-label={`${promptText} — ${cell.optionId}`}
@@ -407,7 +428,7 @@ export default function PageViewer({
                         <span
                           className="grid-cell-mark"
                           aria-hidden="true"
-                          style={gridMarkStyle(cell, viewportHeight)}
+                          style={gridMarkStyle(cell, viewportHeight, rotation)}
                         >
                           ×
                         </span>
@@ -420,13 +441,13 @@ export default function PageViewer({
           }))}
           {showGridDetection && grids.map((grid) => (
             <div key={`debug-grid-${grid.id}`} className="grid-debug-group">
-              <div className="grid-bounds-debug" style={bboxPercentageStyle(grid.gridBbox)}>
+              <div className="grid-bounds-debug" style={bboxPercentageStyle(grid.gridBbox, rotation)}>
                 <span>
                   {grid.id} | {grid.candidateScore.toFixed(2)} | {grid.optionGroupId}
                 </span>
               </div>
               {grid.rows.map((row) => (
-                <div key={`debug-row-${row.id}`} className="grid-row-debug" style={bboxPercentageStyle(row.rowBbox)}>
+                <div key={`debug-row-${row.id}`} className="grid-row-debug" style={bboxPercentageStyle(row.rowBbox, rotation)}>
                   <span>{row.id}</span>
                 </div>
               ))}
@@ -434,7 +455,7 @@ export default function PageViewer({
                 <div
                   key={`debug-cell-${cell.id}`}
                   className="grid-cell-debug"
-                  style={bboxPercentageStyle(cell.cellBbox)}
+                  style={bboxPercentageStyle(cell.cellBbox, rotation)}
                 >
                   <span>{cell.optionId.split('-').pop()}</span>
                 </div>

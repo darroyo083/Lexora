@@ -69,6 +69,28 @@ describe('blank overlays', () => {
     });
   });
 
+  it('transforms the input bbox under 90 rotation and sizes type against it', () => {
+    const exerciseBlank = blank('blank-1', 0.2, 0.3);
+    expect(blankInputStyle(exerciseBlank, 1500, 90)).toEqual({
+      left: '67.5%',
+      top: '20%',
+      width: '2.5%',
+      height: '15%',
+      fontSize: '162px',
+    });
+  });
+
+  it('transforms the input bbox under 180 rotation', () => {
+    const exerciseBlank = blank('blank-1', 0.2, 0.3);
+    expect(blankInputStyle(exerciseBlank, 1500, 180)).toEqual({
+      left: '65%',
+      top: '67.5%',
+      width: '15%',
+      height: '2.5%',
+      fontSize: '27px',
+    });
+  });
+
   it('sorts input order top-to-bottom, then left-to-right, with a natural id tie-break', () => {
     const sorted = sortExerciseBlanks([
       blank('blank-10', 0.4, 0.5),
@@ -115,6 +137,21 @@ describe('choice overlays', () => {
     expect(style.left).toBe('21.5%');
     expect(style.bottom).toBe('10%');
     expect(style.top).toBeUndefined();
+  });
+
+  it('moves the hit area with the target under 90 rotation', () => {
+    expect(choiceHitStyle(choice('choice-1', 0.2, 0.3), 90)).toEqual({
+      left: '66%',
+      top: '19%',
+      width: '5%',
+      height: '5%',
+    });
+  });
+
+  it('anchors the selector relative to the rotated target', () => {
+    const style = choiceSelectorStyle(choice('choice-1', 0.2, 0.3), 1500, 90) as Record<string, string>;
+    expect(style.left).toBe('68.5%');
+    expect(style.top).toBe('23.2667%');
   });
 
   it('sorts targets top-to-bottom then left-to-right', () => {
@@ -170,6 +207,24 @@ describe('grid overlays', () => {
       height: '4%',
       fontSize: '43.2px',
       lineHeight: '60px',
+    });
+  });
+
+  it('moves the cell hit area and mark together under 270 rotation', () => {
+    const rotatedCell = cell('c1', 0.3, 0.4);
+    expect(gridCellHitStyle(rotatedCell, 270)).toEqual({
+      left: '40%',
+      top: '60%',
+      width: '4%',
+      height: '10%',
+    });
+    expect(gridMarkStyle(rotatedCell, 1500, 270)).toEqual({
+      left: '40%',
+      top: '60%',
+      width: '4%',
+      height: '10%',
+      fontSize: '108px',
+      lineHeight: '150px',
     });
   });
 

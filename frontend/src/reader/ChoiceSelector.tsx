@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import type { ChoiceGroup, ChoiceTarget } from './types';
+import type { PageRotation } from './rotation';
 import { choiceSelectorStyle } from './overlay';
 
 interface Props {
   group: ChoiceGroup;
   target: ChoiceTarget;
   viewportHeight: number;
+  rotation: PageRotation;
   selectedOptionId: string | null;
   onSelect: (optionId: string) => void;
   onClose: () => void;
@@ -15,6 +17,7 @@ export default function ChoiceSelector({
   group,
   target,
   viewportHeight,
+  rotation,
   selectedOptionId,
   onSelect,
   onClose,
@@ -81,7 +84,7 @@ export default function ChoiceSelector({
       role="listbox"
       aria-label="Choose an answer"
       className="choice-selector"
-      style={choiceSelectorStyle(target, viewportHeight)}
+      style={choiceSelectorStyle(target, viewportHeight, rotation)}
     >
       {group.options.map((option) => (
         <button

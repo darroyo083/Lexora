@@ -21,6 +21,8 @@ import {
   type BookPageResource,
 } from './api/client';
 import { readBooleanPreference, writeBooleanPreference } from './state/preferences';
+import { readPageRotation, writePageRotation } from './state/pageRotation';
+import { rotateLeft, rotateRight, type PageRotation } from './reader/rotation';
 import { readAnswersForPage, writeAnswersForPage } from './state/exerciseAnswers';
 
 type Status = 'idle' | 'restoring' | 'uploading' | 'ready';
@@ -72,6 +74,7 @@ export default function App() {
     readBooleanPreference(SHOW_GRID_DETECTION_KEY, false)
   ));
   const [zoom, setZoom] = useState(1.0);
+  const [rotation, setRotation] = useState<PageRotation>(0);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const activePage = useRef(selectedPage);
   const processingAbort = useRef<AbortController | null>(null);
@@ -119,6 +122,7 @@ export default function App() {
 
   const showPage = useCallback((nextPage: BookPageResource | null, bookId: string) => {
     setPage(nextPage);
+    setRotation(nextPage ? readPageRotation(bookId, nextPage.pageNumber) : 0);
     const analysis = nextPage?.processingStatus === 'READY'
       ? nextPage.analysis
       : null;
@@ -211,6 +215,7 @@ export default function App() {
 
   const handleUpload = useCallback(async (file: File) => {
     setStatus('uploading');
+    setRotation(0);
     const form = new FormData();
     form.append('file', file);
     form.append('language', 'de');
@@ -366,6 +371,22 @@ export default function App() {
     });
   }, [interaction, scheduleAnswerPersist]);
 
+  const handleRotateLeft = useCallback(() => {
+    const bookId = bookIdRef.current;
+    if (!bookId) return;
+    const next = rotateLeft(rotation);
+    setRotation(next);
+    writePageRotation(bookId, activePage.current, next);
+  }, [rotation]);
+
+  const handleRotateRight = useCallback(() => {
+    const bookId = bookIdRef.current;
+    if (!bookId) return;
+    const next = rotateRight(rotation);
+    setRotation(next);
+    writePageRotation(bookId, activePage.current, next);
+  }, [rotation]);
+
   const pageStage = page?.processingStatus
     ?? (processingRequested ? 'PENDING' : null);
   const processing = isProcessingStage(pageStage);
@@ -425,6 +446,32 @@ export default function App() {
               <option key={option} value={option}>{Math.round(option * 100)}%</option>
             ))}
           </select>
+
+          {book && (
+            <div className="rotate-controls" aria-label="Page rotation">
+              <button
+                type="button"
+                className="rotate-btn"
+                aria-label="Rotate page left"
+                title="Rotate page left"
+                onClick={handleRotateLeft}
+              >
+                ↺
+              </button>
+              <span className="rotate-degree" aria-live="polite">
+                {rotation}°
+              </span>
+              <button
+                type="button"
+                className="rotate-btn"
+                aria-label="Rotate page right"
+                title="Rotate page right"
+                onClick={handleRotateRight}
+              >
+                ↻
+              </button>
+            </div>
+          )}
 
           <label className="toggle">
             <input
@@ -491,6 +538,7 @@ export default function App() {
             <PageViewer
               pdfData={pdfData}
               pageNumber={selectedPage}
+              rotation={rotation}
               spans={interaction.spans}
               blanks={interaction.blanks}
               choices={interaction.choices}

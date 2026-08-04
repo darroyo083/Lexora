@@ -1,6 +1,6 @@
 # Lexora Architecture
 
-Lexora is a four-service Docker Compose system that preserves the original PDF as the visual source of truth and adds persisted OCR, interactive blank geometry, and choice-marker targets per page. PoC 1 established the pipeline and fill-in blanks; PoC 2 added choice-marker interactions.
+Lexora is a four-service Docker Compose system that preserves the original PDF as the visual source of truth and adds persisted OCR, interactive blank geometry, choice-marker targets, and choice grids per page. PoC 1 established the pipeline and fill-in blanks, PoC 2 added choice-marker interactions, and PoC 3 added choice-grid interactions.
 
 ## Runtime Topology
 
@@ -51,7 +51,8 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 - Converts detected line or word boxes to normalized `[0,1]` coordinates.
 - Detects graphical horizontal answer lines with adaptive thresholding, morphology, and OCR spatial context.
 - Detects hollow circular choice markers and numbered option legends with contour analysis and OCR spatial context.
-- Returns text, exercise blanks, choice targets/groups, normalized geometry, and concise processor metadata.
+- Detects interactive choice grids (rows with empty answer cells under short column headers) with line morphology, cell-emptiness checks, and OCR spatial context, while rejecting static/explanatory tables.
+- Returns text, exercise blanks, choice targets/groups, choice grids, normalized geometry, and concise processor metadata.
 
 PaddleOCR document orientation classification, document unwarping, and text-line orientation are intentionally disabled. Those transforms can change pixel geometry even when output dimensions remain unchanged, which would detach OCR boxes from the original PDF page.
 
@@ -112,8 +113,8 @@ Content-Type: application/json
 }
 ```
 
-The second request runs blank and choice-marker detection and returns the completed v0.2 analysis, which Spring persists as JSONB. See [`page-analysis.md`](page-analysis.md) and [`choice-interactions.md`](choice-interactions.md).
+The second request runs blank, choice-marker, and choice-grid detection and returns the completed v0.2 analysis, which Spring persists as JSONB. See [`page-analysis.md`](page-analysis.md), [`choice-interactions.md`](choice-interactions.md), and [`choice-grid-interactions.md`](choice-grid-interactions.md).
 
 ## Current Boundaries
 
-PoC 2 detects horizontal fill-in lines and hollow circular choice markers. It does not include answer validation, translation, vocabulary storage, VLM analysis, RAG, authentication, or background multi-page jobs.
+PoC 3 detects horizontal fill-in lines, hollow circular choice markers, and interactive choice grids (while rejecting static tables). It does not include answer validation, translation, vocabulary storage, VLM analysis, RAG, authentication, or background multi-page jobs.

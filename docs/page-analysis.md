@@ -1,8 +1,8 @@
 # Persisted PageAnalysis v0.2
 
-`PageAnalysis` is the per-page document result stored as JSONB in `book_pages.analysis`. It stores OCR spans, graphical exercise blanks, and choice-marker targets in source-image coordinates, never browser viewport pixels.
+`PageAnalysis` is the per-page document result stored as JSONB in `book_pages.analysis`. It stores OCR spans, graphical exercise blanks, choice-marker targets, and choice-grid structures in source-image coordinates, never browser viewport pixels.
 
-The schema version remains `0.2.0`; PoC 2 added choice fields **additively**. A v0.2 analysis without choice fields (or with `choiceDetection: null`) is a pre-PoC 2 analysis: it still loads and renders blanks, and the frontend offers an explicit **Update analysis** action to add choice detection.
+The schema version remains `0.2.0`; PoC 2 added choice fields and PoC 3 added choice-grid fields **additively**. A v0.2 analysis without the newer fields (for example `choiceGridDetection: null`) still loads and renders everything it has, and the frontend offers an explicit **Update analysis** action to add the newer detection.
 
 ## Persisted Shape
 
@@ -34,6 +34,8 @@ The schema version remains `0.2.0`; PoC 2 added choice fields **additively**. A 
   "choiceGroups": [],
   "choiceTargets": [],
   "choiceDetection": null,
+  "choiceGrids": [],
+  "choiceGridDetection": null,
   "processor": {
     "engine": "PaddleOCR",
     "engineVersion": "3.7.0",
@@ -81,14 +83,18 @@ PaddleOCR orientation classification, document unwarping, and text-line orientat
 
 PoC 2 adds `choiceGroups`, `choiceTargets`, and `choiceDetection` with the same conventions: normalized geometry, a deterministic `candidateScore`, and `empty-ring-v1` provenance. `choiceTargets[].targetBbox` is the printed circle; `interactionBbox` is the derived click area. See [`choice-interactions.md`](choice-interactions.md) for the full contract.
 
+## Choice-Grid Fields
+
+PoC 3 adds `choiceGrids` and `choiceGridDetection` with `table-grid-v1` provenance. Each grid carries normalized bounds, a shared option group, and rows with prompt evidence and one cell per answer column. Column options reuse the existing `ChoiceGroup` model. See [`choice-grid-interactions.md`](choice-grid-interactions.md) for the full contract.
+
 ## Compatibility
 
 - Missing `exerciseBlanks` normalizes to an empty list.
-- Missing `choiceGroups` / `choiceTargets` normalize to empty lists; missing `choiceDetection` to `null`.
+- Missing `choiceGroups` / `choiceTargets` / `choiceGrids` normalize to empty lists; missing `choiceDetection` / `choiceGridDetection` to `null`.
 - Missing `schemaVersion` is treated as `legacy`.
 - A legacy `READY` page remains readable and is not reprocessed automatically.
-- A v0.2 `READY` page with `blankDetection` but without `choiceDetection` (pre-PoC 2) also remains readable; the frontend exposes **Update analysis** to add choice-marker detection.
-- A current v0.2 `READY` page (both detections present) restores through GET only.
+- A v0.2 `READY` page lacking the newest detector output (for example no `choiceGridDetection`) also remains readable; the frontend exposes **Update analysis** to add it.
+- A current v0.2 `READY` page (all detections present) restores through GET only.
 - The frontend exposes **Update analysis** for legacy pages. This explicitly reuses the raster where available and runs the current OCR and interaction pipeline.
 
 ## Persistence

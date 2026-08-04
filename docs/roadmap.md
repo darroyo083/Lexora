@@ -54,6 +54,24 @@ PoC 1 is intentionally heuristic. It validates horizontal graphical blanks, not 
 
 PoC 2 is intentionally structural. It detects markers and structures the learner's selection; it does not know which option is correct, does not extract answer keys, and does not implement grading or explanations.
 
+## PoC 3: Choice-Grid Interactions (Complete)
+
+- [x] Detect interactive choice grids locally without a VLM (`table-grid-v1`)
+- [x] Reject static/explanatory grammar tables and dialogue pages
+- [x] Extract short column headers as a shared `ChoiceGroup` (`ja / nein / doch`)
+- [x] Persist normalized grid, row, and cell geometry additively in `PageAnalysis` v0.2
+- [x] Render transparent radio targets over the printed answer cells
+- [x] One structured selection per row (`rowId -> optionId`), replacing on change
+- [x] Display a restrained `×` centered in the selected cell, scaling with zoom
+- [x] Persist grid answers locally per browser, book, and page with row fingerprints
+- [x] Restore selections across navigation and hard refresh
+- [x] Keyboard-accessible rows via native radio-group semantics
+- [x] Add a distinct choice-grid debug overlay
+- [x] Verify on PDF page 29 (printed page 33) and a second real grid (PDF 15)
+- [x] Verify negative static-table pages (PDF 12, 44, 120) produce no grids
+
+PoC 3 is intentionally structural. It detects grids and structures one selection per row; it does not know which option is correct, does not extract answer keys, and does not implement grading or explanations.
+
 ## Planned Product Capabilities
 
 ### Learning tools
@@ -62,6 +80,7 @@ PoC 2 is intentionally structural. It detects markers and structures the learner
 - [ ] Contextual vocabulary persistence
 - [x] Interactive graphical fill-in-the-blank placement
 - [x] Interactive choice-marker placement
+- [x] Interactive choice-grid placement
 - [ ] Exercise correction and explanations
 - [ ] Highlights and annotations
 
@@ -71,7 +90,7 @@ PoC 2 is intentionally structural. It detects markers and structures the learner
 - [ ] Optional VLM or Gemini-based analysis where useful
 - [x] Graphical fill-in-the-blank placement
 - [x] Choice-marker interactions (`targetId -> optionId`)
-- [ ] Choice-grid interactions (`rowId -> selectedColumnOptionId`)
+- [x] Choice-grid interactions (`rowId -> selectedColumnOptionId`)
 - [ ] Matching interactions (`leftItemId -> rightItemId`)
 - [ ] Exercise correction and explanations
 

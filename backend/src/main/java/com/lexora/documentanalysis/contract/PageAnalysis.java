@@ -15,6 +15,8 @@ public record PageAnalysis(
     List<ChoiceGroup> choiceGroups,
     List<ChoiceTarget> choiceTargets,
     ChoiceDetectionMetadata choiceDetection,
+    List<ChoiceGrid> choiceGrids,
+    ChoiceGridDetectionMetadata choiceGridDetection,
     ProcessorMetadata processor
 ) {
     public PageAnalysis {
@@ -23,6 +25,7 @@ public record PageAnalysis(
         exerciseBlanks = exerciseBlanks == null ? List.of() : List.copyOf(exerciseBlanks);
         choiceGroups = choiceGroups == null ? List.of() : List.copyOf(choiceGroups);
         choiceTargets = choiceTargets == null ? List.of() : List.copyOf(choiceTargets);
+        choiceGrids = choiceGrids == null ? List.of() : List.copyOf(choiceGrids);
     }
 
     public record BBox(double x, double y, double width, double height) {}
@@ -89,6 +92,49 @@ public record PageAnalysis(
     }
 
     public record ChoiceDetectionMetadata(
+        String detectionMethod,
+        int rawCandidateCount,
+        int acceptedCount,
+        int groupCount,
+        long durationMs
+    ) {}
+
+    public record ChoiceGridCell(
+        String id,
+        String optionId,
+        BBox cellBbox,
+        BBox interactionBbox
+    ) {}
+
+    public record ChoiceGridRow(
+        String id,
+        BBox rowBbox,
+        BBox promptBbox,
+        List<String> nearbyTextSpanIds,
+        List<ChoiceGridCell> cells
+    ) {
+        public ChoiceGridRow {
+            nearbyTextSpanIds = nearbyTextSpanIds == null
+                ? List.of() : List.copyOf(nearbyTextSpanIds);
+            cells = cells == null ? List.of() : List.copyOf(cells);
+        }
+    }
+
+    public record ChoiceGrid(
+        String id,
+        String kind,
+        BBox gridBbox,
+        String optionGroupId,
+        String detectionMethod,
+        double candidateScore,
+        List<ChoiceGridRow> rows
+    ) {
+        public ChoiceGrid {
+            rows = rows == null ? List.of() : List.copyOf(rows);
+        }
+    }
+
+    public record ChoiceGridDetectionMetadata(
         String detectionMethod,
         int rawCandidateCount,
         int acceptedCount,

@@ -116,6 +116,84 @@ class PageAnalysisTest {
     }
 
     @Test
+    void deserializesChoiceGridContract() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":29,
+              "width":2284,
+              "height":3121,
+              "language":"de",
+              "textSpans":[],
+              "exerciseBlanks":[],
+              "blankDetection":null,
+              "choiceGroups":[{
+                "id":"grid-group-29-1",
+                "options":[
+                  {"id":"grid-group-29-1-ja","label":"ja"},
+                  {"id":"grid-group-29-1-nein","label":"nein"},
+                  {"id":"grid-group-29-1-doch","label":"doch"}
+                ]
+              }],
+              "choiceTargets":[],
+              "choiceDetection":null,
+              "choiceGrids":[{
+                "id":"choice-grid-29-1","kind":"choice-grid",
+                "gridBbox":{"x":0.154,"y":0.396,"width":0.768,"height":0.189},
+                "optionGroupId":"grid-group-29-1",
+                "detectionMethod":"table-grid-v1","candidateScore":1.0,
+                "rows":[{
+                  "id":"choice-grid-29-1-row-1",
+                  "rowBbox":{"x":0.154,"y":0.415,"width":0.768,"height":0.023},
+                  "promptBbox":{"x":0.187,"y":0.419,"width":0.279,"height":0.013},
+                  "nearbyTextSpanIds":["span-29-46"],
+                  "cells":[{
+                    "id":"choice-grid-29-1-row-1-cell-1",
+                    "optionId":"grid-group-29-1-ja",
+                    "cellBbox":{"x":0.581,"y":0.415,"width":0.114,"height":0.023},
+                    "interactionBbox":{"x":0.581,"y":0.415,"width":0.114,"height":0.023}
+                  }]
+                }]
+              }],
+              "choiceGridDetection":{"detectionMethod":"table-grid-v1","rawCandidateCount":22,"acceptedCount":1,"groupCount":1,"durationMs":171},
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.choiceGrids()).hasSize(1);
+        var grid = analysis.choiceGrids().get(0);
+        assertThat(grid.id()).isEqualTo("choice-grid-29-1");
+        assertThat(grid.kind()).isEqualTo("choice-grid");
+        assertThat(grid.optionGroupId()).isEqualTo("grid-group-29-1");
+        assertThat(grid.rows()).hasSize(1);
+        assertThat(grid.rows().get(0).cells()).hasSize(1);
+        assertThat(grid.rows().get(0).cells().get(0).optionId())
+            .isEqualTo("grid-group-29-1-ja");
+        assertThat(analysis.choiceGridDetection().acceptedCount()).isEqualTo(1);
+        assertThat(analysis.choiceGrids().get(0).rows().get(0).nearbyTextSpanIds())
+            .containsExactly("span-29-46");
+    }
+
+    @Test
+    void version02AnalysisWithoutGridFieldsDefaultsToEmpty() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":2,
+              "width":1200,
+              "height":1600,
+              "language":"de",
+              "textSpans":[],"exerciseBlanks":[],"blankDetection":null,
+              "choiceGroups":[],"choiceTargets":[],"choiceDetection":null,
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.choiceGrids()).isEmpty();
+        assertThat(analysis.choiceGridDetection()).isNull();
+    }
+
+    @Test
     void legacyAnalysisDefaultsMissingExerciseBlanksToEmpty() {
         var analysis = json.readValue("""
             {

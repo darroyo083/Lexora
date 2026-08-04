@@ -80,6 +80,39 @@ class ChoiceDetectionMetadata(BaseModel):
     durationMs: int = Field(ge=0)
 
 
+class ChoiceGridCell(BaseModel):
+    id: str
+    optionId: str
+    cellBbox: BBox
+    interactionBbox: BBox
+
+
+class ChoiceGridRow(BaseModel):
+    id: str
+    rowBbox: BBox
+    promptBbox: BBox | None = None
+    nearbyTextSpanIds: list[str] = Field(default_factory=list)
+    cells: list[ChoiceGridCell] = Field(default_factory=list)
+
+
+class ChoiceGrid(BaseModel):
+    id: str
+    kind: Literal["choice-grid"] = "choice-grid"
+    gridBbox: BBox
+    optionGroupId: str
+    detectionMethod: Literal["table-grid-v1"] = "table-grid-v1"
+    candidateScore: float = Field(ge=0, le=1)
+    rows: list[ChoiceGridRow] = Field(default_factory=list)
+
+
+class ChoiceGridDetectionMetadata(BaseModel):
+    detectionMethod: Literal["table-grid-v1"] = "table-grid-v1"
+    rawCandidateCount: int = Field(ge=0)
+    acceptedCount: int = Field(ge=0)
+    groupCount: int = Field(ge=0)
+    durationMs: int = Field(ge=0)
+
+
 class PageAnalysis(BaseModel):
     schemaVersion: Literal["0.2.0"] = "0.2.0"
     pageNumber: int = Field(ge=1)
@@ -92,6 +125,8 @@ class PageAnalysis(BaseModel):
     choiceGroups: list[ChoiceGroup] = Field(default_factory=list)
     choiceTargets: list[ChoiceTarget] = Field(default_factory=list)
     choiceDetection: ChoiceDetectionMetadata | None = None
+    choiceGrids: list[ChoiceGrid] = Field(default_factory=list)
+    choiceGridDetection: ChoiceGridDetectionMetadata | None = None
     processor: ProcessorMetadata
 
 

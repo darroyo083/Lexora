@@ -217,6 +217,7 @@ class BookServiceTest {
             "0.2.0", 1, 800, 600, "de", List.of(), blanks,
             new PageAnalysis.BlankDetectionMetadata("horizontal-line-v1", 1, blanks.size(), 1),
             List.of(), List.of(), null,
+            List.of(), null,
             new PageAnalysis.ProcessorMetadata("test", "1", "model", "de", Map.of(), null, 1)
         );
     }

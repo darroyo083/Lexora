@@ -1,11 +1,11 @@
-import type { ChoiceTarget, ExerciseBlank } from '../reader/types';
+import type { ChoiceGrid, ChoiceGridRow, ChoiceTarget, ExerciseBlank } from '../reader/types';
 
 export const EXERCISE_ANSWERS_KEY = 'lexora.exerciseAnswers.v1';
 export const EXERCISE_ANSWERS_VERSION = 1;
 
 export interface StoredAnswer {
   fingerprint: string;
-  kind: 'fill-blank' | 'choice';
+  kind: 'fill-blank' | 'choice' | 'choice-grid';
   value: string;
   updatedAt: string;
 }
@@ -44,6 +44,22 @@ export function choiceFingerprint(target: ChoiceTarget, schemaVersion: string): 
   ].join('|');
 }
 
+export function gridRowFingerprint(
+  grid: ChoiceGrid,
+  row: ChoiceGridRow,
+  schemaVersion: string,
+): string {
+  return [
+    schemaVersion,
+    grid.detectionMethod,
+    grid.optionGroupId,
+    row.rowBbox.x.toFixed(4),
+    row.rowBbox.y.toFixed(4),
+    row.rowBbox.width.toFixed(4),
+    row.rowBbox.height.toFixed(4),
+  ].join('|');
+}
+
 export function loadAnswerStore(
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): AnswerStore {
@@ -73,6 +89,7 @@ export function readAnswersForPage(
   pageNumber: number,
   blanks: ExerciseBlank[],
   choices: ChoiceTarget[],
+  grids: ChoiceGrid[],
   schemaVersion: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): Record<string, string> {
@@ -81,6 +98,9 @@ export function readAnswersForPage(
   if (!byPage) return {};
   const blankIds = new Map(blanks.map((blank) => [blank.id, blank]));
   const choiceIds = new Map(choices.map((choice) => [choice.id, choice]));
+  const gridRows = new Map(
+    grids.flatMap((grid) => grid.rows.map((row) => [row.id, { grid, row } as const])),
+  );
   const result: Record<string, string> = {};
   for (const [interactionId, stored] of Object.entries(byPage)) {
     const blank = blankIds.get(interactionId);
@@ -96,6 +116,14 @@ export function readAnswersForPage(
     if (choice) {
       if (stored.fingerprint !== choiceFingerprint(choice, schemaVersion)) continue;
       if (stored.kind === 'choice') result[interactionId] = stored.value;
+      continue;
+    }
+    const gridRow = gridRows.get(interactionId);
+    if (gridRow) {
+      if (stored.fingerprint !== gridRowFingerprint(gridRow.grid, gridRow.row, schemaVersion)) {
+        continue;
+      }
+      if (stored.kind === 'choice-grid') result[interactionId] = stored.value;
     }
   }
   return result;
@@ -107,12 +135,16 @@ export function writeAnswersForPage(
   answers: Record<string, string>,
   blanks: ExerciseBlank[],
   choices: ChoiceTarget[],
+  grids: ChoiceGrid[],
   schemaVersion: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): void {
   const store = loadAnswerStore(storage);
   const blanksById = new Map(blanks.map((blank) => [blank.id, blank]));
   const choicesById = new Map(choices.map((choice) => [choice.id, choice]));
+  const gridRowsById = new Map(
+    grids.flatMap((grid) => grid.rows.map((row) => [row.id, { grid, row } as const])),
+  );
   const nextPage: PageAnswers = {};
   const previous = findAnswersByPage(store, bookId, pageNumber) ?? {};
   const ids = new Set([
@@ -137,6 +169,16 @@ export function writeAnswersForPage(
       nextPage[interactionId] = {
         fingerprint: choiceFingerprint(choice, schemaVersion),
         kind: 'choice',
+        value,
+        updatedAt: new Date().toISOString(),
+      };
+      continue;
+    }
+    const gridRow = gridRowsById.get(interactionId);
+    if (gridRow) {
+      nextPage[interactionId] = {
+        fingerprint: gridRowFingerprint(gridRow.grid, gridRow.row, schemaVersion),
+        kind: 'choice-grid',
         value,
         updatedAt: new Date().toISOString(),
       };

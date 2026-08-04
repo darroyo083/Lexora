@@ -1,10 +1,11 @@
-import type { BBox, ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
+import type { BBox, ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
 
 export interface PageInteractionState {
   spans: TextSpan[];
   blanks: ExerciseBlank[];
   choices: ChoiceTarget[];
   choiceGroups: Record<string, ChoiceGroup>;
+  grids: ChoiceGrid[];
   answers: Record<string, string>;
   schemaVersion: string;
   selectedSpan: TextSpan | null;
@@ -18,6 +19,7 @@ export function emptyPageInteractionState(): PageInteractionState {
     blanks: [],
     choices: [],
     choiceGroups: {},
+    grids: [],
     answers: {},
     schemaVersion: '',
     selectedSpan: null,
@@ -89,4 +91,23 @@ export function choiceSelectorStyle(choice: ChoiceTarget, viewportHeight: number
       : { bottom: `${percent(1 - choice.targetBbox.y)}%` }),
     transform: 'translateX(-50%)',
   };
+}
+
+export function gridCellHitStyle(cell: ChoiceGridCell) {
+  return bboxPercentageStyle(cell.interactionBbox);
+}
+
+export function gridMarkStyle(cell: ChoiceGridCell, viewportHeight: number) {
+  return {
+    ...bboxPercentageStyle(cell.cellBbox),
+    fontSize: `${Math.round(cell.cellBbox.height * viewportHeight * 0.72 * 100) / 100}px`,
+    lineHeight: `${Math.round(cell.cellBbox.height * viewportHeight * 100) / 100}px`,
+  };
+}
+
+export function sortChoiceGrids(grids: ChoiceGrid[]): ChoiceGrid[] {
+  return [...grids].sort((a, b) => (
+    a.gridBbox.y - b.gridBbox.y
+    || a.id.localeCompare(b.id, undefined, { numeric: true })
+  ));
 }

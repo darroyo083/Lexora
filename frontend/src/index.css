@@ -333,6 +333,86 @@ button:disabled {
   background: rgba(23, 32, 51, 0.08);
 }
 
+.grid-row-group {
+  position: static;
+}
+
+.grid-cell-radio {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+}
+
+.grid-cell-radio:disabled {
+  cursor: default;
+}
+
+.grid-cell-radio:focus-visible {
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px rgba(13, 148, 136, 0.9);
+  border-radius: 4px;
+}
+
+.grid-cell-mark {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  color: #134e4a;
+  font-family: inherit;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.grid-bounds-debug,
+.grid-row-debug,
+.grid-cell-debug {
+  position: absolute;
+  pointer-events: none;
+}
+
+.grid-bounds-debug {
+  z-index: 5;
+  border: 1px solid rgba(13, 148, 136, 0.95);
+  background: rgba(20, 184, 166, 0.05);
+}
+
+.grid-row-debug {
+  z-index: 5;
+  border: 1px dashed rgba(8, 145, 178, 0.85);
+}
+
+.grid-cell-debug {
+  z-index: 5;
+  border: 1px dotted rgba(2, 132, 199, 0.8);
+}
+
+.grid-bounds-debug span,
+.grid-row-debug span,
+.grid-cell-debug span {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  padding: 1px 3px;
+  color: #ecfeff;
+  background: rgba(19, 78, 74, 0.9);
+  font-size: 9px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .choice-target-debug,
 .choice-interaction-debug {
   position: absolute;

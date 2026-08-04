@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentLoadingTask, RenderTask } from 'pdfjs-dist';
-import type { ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
-import { bboxPercentageStyle, blankInputStyle, choiceHitStyle, choiceValueStyle } from './overlay';
+import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
+import { bboxPercentageStyle, blankInputStyle, choiceHitStyle, choiceValueStyle, gridCellHitStyle, gridMarkStyle } from './overlay';
 import ChoiceSelector from './ChoiceSelector';
 import {
   isProcessingStage,
@@ -74,11 +74,13 @@ interface Props {
   blanks: ExerciseBlank[];
   choices: ChoiceTarget[];
   choiceGroups: Record<string, ChoiceGroup>;
+  grids: ChoiceGrid[];
   answers: Record<string, string>;
   zoom: number;
   showBoxes: boolean;
   showBlankDetection: boolean;
   showChoiceDetection: boolean;
+  showGridDetection: boolean;
   selectedChoice: ChoiceTarget | null;
   processingStage: PageProcessingStatus | null;
   loaderVariant?: LoaderVariant;
@@ -89,6 +91,7 @@ interface Props {
   onChoiceClick: (choice: ChoiceTarget) => void;
   onChoiceSelect: (choiceId: string, optionId: string) => void;
   onChoiceClose: () => void;
+  onGridSelect: (rowId: string, optionId: string) => void;
 }
 
 export default function PageViewer({
@@ -98,11 +101,13 @@ export default function PageViewer({
   blanks,
   choices,
   choiceGroups,
+  grids,
   answers,
   zoom,
   showBoxes,
   showBlankDetection,
   showChoiceDetection,
+  showGridDetection,
   selectedChoice,
   processingStage,
   loaderVariant = 'halftone-page',
@@ -113,6 +118,7 @@ export default function PageViewer({
   onChoiceClick,
   onChoiceSelect,
   onChoiceClose,
+  onGridSelect,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pageStackRef = useRef<HTMLDivElement>(null);
@@ -369,6 +375,70 @@ export default function PageViewer({
                   {choice.optionGroupId ? ` | ${choice.optionGroupId}` : ' | no group'}
                 </span>
               </div>
+            </div>
+          ))}
+          {grids.map((grid) => grid.rows.map((row) => {
+            const promptText = row.nearbyTextSpanIds
+              .map((id) => spans.find((span) => span.id === id)?.text)
+              .filter(Boolean)
+              .join(' ') || row.id;
+            return (
+              <div
+                key={row.id}
+                role="radiogroup"
+                aria-label={`Answer row near ${promptText}`}
+                className="grid-row-group"
+              >
+                {row.cells.map((cell) => {
+                  const checked = answers[row.id] === cell.optionId;
+                  return (
+                    <Fragment key={cell.id}>
+                      <input
+                        type="radio"
+                        name={row.id}
+                        className="grid-cell-radio"
+                        style={gridCellHitStyle(cell)}
+                        disabled={processing}
+                        checked={checked}
+                        aria-label={`${promptText} — ${cell.optionId}`}
+                        onChange={() => onGridSelect(row.id, cell.optionId)}
+                      />
+                      {checked && (
+                        <span
+                          className="grid-cell-mark"
+                          aria-hidden="true"
+                          style={gridMarkStyle(cell, viewportHeight)}
+                        >
+                          ×
+                        </span>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </div>
+            );
+          }))}
+          {showGridDetection && grids.map((grid) => (
+            <div key={`debug-grid-${grid.id}`} className="grid-debug-group">
+              <div className="grid-bounds-debug" style={bboxPercentageStyle(grid.gridBbox)}>
+                <span>
+                  {grid.id} | {grid.candidateScore.toFixed(2)} | {grid.optionGroupId}
+                </span>
+              </div>
+              {grid.rows.map((row) => (
+                <div key={`debug-row-${row.id}`} className="grid-row-debug" style={bboxPercentageStyle(row.rowBbox)}>
+                  <span>{row.id}</span>
+                </div>
+              ))}
+              {grid.rows.flatMap((row) => row.cells.map((cell) => (
+                <div
+                  key={`debug-cell-${cell.id}`}
+                  className="grid-cell-debug"
+                  style={bboxPercentageStyle(cell.cellBbox)}
+                >
+                  <span>{cell.optionId.split('-').pop()}</span>
+                </div>
+              )))}
             </div>
           ))}
         </div>

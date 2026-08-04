@@ -3,10 +3,11 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import PageViewer from './reader/PageViewer';
 import DebugPanel from './reader/DebugPanel';
-import type { ChoiceTarget, ExerciseBlank, TextSpan } from './reader/types';
+import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, TextSpan } from './reader/types';
 import {
   emptyPageInteractionState,
   indexChoiceGroups,
+  sortChoiceGrids,
   sortChoiceTargets,
   sortExerciseBlanks,
   type PageInteractionState,
@@ -35,6 +36,7 @@ interface PendingPersist {
   answers: Record<string, string>;
   blanks: ExerciseBlank[];
   choices: ChoiceTarget[];
+  grids: ChoiceGrid[];
   schemaVersion: string;
 }
 
@@ -43,6 +45,7 @@ const CURRENT_PAGE_KEY = 'lexora.currentPage';
 const SHOW_BOXES_KEY = 'lexora.showOcrBoxes';
 const SHOW_BLANK_DETECTION_KEY = 'lexora.showBlankDetection';
 const SHOW_CHOICE_DETECTION_KEY = 'lexora.showChoiceDetection';
+const SHOW_GRID_DETECTION_KEY = 'lexora.showGridDetection';
 
 export default function App() {
   const [status, setStatus] = useState<Status>(() => (
@@ -64,6 +67,9 @@ export default function App() {
   ));
   const [showChoiceDetection, setShowChoiceDetection] = useState(() => (
     readBooleanPreference(SHOW_CHOICE_DETECTION_KEY, false)
+  ));
+  const [showGridDetection, setShowGridDetection] = useState(() => (
+    readBooleanPreference(SHOW_GRID_DETECTION_KEY, false)
   ));
   const [zoom, setZoom] = useState(1.0);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
@@ -92,6 +98,7 @@ export default function App() {
       pending.answers,
       pending.blanks,
       pending.choices,
+      pending.grids,
       pending.schemaVersion,
     );
   }, []);
@@ -118,15 +125,17 @@ export default function App() {
     const blanks = sortExerciseBlanks(analysis?.exerciseBlanks ?? []);
     const choices = sortChoiceTargets(analysis?.choiceTargets ?? []);
     const choiceGroups = indexChoiceGroups(analysis?.choiceGroups ?? []);
+    const grids = sortChoiceGrids(analysis?.choiceGrids ?? []);
     const schemaVersion = analysis?.schemaVersion ?? '';
     const restoredAnswers = nextPage && analysis
-      ? readAnswersForPage(bookId, nextPage.pageNumber, blanks, choices, schemaVersion)
+      ? readAnswersForPage(bookId, nextPage.pageNumber, blanks, choices, grids, schemaVersion)
       : {};
     setInteraction({
       spans: analysis?.textSpans ?? [],
       blanks,
       choices,
       choiceGroups,
+      grids,
       answers: restoredAnswers,
       schemaVersion,
       selectedSpan: null,
@@ -320,6 +329,23 @@ export default function App() {
       answers,
       blanks: interaction.blanks,
       choices: interaction.choices,
+      grids: interaction.grids,
+      schemaVersion: interaction.schemaVersion,
+    });
+  }, [interaction, scheduleAnswerPersist]);
+
+  const handleGridSelect = useCallback((rowId: string, optionId: string) => {
+    const bookId = bookIdRef.current;
+    if (!bookId) return;
+    const answers = { ...interaction.answers, [rowId]: optionId };
+    setInteraction((current) => ({ ...current, answers }));
+    scheduleAnswerPersist({
+      bookId,
+      pageNumber: activePage.current,
+      answers,
+      blanks: interaction.blanks,
+      choices: interaction.choices,
+      grids: interaction.grids,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -335,6 +361,7 @@ export default function App() {
       answers,
       blanks: interaction.blanks,
       choices: interaction.choices,
+      grids: interaction.grids,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -435,6 +462,18 @@ export default function App() {
             Show choice detection
           </label>
 
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={showGridDetection}
+              onChange={(event) => {
+                setShowGridDetection(event.target.checked);
+                writeBooleanPreference(SHOW_GRID_DETECTION_KEY, event.target.checked);
+              }}
+            />
+            Show grid detection
+          </label>
+
           {pageStage === 'FAILED' && (
             <span className="status status-error">Failed. Retry is available.</span>
           )}
@@ -456,11 +495,13 @@ export default function App() {
               blanks={interaction.blanks}
               choices={interaction.choices}
               choiceGroups={interaction.choiceGroups}
+              grids={interaction.grids}
               answers={interaction.answers}
               zoom={zoom}
               showBoxes={showBoxes}
               showBlankDetection={showBlankDetection}
               showChoiceDetection={showChoiceDetection}
+              showGridDetection={showGridDetection}
               selectedChoice={interaction.selectedChoice}
               processingStage={pageStage}
               onSpanClick={handleSpanClick}
@@ -469,6 +510,7 @@ export default function App() {
               onChoiceClick={handleChoiceClick}
               onChoiceSelect={handleChoiceSelect}
               onChoiceClose={handleChoiceClose}
+              onGridSelect={handleGridSelect}
             />
           ) : (
             <div className="empty-state">Upload a scanned PDF to begin</div>

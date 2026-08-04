@@ -6,11 +6,14 @@ import {
   choiceSelectorStyle,
   choiceValueStyle,
   emptyPageInteractionState,
+  gridCellHitStyle,
+  gridMarkStyle,
   indexChoiceGroups,
+  sortChoiceGrids,
   sortChoiceTargets,
   sortExerciseBlanks,
 } from '../overlay';
-import type { ChoiceGroup, ChoiceTarget, ExerciseBlank } from '../types';
+import type { ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank } from '../types';
 
 function blank(id: string, x: number, y: number): ExerciseBlank {
   return {
@@ -128,6 +131,54 @@ describe('choice overlays', () => {
   });
 });
 
+function cell(id: string, x: number, y: number): ChoiceGridCell {
+  return {
+    id,
+    optionId: `grid-group-1-ja`,
+    cellBbox: { x, y, width: 0.1, height: 0.04 },
+    interactionBbox: { x, y, width: 0.1, height: 0.04 },
+  };
+}
+
+function grid(id: string, y: number): ChoiceGrid {
+  return {
+    id,
+    kind: 'choice-grid',
+    gridBbox: { x: 0.2, y, width: 0.6, height: 0.2 },
+    optionGroupId: 'grid-group-1',
+    detectionMethod: 'table-grid-v1',
+    candidateScore: 0.9,
+    rows: [],
+  };
+}
+
+describe('grid overlays', () => {
+  it('places the radio hit area on the cell interaction bbox', () => {
+    expect(gridCellHitStyle(cell('c1', 0.3, 0.4))).toEqual({
+      left: '30%',
+      top: '40%',
+      width: '10%',
+      height: '4%',
+    });
+  });
+
+  it('centers the mark on the physical cell with page-relative size', () => {
+    expect(gridMarkStyle(cell('c1', 0.3, 0.4), 1500)).toEqual({
+      left: '30%',
+      top: '40%',
+      width: '10%',
+      height: '4%',
+      fontSize: '43.2px',
+      lineHeight: '60px',
+    });
+  });
+
+  it('sorts grids top-to-bottom', () => {
+    expect(sortChoiceGrids([grid('g2', 0.5), grid('g1', 0.1)]).map(({ id }) => id))
+      .toEqual(['g1', 'g2']);
+  });
+});
+
 describe('interaction state', () => {
   it('creates a fully cleared interaction state for a page change', () => {
     expect(emptyPageInteractionState()).toEqual({
@@ -135,6 +186,7 @@ describe('interaction state', () => {
       blanks: [],
       choices: [],
       choiceGroups: {},
+      grids: [],
       answers: {},
       schemaVersion: '',
       selectedSpan: null,

@@ -70,6 +70,39 @@ export interface ChoiceDetectionMetadata {
   durationMs: number;
 }
 
+export interface ChoiceGridCell {
+  id: string;
+  optionId: string;
+  cellBbox: BBox;
+  interactionBbox: BBox;
+}
+
+export interface ChoiceGridRow {
+  id: string;
+  rowBbox: BBox;
+  promptBbox: BBox | null;
+  nearbyTextSpanIds: string[];
+  cells: ChoiceGridCell[];
+}
+
+export interface ChoiceGrid {
+  id: string;
+  kind: 'choice-grid';
+  gridBbox: BBox;
+  optionGroupId: string;
+  detectionMethod: 'table-grid-v1';
+  candidateScore: number;
+  rows: ChoiceGridRow[];
+}
+
+export interface ChoiceGridDetectionMetadata {
+  detectionMethod: 'table-grid-v1';
+  rawCandidateCount: number;
+  acceptedCount: number;
+  groupCount: number;
+  durationMs: number;
+}
+
 export interface PageAnalysis {
   schemaVersion: string;
   pageNumber: number;
@@ -82,5 +115,7 @@ export interface PageAnalysis {
   choiceGroups: ChoiceGroup[];
   choiceTargets: ChoiceTarget[];
   choiceDetection: ChoiceDetectionMetadata | null;
+  choiceGrids: ChoiceGrid[];
+  choiceGridDetection: ChoiceGridDetectionMetadata | null;
   processor: ProcessorMetadata;
 }

@@ -42,6 +42,8 @@ export function normalizePageAnalysis(value: unknown): PageAnalysis {
     choiceGroups: Array.isArray(analysis.choiceGroups) ? analysis.choiceGroups : [],
     choiceTargets: Array.isArray(analysis.choiceTargets) ? analysis.choiceTargets : [],
     choiceDetection: analysis.choiceDetection ?? null,
+    choiceGrids: Array.isArray(analysis.choiceGrids) ? analysis.choiceGrids : [],
+    choiceGridDetection: analysis.choiceGridDetection ?? null,
     processor: analysis.processor as PageAnalysis['processor'],
   };
 }
@@ -62,6 +64,7 @@ export function getPageProcessAction(page: BookPageResource | null): PageProcess
     analysis?.schemaVersion === '0.2.0'
     && analysis.blankDetection !== null
     && analysis.choiceDetection !== null
+    && analysis.choiceGridDetection !== null
   ) {
     return 'none';
   }

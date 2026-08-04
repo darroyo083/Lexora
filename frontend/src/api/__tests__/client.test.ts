@@ -100,6 +100,8 @@ describe('page API client', () => {
         choiceGroups: [],
         choiceTargets: [],
         choiceDetection: {},
+        choiceGrids: [],
+        choiceGridDetection: {},
         processor: {},
       }),
     };
@@ -114,8 +116,8 @@ describe('page API client', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('offers an explicit update for v0.2 pages without choice analysis', async () => {
-    const prePoc2Page = {
+  it('offers an explicit update for v0.2 pages without grid analysis', async () => {
+    const prePoc3Page = {
       ...rawPage,
       analysis: JSON.stringify({
         schemaVersion: '0.2.0',
@@ -126,11 +128,14 @@ describe('page API client', () => {
         textSpans,
         exerciseBlanks: [],
         blankDetection: {},
+        choiceGroups: [],
+        choiceTargets: [],
+        choiceDetection: {},
         processor: {},
       }),
     };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify([prePoc2Page]), { status: 200 }),
+      new Response(JSON.stringify([prePoc3Page]), { status: 200 }),
     ));
 
     const [restored] = await getBookPages('book-id');
@@ -162,5 +167,7 @@ describe('page API client', () => {
     expect(restored.analysis?.choiceTargets).toEqual([]);
     expect(restored.analysis?.choiceGroups).toEqual([]);
     expect(restored.analysis?.choiceDetection).toBeNull();
+    expect(restored.analysis?.choiceGrids).toEqual([]);
+    expect(restored.analysis?.choiceGridDetection).toBeNull();
   });
 });

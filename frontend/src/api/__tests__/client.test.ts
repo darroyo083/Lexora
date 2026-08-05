@@ -22,6 +22,25 @@ const rawPage = {
   failureReason: null,
 };
 
+const currentAnalysisJson = JSON.stringify({
+  schemaVersion: '0.2.0',
+  pageNumber: 10,
+  width: 1200,
+  height: 1600,
+  language: 'de',
+  textSpans,
+  exerciseBlanks: [],
+  blankDetection: {},
+  choiceGroups: [],
+  choiceTargets: [],
+  choiceDetection: {},
+  choiceGrids: [],
+  choiceGridDetection: {},
+  sentenceOrderings: [],
+  sentenceOrderingDetection: {},
+  processor: {},
+});
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('page API client', () => {
@@ -85,8 +104,58 @@ describe('page API client', () => {
     );
   });
 
-  it('restores a current READY analysis without requesting processing', async () => {
+  it('restores a current READY analysis without reprocessing on open', async () => {
     const currentPage = {
+      ...rawPage,
+      analysis: currentAnalysisJson,
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([currentPage]), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const [restored] = await getBookPages('book-id');
+
+    expect(restored.processingStatus).toBe('READY');
+    expect(getPageProcessAction(restored)).toBe('update');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-analyzes a fully current READY page only after the explicit update action', async () => {
+    const currentPage = {
+      ...rawPage,
+      analysis: currentAnalysisJson,
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([currentPage]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(currentPage), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const [restored] = await getBookPages('book-id');
+
+    expect(getPageProcessAction(restored)).toBe('update');
+    await processBookPage('book-id', 10, true);
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/api/books/book-id/pages/10/process?refreshAnalysis=true',
+      { method: 'POST', signal: undefined },
+    );
+  });
+
+  it('hides the re-analyze action for a READY page without persisted analysis', async () => {
+    const bareReady = { ...rawPage, analysis: null };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([bareReady]), { status: 200 }),
+    ));
+
+    const [restored] = await getBookPages('book-id');
+
+    expect(restored.processingStatus).toBe('READY');
+    expect(getPageProcessAction(restored)).toBe('none');
+  });
+
+  it('offers an explicit update for v0.2 pages without ordering analysis', async () => {
+    const prePoc4Page = {
       ...rawPage,
       analysis: JSON.stringify({
         schemaVersion: '0.2.0',
@@ -105,37 +174,8 @@ describe('page API client', () => {
         processor: {},
       }),
     };
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify([currentPage]), { status: 200 }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-
-    const [restored] = await getBookPages('book-id');
-
-    expect(getPageProcessAction(restored)).toBe('none');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('offers an explicit update for v0.2 pages without grid analysis', async () => {
-    const prePoc3Page = {
-      ...rawPage,
-      analysis: JSON.stringify({
-        schemaVersion: '0.2.0',
-        pageNumber: 10,
-        width: 1200,
-        height: 1600,
-        language: 'de',
-        textSpans,
-        exerciseBlanks: [],
-        blankDetection: {},
-        choiceGroups: [],
-        choiceTargets: [],
-        choiceDetection: {},
-        processor: {},
-      }),
-    };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify([prePoc3Page]), { status: 200 }),
+      new Response(JSON.stringify([prePoc4Page]), { status: 200 }),
     ));
 
     const [restored] = await getBookPages('book-id');

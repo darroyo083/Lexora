@@ -105,6 +105,38 @@ export function isProcessingStage(stage: PageProcessingStatus | null): boolean {
   return stage !== null && ACTIVE_STAGES.includes(stage);
 }
 
+export interface ProcessingTarget {
+  bookId: string;
+  pageNumber: number;
+}
+
+/**
+ * Whether the page currently being viewed is itself the page that a heavy
+ * processing request is analyzing. A global in-flight lock must never drive
+ * the visual processing state of a page that is not the processing target.
+ */
+export function isCurrentPageProcessing(
+  target: ProcessingTarget | null,
+  bookId: string | undefined,
+  pageNumber: number,
+): boolean {
+  return target !== null && target.bookId === bookId && target.pageNumber === pageNumber;
+}
+
+/**
+ * The visible stage for the CURRENT page. A persisted page status wins; the
+ * synthetic PENDING is only used while the current page is the processing
+ * target but its resource has not been observed as processing yet. Other pages
+ * never inherit a processing stage from an unrelated in-flight request.
+ */
+export function currentPageStage(
+  pageStatus: PageProcessingStatus | null | undefined,
+  currentPageProcessing: boolean,
+): PageProcessingStatus | null {
+  if (pageStatus != null) return pageStatus;
+  return currentPageProcessing ? 'PENDING' : null;
+}
+
 export function stageCopy(stage: PageProcessingStatus | null): ProcessingStageCopy | null {
   return stage ? PROCESSING_STAGE_COPY[stage] : null;
 }

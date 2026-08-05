@@ -1,18 +1,22 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useReducer } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import PageViewer from './reader/PageViewer';
 import DebugPanel from './reader/DebugPanel';
-import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, TextSpan } from './reader/types';
+import SentenceOrderingPanel from './reader/SentenceOrderingPanel';
+import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, SentenceOrderingInteraction, TextSpan } from './reader/types';
 import {
   emptyPageInteractionState,
   indexChoiceGroups,
   sortChoiceGrids,
   sortChoiceTargets,
   sortExerciseBlanks,
+  sortSentenceOrderings,
   type PageInteractionState,
 } from './reader/overlay';
-import { isProcessingStage, processLabel, resolveProcessControl } from './reader/processing';
+import { parseOrderedAnswer, serializeOrderedAnswer, toggleItem } from './reader/ordering';
+import { emptyOrderingView, orderingViewReducer } from './reader/floatingOrdering';
+import { currentPageStage, isCurrentPageProcessing, isProcessingStage, processLabel, resolveProcessControl, type ProcessingTarget } from './reader/processing';
 import { ZOOM_OPTIONS } from './reader/zoom';
 import {
   getPageProcessAction,
@@ -20,8 +24,14 @@ import {
   processBookPage,
   type BookPageResource,
 } from './api/client';
-import { readBooleanPreference, writeBooleanPreference } from './state/preferences';
+import {
+  readBooleanPreference,
+  readOrderingModePreference,
+  writeBooleanPreference,
+  writeOrderingModePreference,
+} from './state/preferences';
 import { readPageRotation, writePageRotation } from './state/pageRotation';
+import { readZoomPreference, writeZoomPreference } from './state/zoom';
 import { rotateLeft, rotateRight, type PageRotation } from './reader/rotation';
 import { readAnswersForPage, writeAnswersForPage } from './state/exerciseAnswers';
 
@@ -39,6 +49,7 @@ interface PendingPersist {
   blanks: ExerciseBlank[];
   choices: ChoiceTarget[];
   grids: ChoiceGrid[];
+  sentenceOrderings: SentenceOrderingInteraction[];
   schemaVersion: string;
 }
 
@@ -48,6 +59,7 @@ const SHOW_BOXES_KEY = 'lexora.showOcrBoxes';
 const SHOW_BLANK_DETECTION_KEY = 'lexora.showBlankDetection';
 const SHOW_CHOICE_DETECTION_KEY = 'lexora.showChoiceDetection';
 const SHOW_GRID_DETECTION_KEY = 'lexora.showGridDetection';
+const SHOW_SENTENCE_ORDERING_DETECTION_KEY = 'lexora.showSentenceOrderingDetection';
 
 export default function App() {
   const [status, setStatus] = useState<Status>(() => (
@@ -59,7 +71,7 @@ export default function App() {
     return storedPage > 0 ? storedPage : 1;
   });
   const [page, setPage] = useState<BookPageResource | null>(null);
-  const [processingRequested, setProcessingRequested] = useState(false);
+  const [processingTarget, setProcessingTarget] = useState<ProcessingTarget | null>(null);
   const [interaction, setInteraction] = useState<PageInteractionState>(emptyPageInteractionState);
   const [showBoxes, setShowBoxes] = useState(() => (
     readBooleanPreference(SHOW_BOXES_KEY, false)
@@ -73,11 +85,23 @@ export default function App() {
   const [showGridDetection, setShowGridDetection] = useState(() => (
     readBooleanPreference(SHOW_GRID_DETECTION_KEY, false)
   ));
-  const [zoom, setZoom] = useState(1.0);
+  const [showSentenceOrderingDetection, setShowSentenceOrderingDetection] = useState(() => (
+    readBooleanPreference(SHOW_SENTENCE_ORDERING_DETECTION_KEY, false)
+  ));
+  const [zoom, setZoom] = useState<number>(() => readZoomPreference());
   const [rotation, setRotation] = useState<PageRotation>(0);
+  const [railTab, setRailTab] = useState<'interactions' | 'debug'>('interactions');
+  const [orderingActivePrompt, setOrderingActivePrompt] = useState<string | null>(null);
+  const [orderingPanelCollapsed, setOrderingPanelCollapsed] = useState(false);
+  const [orderingView, dispatchOrderingView] = useReducer(
+    orderingViewReducer,
+    undefined,
+    () => emptyOrderingView(readOrderingModePreference()),
+  );
+  const { mode: orderingMode, expandedExerciseId: expandedOrderingExercise, closedExerciseIds: closedOrderingExercises } = orderingView;
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const activePage = useRef(selectedPage);
-  const processingAbort = useRef<AbortController | null>(null);
+  const processingInFlight = useRef(false);
   const bookIdRef = useRef<string | null>(null);
   const persistTimer = useRef<number | null>(null);
   const pendingPersist = useRef<PendingPersist | null>(null);
@@ -86,6 +110,10 @@ export default function App() {
   useEffect(() => {
     bookIdRef.current = book?.id ?? null;
   }, [book]);
+
+  useEffect(() => {
+    writeOrderingModePreference(orderingMode);
+  }, [orderingMode]);
 
   const flushPendingAnswers = useCallback(() => {
     if (persistTimer.current) {
@@ -102,6 +130,7 @@ export default function App() {
       pending.blanks,
       pending.choices,
       pending.grids,
+      pending.sentenceOrderings,
       pending.schemaVersion,
     );
   }, []);
@@ -130,9 +159,18 @@ export default function App() {
     const choices = sortChoiceTargets(analysis?.choiceTargets ?? []);
     const choiceGroups = indexChoiceGroups(analysis?.choiceGroups ?? []);
     const grids = sortChoiceGrids(analysis?.choiceGrids ?? []);
+    const sentenceOrderings = sortSentenceOrderings(analysis?.sentenceOrderings ?? []);
     const schemaVersion = analysis?.schemaVersion ?? '';
     const restoredAnswers = nextPage && analysis
-      ? readAnswersForPage(bookId, nextPage.pageNumber, blanks, choices, grids, schemaVersion)
+      ? readAnswersForPage(
+          bookId,
+          nextPage.pageNumber,
+          blanks,
+          choices,
+          grids,
+          sentenceOrderings,
+          schemaVersion,
+        )
       : {};
     setInteraction({
       spans: analysis?.textSpans ?? [],
@@ -140,12 +178,15 @@ export default function App() {
       choices,
       choiceGroups,
       grids,
+      sentenceOrderings,
       answers: restoredAnswers,
       schemaVersion,
       selectedSpan: null,
       selectedBlank: null,
       selectedChoice: null,
     });
+    setOrderingActivePrompt(null);
+    dispatchOrderingView({ type: 'reset' });
   }, []);
 
   const clearPageInteraction = useCallback(() => {
@@ -155,8 +196,6 @@ export default function App() {
 
   const selectPage = useCallback((nextPage: number) => {
     if (nextPage === activePage.current) return;
-    processingAbort.current?.abort();
-    setProcessingRequested(false);
     flushPendingAnswers();
     clearPageInteraction();
     setSelectedPage(nextPage);
@@ -245,6 +284,7 @@ export default function App() {
 
   const handleProcessPage = useCallback(async () => {
     if (!book) return;
+    if (processingInFlight.current) return;
 
     const processAction = getPageProcessAction(page);
     if (processAction === 'none') return;
@@ -252,9 +292,8 @@ export default function App() {
     const bookId = book.id;
     const pageNumber = selectedPage;
     const controller = new AbortController();
-    processingAbort.current?.abort();
-    processingAbort.current = controller;
-    setProcessingRequested(true);
+    processingInFlight.current = true;
+    setProcessingTarget({ bookId, pageNumber });
     flushPendingAnswers();
     setInteraction(emptyPageInteractionState());
 
@@ -284,8 +323,8 @@ export default function App() {
       }
     } finally {
       window.clearInterval(poll);
-      if (processingAbort.current === controller) processingAbort.current = null;
-      if (activePage.current === pageNumber) setProcessingRequested(false);
+      processingInFlight.current = false;
+      setProcessingTarget(null);
     }
   }, [book, page, selectedPage, showPage, flushPendingAnswers]);
 
@@ -335,6 +374,7 @@ export default function App() {
       blanks: interaction.blanks,
       choices: interaction.choices,
       grids: interaction.grids,
+      sentenceOrderings: interaction.sentenceOrderings,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -351,6 +391,28 @@ export default function App() {
       blanks: interaction.blanks,
       choices: interaction.choices,
       grids: interaction.grids,
+      sentenceOrderings: interaction.sentenceOrderings,
+      schemaVersion: interaction.schemaVersion,
+    });
+  }, [interaction, scheduleAnswerPersist]);
+
+  const handleOrderingChange = useCallback((
+    interactionId: string,
+    ordered: string[],
+  ) => {
+    const bookId = bookIdRef.current;
+    if (!bookId) return;
+    const value = serializeOrderedAnswer(ordered);
+    const answers = { ...interaction.answers, [interactionId]: value };
+    setInteraction((current) => ({ ...current, answers }));
+    scheduleAnswerPersist({
+      bookId,
+      pageNumber: activePage.current,
+      answers,
+      blanks: interaction.blanks,
+      choices: interaction.choices,
+      grids: interaction.grids,
+      sentenceOrderings: interaction.sentenceOrderings,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -367,9 +429,41 @@ export default function App() {
       blanks: interaction.blanks,
       choices: interaction.choices,
       grids: interaction.grids,
+      sentenceOrderings: interaction.sentenceOrderings,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
+
+  const handleOrderingFragmentClick = useCallback((
+    interactionId: string,
+    itemId: string,
+  ) => {
+    const bookId = bookIdRef.current;
+    if (!bookId) return;
+    const exerciseId = interaction.sentenceOrderings
+      .find((i) => i.id === interactionId)?.exerciseId;
+    if (orderingMode === 'docked') {
+      setRailTab('interactions');
+      setOrderingPanelCollapsed(false);
+    } else if (exerciseId) {
+      dispatchOrderingView({ type: 'expand', exerciseId });
+    }
+    setOrderingActivePrompt(interactionId);
+    const ordered = toggleItem(
+      parseOrderedAnswer(interaction.answers[interactionId]),
+      itemId,
+    );
+    handleOrderingChange(interactionId, ordered);
+  }, [interaction, orderingMode, handleOrderingChange]);
+
+  const handleOrderingDock = useCallback(() => {
+    dispatchOrderingView({ type: 'dock' });
+    setRailTab('interactions');
+  }, []);
+
+  const handleOrderingFloat = useCallback(() => {
+    dispatchOrderingView({ type: 'float' });
+  }, []);
 
   const handleRotateLeft = useCallback(() => {
     const bookId = bookIdRef.current;
@@ -387,9 +481,10 @@ export default function App() {
     writePageRotation(bookId, activePage.current, next);
   }, [rotation]);
 
-  const pageStage = page?.processingStatus
-    ?? (processingRequested ? 'PENDING' : null);
+  const currentPageProcessing = isCurrentPageProcessing(processingTarget, book?.id, selectedPage);
+  const pageStage = currentPageStage(page?.processingStatus, currentPageProcessing);
   const processing = isProcessingStage(pageStage);
+  const processingBusy = processingTarget !== null;
   const processControl = resolveProcessControl(pageStage, getPageProcessAction(page));
   const processButtonLabel = processLabel(processControl);
 
@@ -430,16 +525,23 @@ export default function App() {
               </span>
               <button
                 onClick={() => void handleProcessPage()}
-                disabled={processControl === 'none' || processControl === 'processed' || processing}
+                disabled={processControl === 'none' || processControl === 'processed' || processing || processingBusy}
               >
                 {processButtonLabel}
               </button>
+              {processingBusy && !processing && (
+                <span className="status">Processing page {processingTarget?.pageNumber}…</span>
+              )}
             </>
           )}
 
           <select
             value={zoom}
-            onChange={(event) => setZoom(Number(event.target.value))}
+            onChange={(event) => {
+              const nextZoom = Number(event.target.value);
+              setZoom(nextZoom);
+              writeZoomPreference(nextZoom);
+            }}
             className="zoom-select"
           >
             {ZOOM_OPTIONS.map((option) => (
@@ -521,6 +623,18 @@ export default function App() {
             Show grid detection
           </label>
 
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={showSentenceOrderingDetection}
+              onChange={(event) => {
+                setShowSentenceOrderingDetection(event.target.checked);
+                writeBooleanPreference(SHOW_SENTENCE_ORDERING_DETECTION_KEY, event.target.checked);
+              }}
+            />
+            Show ordering detection
+          </label>
+
           {pageStage === 'FAILED' && (
             <span className="status status-error">Failed. Retry is available.</span>
           )}
@@ -544,12 +658,25 @@ export default function App() {
               choices={interaction.choices}
               choiceGroups={interaction.choiceGroups}
               grids={interaction.grids}
+              sentenceOrderings={interaction.sentenceOrderings}
               answers={interaction.answers}
+              activeOrderingPromptId={orderingActivePrompt}
+              orderingFloat={orderingMode === 'floating' ? {
+                expandedExerciseId: expandedOrderingExercise,
+                closedExerciseIds: closedOrderingExercises,
+                onExpand: (exerciseId) => dispatchOrderingView({ type: 'expand', exerciseId }),
+                onCollapse: () => dispatchOrderingView({ type: 'collapse' }),
+                onClose: (exerciseId) => dispatchOrderingView({ type: 'close', exerciseId }),
+                onDock: handleOrderingDock,
+                onPromptChange: setOrderingActivePrompt,
+                onOrderingChange: handleOrderingChange,
+              } : undefined}
               zoom={zoom}
               showBoxes={showBoxes}
               showBlankDetection={showBlankDetection}
               showChoiceDetection={showChoiceDetection}
               showGridDetection={showGridDetection}
+              showSentenceOrderingDetection={showSentenceOrderingDetection}
               selectedChoice={interaction.selectedChoice}
               processingStage={pageStage}
               onSpanClick={handleSpanClick}
@@ -559,16 +686,66 @@ export default function App() {
               onChoiceSelect={handleChoiceSelect}
               onChoiceClose={handleChoiceClose}
               onGridSelect={handleGridSelect}
+              onOrderingFragmentClick={handleOrderingFragmentClick}
+              onOrderingChange={handleOrderingChange}
             />
           ) : (
             <div className="empty-state">Upload a scanned PDF to begin</div>
           )}
         </div>
-        <DebugPanel
-          span={interaction.selectedSpan}
-          blank={interaction.selectedBlank}
-          choice={interaction.selectedChoice}
-        />
+        <aside className="interaction-rail">
+          {orderingMode === 'docked' ? (
+            <>
+              <div className="rail-tabs" role="tablist" aria-label="Reader tools">
+                {interaction.sentenceOrderings.length > 0 && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={railTab === 'interactions'}
+                    className={`rail-tab${railTab === 'interactions' ? ' rail-tab-active' : ''}`}
+                    onClick={() => setRailTab('interactions')}
+                  >
+                    Ordering ({interaction.sentenceOrderings.length})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={railTab === 'debug'}
+                  className={`rail-tab${railTab === 'debug' ? ' rail-tab-active' : ''}`}
+                  onClick={() => setRailTab('debug')}
+                >
+                  Debug
+                </button>
+              </div>
+              {railTab === 'interactions' && interaction.sentenceOrderings.length > 0 ? (
+                <SentenceOrderingPanel
+                  sentenceOrderings={interaction.sentenceOrderings}
+                  orderingAnswers={interaction.answers}
+                  activePromptId={orderingActivePrompt}
+                  disabled={processing}
+                  collapsed={orderingPanelCollapsed}
+                  onPromptChange={setOrderingActivePrompt}
+                  onOrderingChange={handleOrderingChange}
+                  onCollapseChange={setOrderingPanelCollapsed}
+                  onFloat={handleOrderingFloat}
+                />
+              ) : (
+                <DebugPanel
+                  span={interaction.selectedSpan}
+                  blank={interaction.selectedBlank}
+                  choice={interaction.selectedChoice}
+                />
+              )}
+            </>
+          ) : (
+            <DebugPanel
+              span={interaction.selectedSpan}
+              blank={interaction.selectedBlank}
+              choice={interaction.selectedChoice}
+            />
+          )}
+        </aside>
       </main>
     </div>
   );

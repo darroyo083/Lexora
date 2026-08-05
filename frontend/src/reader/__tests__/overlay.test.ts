@@ -242,6 +242,7 @@ describe('interaction state', () => {
       choices: [],
       choiceGroups: {},
       grids: [],
+      sentenceOrderings: [],
       answers: {},
       schemaVersion: '',
       selectedSpan: null,

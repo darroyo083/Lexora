@@ -1,4 +1,4 @@
-import type { BBox, ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
+import type { BBox, ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, SentenceOrderingInteraction, TextSpan } from './types';
 import { rotateBBox, type PageRotation } from './rotation';
 
 export interface PageInteractionState {
@@ -7,6 +7,7 @@ export interface PageInteractionState {
   choices: ChoiceTarget[];
   choiceGroups: Record<string, ChoiceGroup>;
   grids: ChoiceGrid[];
+  sentenceOrderings: SentenceOrderingInteraction[];
   answers: Record<string, string>;
   schemaVersion: string;
   selectedSpan: TextSpan | null;
@@ -21,6 +22,7 @@ export function emptyPageInteractionState(): PageInteractionState {
     choices: [],
     choiceGroups: {},
     grids: [],
+    sentenceOrderings: [],
     answers: {},
     schemaVersion: '',
     selectedSpan: null,
@@ -132,4 +134,25 @@ export function sortChoiceGrids(grids: ChoiceGrid[]): ChoiceGrid[] {
     a.gridBbox.y - b.gridBbox.y
     || a.id.localeCompare(b.id, undefined, { numeric: true })
   ));
+}
+
+export function sortSentenceOrderings(orderings: SentenceOrderingInteraction[]): SentenceOrderingInteraction[] {
+  return [...orderings].sort((a, b) => (
+    a.promptIndex - b.promptIndex
+    || a.bbox.y - b.bbox.y
+    || a.bbox.x - b.bbox.x
+    || a.id.localeCompare(b.id, undefined, { numeric: true })
+  ));
+}
+
+export function groupSentenceOrderings(
+  orderings: SentenceOrderingInteraction[],
+): Record<string, SentenceOrderingInteraction[]> {
+  const groups: Record<string, SentenceOrderingInteraction[]> = {};
+  for (const interaction of sortSentenceOrderings(orderings)) {
+    const list = groups[interaction.exerciseId] ?? [];
+    list.push(interaction);
+    groups[interaction.exerciseId] = list;
+  }
+  return groups;
 }

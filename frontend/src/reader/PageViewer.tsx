@@ -1,10 +1,12 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
-import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, TextSpan } from './types';
+import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, SentenceOrderingInteraction, TextSpan } from './types';
 import { bboxPercentageStyle, blankInputStyle, choiceHitStyle, choiceValueStyle, gridCellHitStyle, gridMarkStyle } from './overlay';
 import { normalizeRotation, type PageRotation } from './rotation';
 import ChoiceSelector from './ChoiceSelector';
+import SentenceOrderingOverlay from './SentenceOrderingOverlay';
+import OrderingFloatingLayer from './OrderingFloatingLayer';
 import {
   isProcessingStage,
   PROCESSING_MESSAGE_INTERVAL_MS,
@@ -68,6 +70,17 @@ function ProcessingDetail({ messages, prefersReducedMotion }: ProcessingDetailPr
 export type LoaderVariant = 'halftone-page' | 'light-beam' | 'halftone-card';
 export type CardStyle = 'card-minimal-light' | 'card-slate-mono' | 'card-lexora-cyan' | 'card-borderless-float';
 
+export interface OrderingFloatControl {
+  expandedExerciseId: string | null;
+  closedExerciseIds: string[];
+  onExpand: (exerciseId: string) => void;
+  onCollapse: () => void;
+  onClose: (exerciseId: string) => void;
+  onDock: () => void;
+  onPromptChange: (interactionId: string) => void;
+  onOrderingChange: (interactionId: string, ordered: string[]) => void;
+}
+
 interface Props {
   pdfData: ArrayBuffer;
   pageNumber: number;
@@ -77,12 +90,16 @@ interface Props {
   choices: ChoiceTarget[];
   choiceGroups: Record<string, ChoiceGroup>;
   grids: ChoiceGrid[];
+  sentenceOrderings: SentenceOrderingInteraction[];
   answers: Record<string, string>;
+  activeOrderingPromptId: string | null;
+  orderingFloat?: OrderingFloatControl;
   zoom: number;
   showBoxes: boolean;
   showBlankDetection: boolean;
   showChoiceDetection: boolean;
   showGridDetection: boolean;
+  showSentenceOrderingDetection: boolean;
   selectedChoice: ChoiceTarget | null;
   processingStage: PageProcessingStatus | null;
   loaderVariant?: LoaderVariant;
@@ -94,6 +111,8 @@ interface Props {
   onChoiceSelect: (choiceId: string, optionId: string) => void;
   onChoiceClose: () => void;
   onGridSelect: (rowId: string, optionId: string) => void;
+  onOrderingFragmentClick: (interactionId: string, itemId: string) => void;
+  onOrderingChange: (interactionId: string, ordered: string[]) => void;
 }
 
 export default function PageViewer({
@@ -105,12 +124,16 @@ export default function PageViewer({
   choices,
   choiceGroups,
   grids,
+  sentenceOrderings,
   answers,
+  activeOrderingPromptId,
+  orderingFloat,
   zoom,
   showBoxes,
   showBlankDetection,
   showChoiceDetection,
   showGridDetection,
+  showSentenceOrderingDetection,
   selectedChoice,
   processingStage,
   loaderVariant = 'halftone-page',
@@ -122,11 +145,14 @@ export default function PageViewer({
   onChoiceSelect,
   onChoiceClose,
   onGridSelect,
+  onOrderingFragmentClick,
+  onOrderingChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pageStackRef = useRef<HTMLDivElement>(null);
   const processingContentRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
+  const [pageSize, setPageSize] = useState<{ width: number; height: number } | null>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(readPrefersReducedMotion);
@@ -161,6 +187,7 @@ export default function PageViewer({
       const effectiveRotation = normalizeRotation(page.rotate + rotation);
       const viewport = page.getViewport({ scale: zoom, rotation: effectiveRotation });
       setViewportHeight(viewport.height);
+      setPageSize({ width: viewport.width, height: viewport.height });
 
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.floor(viewport.width * dpr);
@@ -462,6 +489,58 @@ export default function PageViewer({
               )))}
             </div>
           ))}
+          {sentenceOrderings.length > 0 && (
+            <SentenceOrderingOverlay
+              sentenceOrderings={sentenceOrderings}
+              orderingAnswers={answers}
+              rotation={rotation}
+              disabled={processing}
+              activePromptId={activeOrderingPromptId}
+              onFragmentClick={onOrderingFragmentClick}
+            />
+          )}
+          {showSentenceOrderingDetection && (() => {
+            const exercises = new Map<string, SentenceOrderingInteraction[]>();
+            for (const interaction of sentenceOrderings) {
+              const list = exercises.get(interaction.exerciseId) ?? [];
+              list.push(interaction);
+              exercises.set(interaction.exerciseId, list);
+            }
+            return [...exercises.values()].flatMap((interactions) => interactions.map((interaction) => (
+              <div key={`debug-ordering-${interaction.id}`} className="ordering-debug-group">
+                <div
+                  className="ordering-exercise-debug"
+                  style={bboxPercentageStyle({
+                    x: Math.min(...interactions.map((i) => i.bbox.x)),
+                    y: Math.min(...interactions.map((i) => i.bbox.y)),
+                    width: Math.max(...interactions.map((i) => i.bbox.x + i.bbox.width))
+                      - Math.min(...interactions.map((i) => i.bbox.x)),
+                    height: Math.max(...interactions.map((i) => i.bbox.y + i.bbox.height))
+                      - Math.min(...interactions.map((i) => i.bbox.y)),
+                  }, rotation)}
+                >
+                  <span>{interaction.exerciseId}</span>
+                </div>
+                <div
+                  className="ordering-prompt-debug"
+                  style={bboxPercentageStyle(interaction.bbox, rotation)}
+                >
+                  <span>
+                    {interaction.id} | {interaction.candidateScore.toFixed(2)} | {interaction.items.length} items
+                  </span>
+                </div>
+                {interaction.items.map((item) => (
+                  <div
+                    key={`debug-ordering-item-${item.id}`}
+                    className="ordering-item-debug"
+                    style={bboxPercentageStyle(item.bbox, rotation)}
+                  >
+                    <span>{item.originalIndex}:{item.id.split('-').pop()}</span>
+                  </div>
+                ))}
+              </div>
+            )));
+          })()}
         </div>
         {processing && processingCopy && (
           <div
@@ -506,6 +585,25 @@ export default function PageViewer({
           </div>
         )}
       </div>
+      {orderingFloat && sentenceOrderings.length > 0 && pageSize && (
+        <OrderingFloatingLayer
+          sentenceOrderings={sentenceOrderings}
+          answers={answers}
+          activePromptId={activeOrderingPromptId}
+          rotation={rotation}
+          pageWidth={pageSize.width}
+          pageHeight={pageSize.height}
+          disabled={processing}
+          expandedExerciseId={orderingFloat.expandedExerciseId}
+          closedExerciseIds={orderingFloat.closedExerciseIds}
+          onExpand={orderingFloat.onExpand}
+          onCollapse={orderingFloat.onCollapse}
+          onClose={orderingFloat.onClose}
+          onDock={orderingFloat.onDock}
+          onPromptChange={orderingFloat.onPromptChange}
+          onOrderingChange={onOrderingChange}
+        />
+      )}
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {stageLabel(processingStage) ?? ''}
       </div>

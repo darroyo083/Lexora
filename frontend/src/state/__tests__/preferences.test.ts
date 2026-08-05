@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { readBooleanPreference, writeBooleanPreference } from '../preferences';
+import {
+  readBooleanPreference,
+  readOrderingModePreference,
+  writeBooleanPreference,
+  writeOrderingModePreference,
+} from '../preferences';
 
 describe('boolean preferences', () => {
   it('uses the fallback when no value is stored', () => {
@@ -16,5 +21,23 @@ describe('boolean preferences', () => {
     const storage = { setItem: vi.fn() };
     writeBooleanPreference('boxes', true, storage);
     expect(storage.setItem).toHaveBeenCalledWith('boxes', 'true');
+  });
+});
+
+describe('ordering presentation mode preference', () => {
+  it('defaults to floating when nothing is stored', () => {
+    const storage = { getItem: vi.fn(() => null) };
+    expect(readOrderingModePreference(storage)).toBe('floating');
+  });
+
+  it('restores a docked preference', () => {
+    const storage = { getItem: vi.fn(() => 'docked') };
+    expect(readOrderingModePreference(storage)).toBe('docked');
+  });
+
+  it('persists the mode as a stable string', () => {
+    const storage = { setItem: vi.fn() };
+    writeOrderingModePreference('floating', storage);
+    expect(storage.setItem).toHaveBeenCalledWith('lexora.orderingMode', 'floating');
   });
 });

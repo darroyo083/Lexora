@@ -44,6 +44,8 @@ export function normalizePageAnalysis(value: unknown): PageAnalysis {
     choiceDetection: analysis.choiceDetection ?? null,
     choiceGrids: Array.isArray(analysis.choiceGrids) ? analysis.choiceGrids : [],
     choiceGridDetection: analysis.choiceGridDetection ?? null,
+    sentenceOrderings: Array.isArray(analysis.sentenceOrderings) ? analysis.sentenceOrderings : [],
+    sentenceOrderingDetection: analysis.sentenceOrderingDetection ?? null,
     processor: analysis.processor as PageAnalysis['processor'],
   };
 }
@@ -59,15 +61,7 @@ export type PageProcessAction = 'process' | 'update' | 'none';
 
 export function getPageProcessAction(page: BookPageResource | null): PageProcessAction {
   if (page?.processingStatus !== 'READY') return 'process';
-  const analysis = page.analysis;
-  if (
-    analysis?.schemaVersion === '0.2.0'
-    && analysis.blankDetection !== null
-    && analysis.choiceDetection !== null
-    && analysis.choiceGridDetection !== null
-  ) {
-    return 'none';
-  }
+  if (page.analysis === null) return 'none';
   return 'update';
 }
 

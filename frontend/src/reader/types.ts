@@ -103,6 +103,33 @@ export interface ChoiceGridDetectionMetadata {
   durationMs: number;
 }
 
+export interface SentenceOrderingItem {
+  id: string;
+  text: string;
+  bbox: BBox;
+  originalIndex: number;
+}
+
+export interface SentenceOrderingInteraction {
+  id: string;
+  kind: 'sentence-ordering';
+  bbox: BBox;
+  exerciseId: string;
+  promptIndex: number;
+  detectionMethod: 'sentence-ordering-v1';
+  candidateScore: number;
+  nearbyTextSpanIds: string[];
+  items: SentenceOrderingItem[];
+}
+
+export interface SentenceOrderingDetectionMetadata {
+  detectionMethod: 'sentence-ordering-v1';
+  rawCandidateCount: number;
+  acceptedCount: number;
+  groupCount: number;
+  durationMs: number;
+}
+
 export interface PageAnalysis {
   schemaVersion: string;
   pageNumber: number;
@@ -117,5 +144,7 @@ export interface PageAnalysis {
   choiceDetection: ChoiceDetectionMetadata | null;
   choiceGrids: ChoiceGrid[];
   choiceGridDetection: ChoiceGridDetectionMetadata | null;
+  sentenceOrderings: SentenceOrderingInteraction[];
+  sentenceOrderingDetection: SentenceOrderingDetectionMetadata | null;
   processor: ProcessorMetadata;
 }

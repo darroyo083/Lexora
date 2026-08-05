@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   ACTIVE_STAGES,
+  currentPageStage,
+  isCurrentPageProcessing,
   isProcessingStage,
   processLabel,
   PROCESSING_MESSAGE_INTERVAL_MS,
@@ -102,11 +104,70 @@ describe('processing stage UI', () => {
     expect(processLabel('processed')).toBe('Processed');
   });
 
+  it('exposes an explicit Update analysis action for a READY page with persisted analysis', () => {
+    expect(resolveProcessControl('READY', 'update')).toBe('update');
+    expect(processLabel('update')).toBe('Update analysis');
+  });
+
   it('reports active processing and the plain process action otherwise', () => {
     expect(resolveProcessControl('OCR', 'process')).toBe('processing');
     expect(processLabel('processing')).toBe('Processing');
     expect(resolveProcessControl('PENDING', 'process')).toBe('processing');
     expect(resolveProcessControl(null, 'process')).toBe('process');
+  });
+});
+
+describe('processing target identity vs global lock', () => {
+  const bookId = 'book-1';
+  const target = { bookId, pageNumber: 33 };
+
+  it('only treats the page being analyzed as the current processing page', () => {
+    expect(isCurrentPageProcessing(target, bookId, 33)).toBe(true);
+    expect(isCurrentPageProcessing(target, bookId, 39)).toBe(false);
+    expect(isCurrentPageProcessing(target, 'book-2', 33)).toBe(false);
+    expect(isCurrentPageProcessing(null, bookId, 33)).toBe(false);
+  });
+
+  it('navigating to a READY page B shows B normally, not the processing shell', () => {
+    expect(isCurrentPageProcessing(target, bookId, 39)).toBe(false);
+    const stage = currentPageStage('READY', isCurrentPageProcessing(target, bookId, 39));
+    expect(stage).toBe('READY');
+    expect(isProcessingStage(stage)).toBe(false);
+  });
+
+  it('navigating to an unprocessed page C shows its normal empty state, not PENDING', () => {
+    expect(isCurrentPageProcessing(target, bookId, 40)).toBe(false);
+    const stage = currentPageStage(undefined, isCurrentPageProcessing(target, bookId, 40));
+    expect(stage).toBeNull();
+    expect(isProcessingStage(stage)).toBe(false);
+  });
+
+  it('the target page shows the synthetic PENDING only while its resource is absent', () => {
+    expect(isCurrentPageProcessing(target, bookId, 33)).toBe(true);
+    expect(currentPageStage(undefined, true)).toBe('PENDING');
+    expect(currentPageStage('READY', true)).toBe('READY');
+    expect(currentPageStage('OCR', true)).toBe('OCR');
+  });
+
+  it('completion clears the target so B keeps its own stage with no corruption', () => {
+    expect(isCurrentPageProcessing(null, bookId, 39)).toBe(false);
+    expect(currentPageStage('READY', false)).toBe('READY');
+    expect(currentPageStage(undefined, false)).toBeNull();
+    expect(currentPageStage('READY', false)).not.toBe('PENDING');
+  });
+
+  it('rapid A -> B -> C navigation never inherits a processing stage', () => {
+    for (const page of [33, 34, 35]) {
+      const isCurrent = isCurrentPageProcessing(target, bookId, page);
+      expect(isCurrent).toBe(page === 33);
+      const stage = currentPageStage(page === 33 ? 'PENDING' : 'READY', isCurrent);
+      expect(isProcessingStage(stage)).toBe(page === 33);
+    }
+  });
+
+  it('a persisted active stage on the visible page still shows its overlay', () => {
+    expect(currentPageStage('DETECTING_INTERACTIONS', false)).toBe('DETECTING_INTERACTIONS');
+    expect(isProcessingStage('DETECTING_INTERACTIONS')).toBe(true);
   });
 });
 

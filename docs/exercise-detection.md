@@ -7,6 +7,7 @@ Three detector families exist today:
 - **Fill-in blanks** (this document): printed horizontal answer lines.
 - **Choice markers** ([`choice-interactions.md`](choice-interactions.md)): hollow circular answer targets with numbered option legends.
 - **Choice grids** ([`choice-grid-interactions.md`](choice-grid-interactions.md)): tables of empty answer cells under short column headers, kept distinct from static grammar tables.
+- **Sentence ordering** ([`sentence-ordering-interactions.md`](sentence-ordering-interactions.md)): fragment rows separated by printed dot glyphs that the learner reorders.
 
 All run in the same FastAPI interaction-detection operation against the same unmodified 300 DPI raster and OCR result.
 

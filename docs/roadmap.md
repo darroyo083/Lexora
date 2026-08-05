@@ -72,6 +72,46 @@ PoC 2 is intentionally structural. It detects markers and structures the learner
 
 PoC 3 is intentionally structural. It detects grids and structures one selection per row; it does not know which option is correct, does not extract answer keys, and does not implement grading or explanations.
 
+## PoC 4: Sentence-Ordering Interactions (Complete)
+
+- [x] Detect sentence-ordering prompt rows locally without a VLM (`sentence-ordering-v1`)
+- [x] Use printed separator-dot glyphs (`•`/`·`) in OCR text plus OpenCV dot evidence in each line band
+- [x] Group consecutive prompt rows into exercises; reject prose, matching layouts, grammar boxes, examples, and uniform word banks
+- [x] Persist interaction, exercise, and per-item normalized geometry additively in `PageAnalysis` v0.2
+- [x] Deterministic item IDs (`page-block-row-item-index`); duplicate fragment texts keep distinct identities
+- [x] Render transparent, keyboard-accessible hit areas over each printed fragment
+- [x] Click-to-order UX: fragments append with position badges; click again to remove
+- [x] Floating per-exercise answer card with numbered chips, previous/next prompt, per-prompt reset, and progress
+- [x] Chips support click-to-remove, ArrowLeft/ArrowRight moves, and Delete removal
+- [x] Persist partial and complete `orderedItemIds` answers locally (kind `sentence-ordering`)
+- [x] Fingerprints ignore rotation, zoom, and view state; stale geometry/count invalidates answers
+- [x] Restore orders across navigation and hard refresh; mixed stores with PoC 1-3 answers verified
+- [x] Rotate 0/90/180/270 with upright cards; zoom to 200% with aligned targets
+- [x] Add a distinct sentence-ordering debug overlay
+- [x] Verify primary PDF 33 (4 exercises / 22 prompts), secondary PDF 65, and negatives (11, 16, 29, 30, 15, 21, 22, 8, 9, 10, 100, 120)
+- [x] Hardening: zoom persists across F5; terminal punctuation (`. ? !`) normalized as independent orderable items, attached and standalone OCR forms equivalent, abbreviations (`usw.`/`z.B.`) preserved
+- [x] Hardening: wrapped continuation lines merge into their prompt (PDF 15 exercise 3 = exactly 5 prompts)
+- [x] Hardening: two-column exercises — column structure inferred from geometry (shared print rows), continuations group within their own column, reading order left column top-to-bottom then right column top-to-bottom; indented dialogue rows stay single-column
+- [x] Hardening: collapsed floating bubbles are draggable too — shared click-vs-drag pointer state (5 px threshold), click still expands, release after drag stays collapsed, clamped to the visible reader area
+- [x] Hardening: answer UI moved from floating cards to a side panel outside the PDF (tabbed with Debug, collapsible, keyboard-accessible)
+- [x] Hardening: single-flight processing — one heavy analysis at a time, navigation no longer aborts it, client disconnects logged as expected not as errors
+- [x] Hardening: processing target identity separate from the global lock — only the analyzed page shows the processing shell; other pages render normally with a "Processing page N…" indicator and a disabled Process action, no stale shell on navigation
+- [x] Hardening: PDF 21 hybrid ordering/transformation variant documented as a limitation for a later FreeText interaction
+- [x] Hardening: explicit **Update analysis** action on any `READY` page with persisted analysis reruns OCR + detection on demand (single-flight, no auto-reprocess)
+- [x] Hardening: ordering presentation returns to floating per-exercise bubbles (one expanded at a time, drag handle, collapse/close/reopen) with Dock → right-rail panel → Float round-trip sharing one answer state; smart default position from exercise geometry, session-only drag positions, upright at all rotations/zooms
+
+PoC 4 is intentionally structural. It detects ordering prompts and records the learner's chosen sequence; it does not know the correct order, does not parse the answer key, and does not implement grading or explanations.
+
+### Known follow-up (non-blocking for PoC 5)
+
+- Terminal punctuation (`. ? !`) is now represented as ORDERABLE
+  sentence-ordering items, and that behavior is ACCEPTED for PoC 4. However,
+  punctuation splitting/detection still needs additional refinement on some
+  real workbook pages (edge cases around attached vs. standalone marks,
+  multi-mark runs, and abbreviation-like periods). This is recorded as a
+  known follow-up for later hardening — do NOT treat punctuation detection as
+  fully solved.
+
 ## Planned Product Capabilities
 
 ### Learning tools
@@ -81,6 +121,7 @@ PoC 3 is intentionally structural. It detects grids and structures one selection
 - [x] Interactive graphical fill-in-the-blank placement
 - [x] Interactive choice-marker placement
 - [x] Interactive choice-grid placement
+- [x] Interactive sentence-ordering placement
 - [ ] Exercise correction and explanations
 - [ ] Highlights and annotations
 
@@ -91,6 +132,7 @@ PoC 3 is intentionally structural. It detects grids and structures one selection
 - [x] Graphical fill-in-the-blank placement
 - [x] Choice-marker interactions (`targetId -> optionId`)
 - [x] Choice-grid interactions (`rowId -> selectedColumnOptionId`)
+- [x] Sentence-ordering interactions (`interactionId -> orderedItemIds`)
 - [ ] Matching interactions (`leftItemId -> rightItemId`)
 - [ ] Exercise correction and explanations
 

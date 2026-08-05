@@ -94,8 +94,8 @@ PoC 3 adds `choiceGrids` and `choiceGridDetection` with `table-grid-v1` provenan
 - Missing `schemaVersion` is treated as `legacy`.
 - A legacy `READY` page remains readable and is not reprocessed automatically.
 - A v0.2 `READY` page lacking the newest detector output (for example no `choiceGridDetection`) also remains readable; the frontend exposes **Update analysis** to add it.
-- A current v0.2 `READY` page (all detections present) restores through GET only.
-- The frontend exposes **Update analysis** for legacy pages. This explicitly reuses the raster where available and runs the current OCR and interaction pipeline.
+- A current v0.2 `READY` page (all detections present) restores through GET only and still offers an explicit **Update analysis** action.
+- The frontend exposes **Update analysis** for every `READY` page that has persisted analysis. This explicitly reuses the raster where available and runs the current OCR and interaction pipeline; it never runs automatically just because a page was opened.
 
 ## Persistence
 

@@ -1,6 +1,6 @@
 # Lexora Architecture
 
-Lexora is a four-service Docker Compose system that preserves the original PDF as the visual source of truth and adds persisted OCR, interactive blank geometry, choice-marker targets, and choice grids per page. PoC 1 established the pipeline and fill-in blanks, PoC 2 added choice-marker interactions, and PoC 3 added choice-grid interactions.
+Lexora is a four-service Docker Compose system that preserves the original PDF as the visual source of truth and adds persisted OCR, interactive blank geometry, choice-marker targets, choice grids, and sentence-ordering prompts per page. PoC 1 established the pipeline and fill-in blanks, PoC 2 added choice-marker interactions, PoC 3 added choice-grid interactions, and PoC 4 added sentence-ordering interactions.
 
 ## Runtime Topology
 
@@ -31,7 +31,7 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 - Polls persisted coarse stages while the synchronous processing request runs.
 - Shows an in-page analysis overlay with real stage labels while a rendered page is processed, with a CSS-only scan beam that is disabled under `prefers-reduced-motion`.
 - Persists exercise answers (fill-in text and choice option IDs) in versioned `localStorage` keyed by book, page, and stable interaction fingerprint.
-- Reuses `READY` analysis immediately, offers retry for `FAILED`, exposes **Update analysis** for legacy and pre-PoC 2 analyses, and never requests processing merely because a page was opened.
+- Reuses `READY` analysis immediately, offers retry for `FAILED`, exposes an explicit **Update analysis** action for any `READY` page with persisted analysis, and never requests processing merely because a page was opened.
 
 ### Spring Boot Backend
 
@@ -52,7 +52,8 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 - Detects graphical horizontal answer lines with adaptive thresholding, morphology, and OCR spatial context.
 - Detects hollow circular choice markers and numbered option legends with contour analysis and OCR spatial context.
 - Detects interactive choice grids (rows with empty answer cells under short column headers) with line morphology, cell-emptiness checks, and OCR spatial context, while rejecting static/explanatory tables.
-- Returns text, exercise blanks, choice targets/groups, choice grids, normalized geometry, and concise processor metadata.
+- Detects sentence-ordering prompts (fragment rows separated by printed dot glyphs) from OCR text and separator-dot pixel evidence, grouped into exercises, rejecting prose, matching layouts, and uniform word banks.
+- Returns text, exercise blanks, choice targets/groups, choice grids, sentence-ordering prompts, normalized geometry, and concise processor metadata.
 
 PaddleOCR document orientation classification, document unwarping, and text-line orientation are intentionally disabled. Those transforms can change pixel geometry even when output dimensions remain unchanged, which would detach OCR boxes from the original PDF page.
 
@@ -84,7 +85,7 @@ The processing claim is idempotent:
 - Active stage: return the current page; do not start concurrent OCR.
 - Missing page: create and claim it.
 - `FAILED`: clear the failed attempt and claim a retry.
-- Legacy `READY` or pre-PoC 2 v0.2 `READY` (no choice detection): expose an explicit update action; do not reprocess automatically.
+- `READY` with persisted analysis: expose an explicit re-analysis action that claims the page with `refreshAnalysis=true`; never reprocess automatically.
 
 ## Internal Contract
 

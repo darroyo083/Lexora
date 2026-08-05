@@ -1,11 +1,16 @@
 package com.lexora.shared.error;
 
+import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.io.IOException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -30,10 +35,36 @@ public class GlobalExceptionHandler {
         return ApiError.of("BAD_REQUEST", e.getMessage());
     }
 
+    @ExceptionHandler({HttpMessageNotWritableException.class, ClientAbortException.class})
+    public ResponseEntity<ApiError> handleResponseWriteFailure(Exception e) {
+        if (isClientDisconnect(e)) {
+            // The analysis itself was already persisted server-side; only the
+            // response could not be delivered because the browser navigated
+            // away or closed the tab. This is expected, not an application
+            // failure, so it must not surface as an unhandled error.
+            log.info("client disconnected while the response was being written "
+                + "(expected after navigation): {}", e.getMessage());
+            return ResponseEntity.noContent().build();
+        }
+        log.error("unhandled error", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ApiError.of("INTERNAL_ERROR", "An unexpected error occurred"));
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleGeneral(Exception e) {
         log.error("unhandled error", e);
         return ApiError.of("INTERNAL_ERROR", "An unexpected error occurred");
+    }
+
+    static boolean isClientDisconnect(Throwable error) {
+        for (Throwable t = error; t != null; t = t.getCause()) {
+            if (t instanceof ClientAbortException) return true;
+            if (t instanceof IOException && "Broken pipe".equals(t.getMessage())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

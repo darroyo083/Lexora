@@ -113,6 +113,33 @@ class ChoiceGridDetectionMetadata(BaseModel):
     durationMs: int = Field(ge=0)
 
 
+class SentenceOrderingItem(BaseModel):
+    id: str
+    text: str
+    bbox: BBox
+    originalIndex: int = Field(ge=1)
+
+
+class SentenceOrderingInteraction(BaseModel):
+    id: str
+    kind: Literal["sentence-ordering"] = "sentence-ordering"
+    bbox: BBox
+    exerciseId: str
+    promptIndex: int = Field(ge=1)
+    detectionMethod: Literal["sentence-ordering-v1"] = "sentence-ordering-v1"
+    candidateScore: float = Field(ge=0, le=1)
+    nearbyTextSpanIds: list[str] = Field(default_factory=list)
+    items: list[SentenceOrderingItem] = Field(default_factory=list)
+
+
+class SentenceOrderingDetectionMetadata(BaseModel):
+    detectionMethod: Literal["sentence-ordering-v1"] = "sentence-ordering-v1"
+    rawCandidateCount: int = Field(ge=0)
+    acceptedCount: int = Field(ge=0)
+    groupCount: int = Field(ge=0)
+    durationMs: int = Field(ge=0)
+
+
 class PageAnalysis(BaseModel):
     schemaVersion: Literal["0.2.0"] = "0.2.0"
     pageNumber: int = Field(ge=1)
@@ -127,6 +154,8 @@ class PageAnalysis(BaseModel):
     choiceDetection: ChoiceDetectionMetadata | None = None
     choiceGrids: list[ChoiceGrid] = Field(default_factory=list)
     choiceGridDetection: ChoiceGridDetectionMetadata | None = None
+    sentenceOrderings: list[SentenceOrderingInteraction] = Field(default_factory=list)
+    sentenceOrderingDetection: SentenceOrderingDetectionMetadata | None = None
     processor: ProcessorMetadata
 
 

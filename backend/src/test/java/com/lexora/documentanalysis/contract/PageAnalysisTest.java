@@ -212,4 +212,97 @@ class PageAnalysisTest {
         assertThat(serialized.get("exerciseBlanks").isArray()).isTrue();
         assertThat(serialized.get("exerciseBlanks").isEmpty()).isTrue();
     }
+
+    @Test
+    void deserializesSentenceOrderingContract() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":33,
+              "width":2284,
+              "height":3121,
+              "language":"de",
+              "textSpans":[],
+              "exerciseBlanks":[],
+              "blankDetection":null,
+              "choiceGroups":[],
+              "choiceTargets":[],
+              "choiceDetection":null,
+              "choiceGrids":[],
+              "choiceGridDetection":null,
+              "sentenceOrderings":[{
+                "id":"sentence-ordering-33-1-1","kind":"sentence-ordering",
+                "bbox":{"x":0.151,"y":0.078,"width":0.476,"height":0.015},
+                "exerciseId":"sentence-order-exercise-33-1","promptIndex":1,
+                "detectionMethod":"sentence-ordering-v1","candidateScore":0.95,
+                "nearbyTextSpanIds":["span-33-1"],
+                "items":[
+                  {"id":"sentence-ordering-33-1-1-item-1","text":"Am letzten Wochenende","bbox":{"x":0.151,"y":0.078,"width":0.208,"height":0.015},"originalIndex":1},
+                  {"id":"sentence-ordering-33-1-1-item-2","text":"nach Berlin","bbox":{"x":0.359,"y":0.078,"width":0.093,"height":0.015},"originalIndex":2},
+                  {"id":"sentence-ordering-33-1-1-item-3","text":"Anna","bbox":{"x":0.452,"y":0.078,"width":0.053,"height":0.015},"originalIndex":3},
+                  {"id":"sentence-ordering-33-1-1-item-4","text":"ist","bbox":{"x":0.505,"y":0.078,"width":0.030,"height":0.015},"originalIndex":4},
+                  {"id":"sentence-ordering-33-1-1-item-5","text":"gefahren","bbox":{"x":0.535,"y":0.078,"width":0.077,"height":0.015},"originalIndex":5},
+                  {"id":"sentence-ordering-33-1-1-item-6","text":".","bbox":{"x":0.612,"y":0.078,"width":0.015,"height":0.015},"originalIndex":6}
+                ]
+              }],
+              "sentenceOrderingDetection":{"detectionMethod":"sentence-ordering-v1","rawCandidateCount":22,"acceptedCount":22,"groupCount":4,"durationMs":110},
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.sentenceOrderings()).hasSize(1);
+        var interaction = analysis.sentenceOrderings().get(0);
+        assertThat(interaction.id()).isEqualTo("sentence-ordering-33-1-1");
+        assertThat(interaction.kind()).isEqualTo("sentence-ordering");
+        assertThat(interaction.exerciseId()).isEqualTo("sentence-order-exercise-33-1");
+        assertThat(interaction.promptIndex()).isEqualTo(1);
+        assertThat(interaction.detectionMethod()).isEqualTo("sentence-ordering-v1");
+        assertThat(interaction.nearbyTextSpanIds()).containsExactly("span-33-1");
+        assertThat(interaction.items()).hasSize(6);
+        assertThat(interaction.items().get(0).id())
+            .isEqualTo("sentence-ordering-33-1-1-item-1");
+        assertThat(interaction.items().get(0).text()).isEqualTo("Am letzten Wochenende");
+        assertThat(interaction.items().get(0).originalIndex()).isEqualTo(1);
+        assertThat(analysis.sentenceOrderingDetection().acceptedCount()).isEqualTo(22);
+        assertThat(analysis.sentenceOrderingDetection().groupCount()).isEqualTo(4);
+    }
+
+    @Test
+    void version02AnalysisWithoutSentenceOrderingFieldsDefaultsToEmpty() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":2,
+              "width":1200,
+              "height":1600,
+              "language":"de",
+              "textSpans":[],"exerciseBlanks":[],"blankDetection":null,
+              "choiceGroups":[],"choiceTargets":[],"choiceDetection":null,
+              "choiceGrids":[],"choiceGridDetection":null,
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.sentenceOrderings()).isEmpty();
+        assertThat(analysis.sentenceOrderingDetection()).isNull();
+
+        var serialized = json.readTree(json.writeValueAsString(analysis));
+        assertThat(serialized.get("sentenceOrderings").isArray()).isTrue();
+        assertThat(serialized.get("sentenceOrderings").isEmpty()).isTrue();
+        assertThat(serialized.get("sentenceOrderingDetection").isNull()).isTrue();
+    }
+
+    @Test
+    void legacyAnalysisWithoutSentenceOrderingFieldsDefaultsToEmpty() {
+        var analysis = json.readValue("""
+            {
+              "pageNumber":1,"width":800,"height":600,"language":"de",
+              "textSpans":[],"blankDetection":null,
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.sentenceOrderings()).isEmpty();
+        assertThat(analysis.sentenceOrderingDetection()).isNull();
+    }
 }

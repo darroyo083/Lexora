@@ -17,6 +17,8 @@ public record PageAnalysis(
     ChoiceDetectionMetadata choiceDetection,
     List<ChoiceGrid> choiceGrids,
     ChoiceGridDetectionMetadata choiceGridDetection,
+    List<SentenceOrderingInteraction> sentenceOrderings,
+    SentenceOrderingDetectionMetadata sentenceOrderingDetection,
     ProcessorMetadata processor
 ) {
     public PageAnalysis {
@@ -26,6 +28,7 @@ public record PageAnalysis(
         choiceGroups = choiceGroups == null ? List.of() : List.copyOf(choiceGroups);
         choiceTargets = choiceTargets == null ? List.of() : List.copyOf(choiceTargets);
         choiceGrids = choiceGrids == null ? List.of() : List.copyOf(choiceGrids);
+        sentenceOrderings = sentenceOrderings == null ? List.of() : List.copyOf(sentenceOrderings);
     }
 
     public record BBox(double x, double y, double width, double height) {}
@@ -135,6 +138,39 @@ public record PageAnalysis(
     }
 
     public record ChoiceGridDetectionMetadata(
+        String detectionMethod,
+        int rawCandidateCount,
+        int acceptedCount,
+        int groupCount,
+        long durationMs
+    ) {}
+
+    public record SentenceOrderingItem(
+        String id,
+        String text,
+        BBox bbox,
+        int originalIndex
+    ) {}
+
+    public record SentenceOrderingInteraction(
+        String id,
+        String kind,
+        BBox bbox,
+        String exerciseId,
+        int promptIndex,
+        String detectionMethod,
+        double candidateScore,
+        List<String> nearbyTextSpanIds,
+        List<SentenceOrderingItem> items
+    ) {
+        public SentenceOrderingInteraction {
+            nearbyTextSpanIds = nearbyTextSpanIds == null
+                ? List.of() : List.copyOf(nearbyTextSpanIds);
+            items = items == null ? List.of() : List.copyOf(items);
+        }
+    }
+
+    public record SentenceOrderingDetectionMetadata(
         String detectionMethod,
         int rawCandidateCount,
         int acceptedCount,

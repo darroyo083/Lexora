@@ -149,6 +149,38 @@ explanations (Answer Key + Correction is a later PoC).
   side-by-side exercises with horizontally interleaved columns are not
   supported.
 
+## PoC 6: FreeText Interactions (Complete)
+
+- [x] Detect FreeText writing areas locally without a VLM (`free-text-v1`): long thin lines whose print rows are empty, clustered into aligned stacks
+- [x] Explicit FillBlank vs FreeText separation: row-band emptiness + stack structure + prompt proximity; a line claimed by FreeText is removed from `exerciseBlanks` (IoU ≥ 0.5), everything else stays
+- [x] One or two lines accepted only with a printed prompt near the stack; three or more clean parallel lines stand on their own; single un-prompted rules, underlines, footers, decorative rules, tables and grids rejected
+- [x] Persist interaction and per-line normalized geometry additively in `PageAnalysis` v0.2 (no migration, schemaVersion unchanged)
+- [x] Deterministic IDs (`free-text-page-index`, lines `-line-j`)
+- [x] Frontend: single-line response → text input centered on the printed line; multi-line response → one textarea whose line height matches the printed spacing
+- [x] Persist learner text locally (kind `free-text`); fingerprints ignore rotation/zoom/view state; stale geometry or line-count changes invalidate answers
+- [x] Restore answers across navigation and hard refresh; clearing the input persists as empty; mixed stores with PoC 1–5 answers verified
+- [x] Overlay rotates 0/90/180/270 and zooms 75%–200% with the shared normalized geometry; typing/selection/editing work; focus ring and aria-labels present
+- [x] Add a distinct free-text debug overlay (writing area, per-line rects, id/score/line count)
+- [x] Verify primary PDF 28 (1 interaction, 10 response lines) and secondaries 149, 104, 21, 29, 182, 132; 22 negative pages with zero false positives; all prior interaction types unchanged
+- [x] Detector runtime ~150–330 ms/page on CPU (PaddleOCR excluded)
+
+PoC 6 is intentionally structural. It detects writing areas and records the
+learner's own text; it does NOT know the correct answer, does not parse the
+answer key, and does not implement grading or explanations (Answer Key +
+Correction is a later PoC). Manual acceptance covered representative FreeText
+pages, persistence, zoom, rotation, and coexistence with earlier interaction
+types. The broad reader UX overhaul belongs to PoC 6.5.
+
+### Known follow-up (for later hardening and PoC 6.5)
+
+- SentenceOrdering has false positives on some layouts. This is existing
+  detector-hardening work; PoC 6 did not change SentenceOrdering behavior.
+- Hybrid sentence construction, conjugation, and rewriting exercises need
+  better interaction modeling than the current SentenceOrdering abstraction.
+- PoC 6.5 should add explicit convenient previous/next or incremental page
+  navigation controls as part of the professional reader redesign. Do not
+  restore browser-native number-input spinners.
+
 ## Planned Product Capabilities
 
 ### Learning tools
@@ -160,6 +192,7 @@ explanations (Answer Key + Correction is a later PoC).
 - [x] Interactive choice-grid placement
 - [x] Interactive sentence-ordering placement
 - [x] Interactive matching placement (one-to-one)
+- [x] Interactive free-text writing placement
 - [ ] Exercise correction and explanations
 - [ ] Highlights and annotations
 
@@ -172,6 +205,7 @@ explanations (Answer Key + Correction is a later PoC).
 - [x] Choice-grid interactions (`rowId -> selectedColumnOptionId`)
 - [x] Sentence-ordering interactions (`interactionId -> orderedItemIds`)
 - [x] Matching interactions (`leftItemId -> rightItemId`, one-to-one)
+- [x] FreeText interactions (`interactionId -> learner text`)
 - [ ] Matching variants: one-to-many, many-to-many, image-to-text
 - [ ] Exercise correction and explanations
 

@@ -3,6 +3,9 @@ from app.schemas.page_analysis import (
     BBox,
     BlankDetectionMetadata,
     ExerciseBlank,
+    FreeTextDetectionMetadata,
+    FreeTextInteraction,
+    FreeTextLine,
     TextSpan,
     PageAnalysis,
     ProcessorMetadata,
@@ -104,3 +107,67 @@ class TestSchemas:
             },
         )
         assert resp.pageNumber == 3
+
+    def test_free_text_fields_round_trip(self):
+        pa = PageAnalysis(
+            pageNumber=3,
+            width=2480,
+            height=3508,
+            language="de",
+            textSpans=[],
+            freeTextInteractions=[
+                FreeTextInteraction(
+                    id="free-text-3-1",
+                    bbox=BBox(x=0.15, y=0.3, width=0.7, height=0.07),
+                    candidateScore=0.91,
+                    nearbyTextSpanIds=["span-3-1"],
+                    responseLines=[
+                        FreeTextLine(
+                            id="free-text-3-1-line-1",
+                            bbox=BBox(x=0.15, y=0.3, width=0.7, height=0.001),
+                        ),
+                        FreeTextLine(
+                            id="free-text-3-1-line-2",
+                            bbox=BBox(x=0.15, y=0.34, width=0.7, height=0.001),
+                        ),
+                    ],
+                )
+            ],
+            freeTextDetection=FreeTextDetectionMetadata(
+                rawCandidateCount=3,
+                acceptedCount=1,
+                groupCount=1,
+                durationMs=12,
+            ),
+            processor=ProcessorMetadata(
+                engine="test",
+                engineVersion="1",
+                model="fake",
+                language="de",
+                durationMs=1,
+            ),
+        )
+        data = json.loads(pa.model_dump_json())
+        assert data["freeTextInteractions"][0]["kind"] == "free-text"
+        assert data["freeTextInteractions"][0]["detectionMethod"] == "free-text-v1"
+        assert data["freeTextInteractions"][0]["responseLines"][1]["id"] == "free-text-3-1-line-2"
+        assert data["freeTextDetection"]["groupCount"] == 1
+
+    def test_free_text_fields_default_to_empty(self):
+        pa = PageAnalysis(
+            pageNumber=3,
+            width=2480,
+            height=3508,
+            language="de",
+            textSpans=[],
+            processor=ProcessorMetadata(
+                engine="test",
+                engineVersion="1",
+                model="fake",
+                language="de",
+                durationMs=1,
+            ),
+        )
+        data = json.loads(pa.model_dump_json())
+        assert data["freeTextInteractions"] == []
+        assert data["freeTextDetection"] is None

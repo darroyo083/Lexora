@@ -169,6 +169,29 @@ class MatchingDetectionMetadata(BaseModel):
     durationMs: int = Field(ge=0)
 
 
+class FreeTextLine(BaseModel):
+    id: str
+    bbox: BBox
+
+
+class FreeTextInteraction(BaseModel):
+    id: str
+    kind: Literal["free-text"] = "free-text"
+    bbox: BBox
+    detectionMethod: Literal["free-text-v1"] = "free-text-v1"
+    candidateScore: float = Field(ge=0, le=1)
+    nearbyTextSpanIds: list[str] = Field(default_factory=list)
+    responseLines: list[FreeTextLine] = Field(default_factory=list)
+
+
+class FreeTextDetectionMetadata(BaseModel):
+    detectionMethod: Literal["free-text-v1"] = "free-text-v1"
+    rawCandidateCount: int = Field(ge=0)
+    acceptedCount: int = Field(ge=0)
+    groupCount: int = Field(ge=0)
+    durationMs: int = Field(ge=0)
+
+
 class PageAnalysis(BaseModel):
     schemaVersion: Literal["0.2.0"] = "0.2.0"
     pageNumber: int = Field(ge=1)
@@ -187,6 +210,8 @@ class PageAnalysis(BaseModel):
     sentenceOrderingDetection: SentenceOrderingDetectionMetadata | None = None
     matchingInteractions: list[MatchingInteraction] = Field(default_factory=list)
     matchingDetection: MatchingDetectionMetadata | None = None
+    freeTextInteractions: list[FreeTextInteraction] = Field(default_factory=list)
+    freeTextDetection: FreeTextDetectionMetadata | None = None
     processor: ProcessorMetadata
 
 

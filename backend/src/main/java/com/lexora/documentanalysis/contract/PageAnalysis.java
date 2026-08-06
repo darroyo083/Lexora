@@ -21,6 +21,8 @@ public record PageAnalysis(
     SentenceOrderingDetectionMetadata sentenceOrderingDetection,
     List<MatchingInteraction> matchingInteractions,
     MatchingDetectionMetadata matchingDetection,
+    List<FreeTextInteraction> freeTextInteractions,
+    FreeTextDetectionMetadata freeTextDetection,
     ProcessorMetadata processor
 ) {
     public PageAnalysis {
@@ -33,6 +35,8 @@ public record PageAnalysis(
         sentenceOrderings = sentenceOrderings == null ? List.of() : List.copyOf(sentenceOrderings);
         matchingInteractions = matchingInteractions == null
             ? List.of() : List.copyOf(matchingInteractions);
+        freeTextInteractions = freeTextInteractions == null
+            ? List.of() : List.copyOf(freeTextInteractions);
     }
 
     public record BBox(double x, double y, double width, double height) {}
@@ -216,6 +220,36 @@ public record PageAnalysis(
     }
 
     public record MatchingDetectionMetadata(
+        String detectionMethod,
+        int rawCandidateCount,
+        int acceptedCount,
+        int groupCount,
+        long durationMs
+    ) {}
+
+    public record FreeTextLine(
+        String id,
+        BBox bbox
+    ) {}
+
+    public record FreeTextInteraction(
+        String id,
+        String kind,
+        BBox bbox,
+        String detectionMethod,
+        double candidateScore,
+        List<String> nearbyTextSpanIds,
+        List<FreeTextLine> responseLines
+    ) {
+        public FreeTextInteraction {
+            nearbyTextSpanIds = nearbyTextSpanIds == null
+                ? List.of() : List.copyOf(nearbyTextSpanIds);
+            responseLines = responseLines == null
+                ? List.of() : List.copyOf(responseLines);
+        }
+    }
+
+    public record FreeTextDetectionMetadata(
         String detectionMethod,
         int rawCandidateCount,
         int acceptedCount,

@@ -470,4 +470,242 @@ class PageAnalysisTest {
         assertThat(analysis.matchingInteractions()).isEmpty();
         assertThat(analysis.matchingDetection()).isNull();
     }
+
+    @Test
+    void deserializesFreeTextContract() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":28,
+              "width":2284,
+              "height":3121,
+              "language":"de",
+              "textSpans":[],
+              "exerciseBlanks":[],
+              "blankDetection":null,
+              "choiceGroups":[],
+              "choiceTargets":[],
+              "choiceDetection":null,
+              "choiceGrids":[],
+              "choiceGridDetection":null,
+              "sentenceOrderings":[],
+              "sentenceOrderingDetection":null,
+              "matchingInteractions":[],
+              "matchingDetection":null,
+              "freeTextInteractions":[{
+                "id":"free-text-28-1","kind":"free-text",
+                "bbox":{"x":0.451,"y":0.572,"width":0.468,"height":0.216},
+                "detectionMethod":"free-text-v1","candidateScore":0.9333,
+                "nearbyTextSpanIds":["span-28-1"],
+                "responseLines":[
+                  {"id":"free-text-28-1-line-1","bbox":{"x":0.451,"y":0.572,"width":0.468,"height":0.0013}},
+                  {"id":"free-text-28-1-line-2","bbox":{"x":0.451,"y":0.596,"width":0.468,"height":0.0013}}
+                ]
+              }],
+              "freeTextDetection":{"detectionMethod":"free-text-v1","rawCandidateCount":11,"acceptedCount":1,"groupCount":1,"durationMs":88},
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.freeTextInteractions()).hasSize(1);
+        var interaction = analysis.freeTextInteractions().get(0);
+        assertThat(interaction.id()).isEqualTo("free-text-28-1");
+        assertThat(interaction.kind()).isEqualTo("free-text");
+        assertThat(interaction.detectionMethod()).isEqualTo("free-text-v1");
+        assertThat(interaction.bbox().y()).isEqualTo(0.572);
+        assertThat(interaction.nearbyTextSpanIds()).containsExactly("span-28-1");
+        assertThat(interaction.responseLines()).hasSize(2);
+        assertThat(interaction.responseLines().get(0).id())
+            .isEqualTo("free-text-28-1-line-1");
+        assertThat(interaction.responseLines().get(1).bbox().y()).isEqualTo(0.596);
+        assertThat(analysis.freeTextDetection().acceptedCount()).isEqualTo(1);
+        assertThat(analysis.freeTextDetection().groupCount()).isEqualTo(1);
+    }
+
+    @Test
+    void freeTextContractRoundTripsThroughSerialization() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":28,
+              "width":2284,
+              "height":3121,
+              "language":"de",
+              "textSpans":[],
+              "exerciseBlanks":[],
+              "blankDetection":null,
+              "choiceGroups":[],
+              "choiceTargets":[],
+              "choiceDetection":null,
+              "choiceGrids":[],
+              "choiceGridDetection":null,
+              "sentenceOrderings":[],
+              "sentenceOrderingDetection":null,
+              "matchingInteractions":[],
+              "matchingDetection":null,
+              "freeTextInteractions":[{
+                "id":"free-text-28-1","kind":"free-text",
+                "bbox":{"x":0.451,"y":0.572,"width":0.468,"height":0.216},
+                "detectionMethod":"free-text-v1","candidateScore":0.9333,
+                "nearbyTextSpanIds":[],
+                "responseLines":[{
+                  "id":"free-text-28-1-line-1",
+                  "bbox":{"x":0.451,"y":0.572,"width":0.468,"height":0.0013}
+                }]
+              }],
+              "freeTextDetection":{"detectionMethod":"free-text-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":88},
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        var serialized = json.writeValueAsString(analysis);
+        var restored = json.readValue(serialized, PageAnalysis.class);
+
+        assertThat(restored.freeTextInteractions()).hasSize(1);
+        assertThat(restored.freeTextInteractions().get(0).id())
+            .isEqualTo(analysis.freeTextInteractions().get(0).id());
+        assertThat(restored.freeTextInteractions().get(0).responseLines().get(0).bbox())
+            .isEqualTo(analysis.freeTextInteractions().get(0).responseLines().get(0).bbox());
+        assertThat(restored.freeTextDetection().durationMs())
+            .isEqualTo(analysis.freeTextDetection().durationMs());
+        assertThat(restored.matchingInteractions()).isEmpty();
+        assertThat(restored.sentenceOrderings()).isEmpty();
+    }
+
+    @Test
+    void deserializesMultipleFreeTextInteractions() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":149,
+              "width":2284,
+              "height":3121,
+              "language":"de",
+              "textSpans":[],
+              "exerciseBlanks":[],
+              "blankDetection":null,
+              "choiceGroups":[],
+              "choiceTargets":[],
+              "choiceDetection":null,
+              "choiceGrids":[],
+              "choiceGridDetection":null,
+              "sentenceOrderings":[],
+              "sentenceOrderingDetection":null,
+              "matchingInteractions":[],
+              "matchingDetection":null,
+              "freeTextInteractions":[
+                {"id":"free-text-149-1","kind":"free-text",
+                 "bbox":{"x":0.181,"y":0.348,"width":0.74,"height":0.12},
+                 "detectionMethod":"free-text-v1","candidateScore":0.91,
+                 "nearbyTextSpanIds":[],"responseLines":[]},
+                {"id":"free-text-149-2","kind":"free-text",
+                 "bbox":{"x":0.181,"y":0.55,"width":0.74,"height":0.1},
+                 "detectionMethod":"free-text-v1","candidateScore":0.85,
+                 "nearbyTextSpanIds":[],"responseLines":[]}
+              ],
+              "freeTextDetection":{"detectionMethod":"free-text-v1","rawCandidateCount":2,"acceptedCount":2,"groupCount":2,"durationMs":77},
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.freeTextInteractions()).hasSize(2);
+        assertThat(analysis.freeTextInteractions().get(0).id()).isEqualTo("free-text-149-1");
+        assertThat(analysis.freeTextInteractions().get(1).id()).isEqualTo("free-text-149-2");
+        assertThat(analysis.freeTextDetection().acceptedCount()).isEqualTo(2);
+    }
+
+    @Test
+    void version02AnalysisWithoutFreeTextFieldsDefaultsToEmpty() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":2,
+              "width":1200,
+              "height":1600,
+              "language":"de",
+              "textSpans":[],"exerciseBlanks":[],"blankDetection":null,
+              "choiceGroups":[],"choiceTargets":[],"choiceDetection":null,
+              "choiceGrids":[],"choiceGridDetection":null,
+              "sentenceOrderings":[],"sentenceOrderingDetection":null,
+              "matchingInteractions":[],"matchingDetection":null,
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.freeTextInteractions()).isEmpty();
+        assertThat(analysis.freeTextDetection()).isNull();
+
+        var serialized = json.readTree(json.writeValueAsString(analysis));
+        assertThat(serialized.get("freeTextInteractions").isArray()).isTrue();
+        assertThat(serialized.get("freeTextInteractions").isEmpty()).isTrue();
+        assertThat(serialized.get("freeTextDetection").isNull()).isTrue();
+    }
+
+    @Test
+    void legacyAnalysisWithoutFreeTextFieldsDefaultsToEmpty() {
+        var analysis = json.readValue("""
+            {
+              "pageNumber":1,"width":800,"height":600,"language":"de",
+              "textSpans":[],"blankDetection":null,
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.freeTextInteractions()).isEmpty();
+        assertThat(analysis.freeTextDetection()).isNull();
+    }
+
+    @Test
+    void coexistingFreeTextAndOtherInteractionsRoundTrip() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":49,
+              "width":2284,
+              "height":3121,
+              "language":"de",
+              "textSpans":[],
+              "exerciseBlanks":[{
+                "id":"blank-49-1","kind":"fill-in-line",
+                "lineBbox":{"x":0.4,"y":0.2,"width":0.2,"height":0.01},
+                "interactionBbox":{"x":0.4,"y":0.18,"width":0.2,"height":0.05},
+                "detectionMethod":"horizontal-line-v1","candidateScore":0.91,
+                "nearbyTextSpanIds":[]
+              }],
+              "blankDetection":{"detectionMethod":"horizontal-line-v1","rawCandidateCount":2,"acceptedCount":1,"durationMs":4},
+              "choiceGroups":[],
+              "choiceTargets":[],
+              "choiceDetection":null,
+              "choiceGrids":[],
+              "choiceGridDetection":null,
+              "sentenceOrderings":[],
+              "sentenceOrderingDetection":null,
+              "matchingInteractions":[{
+                "id":"matching-49-1","kind":"matching",
+                "bbox":{"x":0.175,"y":0.406,"width":0.715,"height":0.135},
+                "detectionMethod":"matching-v1","candidateScore":0.9875,
+                "cardinality":"one-to-one",
+                "nearbyTextSpanIds":[],"leftItems":[],"rightItems":[]
+              }],
+              "matchingDetection":{"detectionMethod":"matching-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":88},
+              "freeTextInteractions":[{
+                "id":"free-text-49-1","kind":"free-text",
+                "bbox":{"x":0.451,"y":0.572,"width":0.468,"height":0.216},
+                "detectionMethod":"free-text-v1","candidateScore":0.93,
+                "nearbyTextSpanIds":[],"responseLines":[]
+              }],
+              "freeTextDetection":{"detectionMethod":"free-text-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":88},
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        var serialized = json.writeValueAsString(analysis);
+        var restored = json.readValue(serialized, PageAnalysis.class);
+
+        assertThat(restored.exerciseBlanks()).hasSize(1);
+        assertThat(restored.matchingInteractions()).hasSize(1);
+        assertThat(restored.freeTextInteractions()).hasSize(1);
+        assertThat(restored.freeTextInteractions().get(0).id()).isEqualTo("free-text-49-1");
+        assertThat(restored.matchingInteractions().get(0).id()).isEqualTo("matching-49-1");
+    }
 }

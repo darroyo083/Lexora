@@ -51,10 +51,17 @@ export function normalizePageAnalysis(value: unknown): PageAnalysis {
 }
 
 export function parsePage(page: RawBookPage): BookPageResource {
-  return {
-    ...page,
-    analysis: page.analysis ? normalizePageAnalysis(JSON.parse(page.analysis)) : null,
-  };
+  let analysis: PageAnalysis | null = null;
+  if (page.analysis) {
+    try {
+      analysis = normalizePageAnalysis(JSON.parse(page.analysis));
+    } catch {
+      console.warn(
+        `Unparseable analysis for page ${page.pageNumber} of book ${page.bookId}; treating it as absent`,
+      );
+    }
+  }
+  return { ...page, analysis };
 }
 
 export type PageProcessAction = 'process' | 'update' | 'none';
@@ -73,6 +80,20 @@ export async function getBookPages(
   if (!res.ok) throw new Error(`Loading pages failed: ${res.status}`);
   const pages: RawBookPage[] = await res.json();
   return pages.map(parsePage);
+}
+
+export async function getBookPage(
+  bookId: string,
+  pageNumber: number,
+  signal?: AbortSignal,
+): Promise<BookPageResource> {
+  const res = await fetch(`/api/books/${bookId}/pages/${pageNumber}`, { signal });
+  if (!res.ok) {
+    const error = new Error(`Loading page failed: ${res.status}`) as Error & { status?: number };
+    error.status = res.status;
+    throw error;
+  }
+  return parsePage(await (res.json() as Promise<RawBookPage>));
 }
 
 export async function processBookPage(

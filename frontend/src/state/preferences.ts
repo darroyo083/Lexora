@@ -3,9 +3,13 @@ export function readBooleanPreference(
   fallback: boolean,
   storage: Pick<Storage, 'getItem'> = localStorage,
 ): boolean {
-  const value = storage.getItem(key);
-  if (value === null) return fallback;
-  return value === 'true';
+  try {
+    const value = storage.getItem(key);
+    if (value === null) return fallback;
+    return value === 'true';
+  } catch {
+    return fallback;
+  }
 }
 
 export function writeBooleanPreference(
@@ -21,7 +25,11 @@ export const ORDERING_MODE_KEY = 'lexora.orderingMode';
 export function readOrderingModePreference(
   storage: Pick<Storage, 'getItem'> = localStorage,
 ): 'floating' | 'docked' {
-  return storage.getItem(ORDERING_MODE_KEY) === 'docked' ? 'docked' : 'floating';
+  try {
+    return storage.getItem(ORDERING_MODE_KEY) === 'docked' ? 'docked' : 'floating';
+  } catch {
+    return 'floating';
+  }
 }
 
 export function writeOrderingModePreference(

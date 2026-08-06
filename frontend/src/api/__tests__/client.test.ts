@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  getBookPage,
   getBookPages,
   getPageProcessAction,
   processBookPage,
@@ -209,5 +210,49 @@ describe('page API client', () => {
     expect(restored.analysis?.choiceDetection).toBeNull();
     expect(restored.analysis?.choiceGrids).toEqual([]);
     expect(restored.analysis?.choiceGridDetection).toBeNull();
+  });
+
+  it('loads a single page resource from its dedicated endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(rawPage), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const page = await getBookPage('book-id', 10);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/books/book-id/pages/10', { signal: undefined });
+    expect(page.pageNumber).toBe(10);
+    expect(page.processingStatus).toBe('READY');
+    expect(page.analysis?.textSpans).toHaveLength(1);
+  });
+
+  it('surfaces the HTTP status for a missing single page', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(null, { status: 404 }),
+    ));
+
+    const error = await getBookPage('book-id', 10).then(
+      () => null,
+      (caught: unknown) => caught as Error & { status?: number },
+    );
+
+    expect(error).not.toBeNull();
+    expect(error?.status).toBe(404);
+    expect(error?.message).toContain('404');
+  });
+
+  it('does not let one corrupted analysis JSON break the page list', async () => {
+    const corrupted = { ...rawPage, pageNumber: 11, analysis: '{not json' };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([rawPage, corrupted]), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const pages = await getBookPages('book-id');
+
+    expect(pages).toHaveLength(2);
+    expect(pages[0].analysis?.textSpans).toHaveLength(1);
+    expect(pages[1].processingStatus).toBe('READY');
+    expect(pages[1].analysis).toBeNull();
   });
 });

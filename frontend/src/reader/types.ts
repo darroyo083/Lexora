@@ -130,6 +130,35 @@ export interface SentenceOrderingDetectionMetadata {
   durationMs: number;
 }
 
+export interface MatchingItem {
+  id: string;
+  label: string;
+  text: string;
+  bbox: BBox;
+  anchorBbox: BBox | null;
+  nearbyTextSpanIds: string[];
+}
+
+export interface MatchingInteraction {
+  id: string;
+  kind: 'matching';
+  bbox: BBox;
+  detectionMethod: 'matching-v1';
+  candidateScore: number;
+  cardinality: 'one-to-one';
+  nearbyTextSpanIds: string[];
+  leftItems: MatchingItem[];
+  rightItems: MatchingItem[];
+}
+
+export interface MatchingDetectionMetadata {
+  detectionMethod: 'matching-v1';
+  rawCandidateCount: number;
+  acceptedCount: number;
+  groupCount: number;
+  durationMs: number;
+}
+
 export interface PageAnalysis {
   schemaVersion: string;
   pageNumber: number;
@@ -146,5 +175,7 @@ export interface PageAnalysis {
   choiceGridDetection: ChoiceGridDetectionMetadata | null;
   sentenceOrderings: SentenceOrderingInteraction[];
   sentenceOrderingDetection: SentenceOrderingDetectionMetadata | null;
+  matchingInteractions: MatchingInteraction[];
+  matchingDetection: MatchingDetectionMetadata | null;
   processor: ProcessorMetadata;
 }

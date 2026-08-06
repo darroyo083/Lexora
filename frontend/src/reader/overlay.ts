@@ -1,4 +1,4 @@
-import type { BBox, ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, SentenceOrderingInteraction, TextSpan } from './types';
+import type { BBox, ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './types';
 import { rotateBBox, type PageRotation } from './rotation';
 
 export interface PageInteractionState {
@@ -8,6 +8,7 @@ export interface PageInteractionState {
   choiceGroups: Record<string, ChoiceGroup>;
   grids: ChoiceGrid[];
   sentenceOrderings: SentenceOrderingInteraction[];
+  matchings: MatchingInteraction[];
   answers: Record<string, string>;
   schemaVersion: string;
   selectedSpan: TextSpan | null;
@@ -23,6 +24,7 @@ export function emptyPageInteractionState(): PageInteractionState {
     choiceGroups: {},
     grids: [],
     sentenceOrderings: [],
+    matchings: [],
     answers: {},
     schemaVersion: '',
     selectedSpan: null,
@@ -155,4 +157,79 @@ export function groupSentenceOrderings(
     groups[interaction.exerciseId] = list;
   }
   return groups;
+}
+
+export function sortMatchingInteractions(
+  matchings: MatchingInteraction[],
+): MatchingInteraction[] {
+  return [...matchings].sort((a, b) => (
+    a.bbox.y - b.bbox.y
+    || a.bbox.x - b.bbox.x
+    || a.id.localeCompare(b.id, undefined, { numeric: true })
+  ));
+}
+
+/**
+ * Connection endpoint of a matching item in normalized [0,1] coordinates.
+ *
+ * Prefers the printed anchor dot; items whose anchor OCR missed fall back to
+ * the text edge facing the other column, so the connection line never runs
+ * through the item text.
+ */
+export function matchingEndpoint(
+  item: { bbox: BBox; anchorBbox: BBox | null; id: string },
+  side: 'left' | 'right',
+  rotation: PageRotation = 0,
+): { x: number; y: number } {
+  if (item.anchorBbox) {
+    const anchor = rotateBBox(item.anchorBbox, rotation);
+    return {
+      x: anchor.x + anchor.width / 2,
+      y: anchor.y + anchor.height / 2,
+    };
+  }
+  const bbox = rotateBBox(item.bbox, rotation);
+  return side === 'left'
+    ? { x: bbox.x + bbox.width, y: bbox.y + bbox.height / 2 }
+    : { x: bbox.x, y: bbox.y + bbox.height / 2 };
+}
+
+/**
+ * Hit area style for a matching item in the rotated viewport.
+ *
+ * Extends the printed text box toward the item's anchor so the printed
+ * connection dot itself is clickable, with a small pad on the other sides.
+ * Anchors always sit between the two columns, so the extension can never
+ * cross into the opposite column.
+ */
+export function matchingHitStyle(
+  item: { bbox: BBox; anchorBbox: BBox | null },
+  side: 'left' | 'right',
+  rotation: PageRotation = 0,
+) {
+  const bbox = rotateBBox(item.bbox, rotation);
+  const pad = 0.004;
+  let { x, y, width, height } = bbox;
+  if (item.anchorBbox) {
+    const anchor = rotateBBox(item.anchorBbox, rotation);
+    const anchorCenterX = anchor.x + anchor.width / 2;
+    if (side === 'left') {
+      width = Math.max(width, anchorCenterX - x + pad);
+    } else {
+      const right = x + width;
+      x = Math.min(x, anchorCenterX - pad);
+      width = right - x;
+    }
+  } else if (side === 'left') {
+    width += pad * 2;
+  } else {
+    x -= pad * 2;
+    width += pad * 2;
+  }
+  return {
+    left: `${percent(x)}%`,
+    top: `${percent(y)}%`,
+    width: `${percent(width)}%`,
+    height: `${percent(height)}%`,
+  };
 }

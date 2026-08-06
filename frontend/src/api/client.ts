@@ -46,6 +46,8 @@ export function normalizePageAnalysis(value: unknown): PageAnalysis {
     choiceGridDetection: analysis.choiceGridDetection ?? null,
     sentenceOrderings: Array.isArray(analysis.sentenceOrderings) ? analysis.sentenceOrderings : [],
     sentenceOrderingDetection: analysis.sentenceOrderingDetection ?? null,
+    matchingInteractions: Array.isArray(analysis.matchingInteractions) ? analysis.matchingInteractions : [],
+    matchingDetection: analysis.matchingDetection ?? null,
     processor: analysis.processor as PageAnalysis['processor'],
   };
 }

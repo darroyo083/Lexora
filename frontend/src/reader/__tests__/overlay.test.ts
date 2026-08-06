@@ -6,14 +6,16 @@ import {
   choiceSelectorStyle,
   choiceValueStyle,
   emptyPageInteractionState,
+  freeTextInputStyle,
   gridCellHitStyle,
   gridMarkStyle,
   indexChoiceGroups,
   sortChoiceGrids,
   sortChoiceTargets,
   sortExerciseBlanks,
+  sortFreeTextInteractions,
 } from '../overlay';
-import type { ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank } from '../types';
+import type { ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, FreeTextInteraction } from '../types';
 
 function blank(id: string, x: number, y: number): ExerciseBlank {
   return {
@@ -244,11 +246,81 @@ describe('interaction state', () => {
       grids: [],
       sentenceOrderings: [],
       matchings: [],
+      freeTexts: [],
       answers: {},
       schemaVersion: '',
       selectedSpan: null,
       selectedBlank: null,
       selectedChoice: null,
     });
+  });
+});
+
+function freeText(id: string, x: number, y: number, lineCount: number): FreeTextInteraction {
+  const band = 0.0225;
+  return {
+    id,
+    kind: 'free-text',
+    bbox: { x, y, width: 0.6, height: band * lineCount },
+    detectionMethod: 'free-text-v1',
+    candidateScore: 0.9,
+    nearbyTextSpanIds: [],
+    responseLines: Array.from({ length: lineCount }, (_, index) => ({
+      id: `${id}-line-${index + 1}`,
+      bbox: { x, y: y + index * band, width: 0.6, height: 0.0013 },
+    })),
+  };
+}
+
+describe('free-text overlays', () => {
+  it('centers a single-line input on the printed line with a writing band', () => {
+    const interaction = freeText('free-text-1', 0.2, 0.3, 1);
+    expect(freeTextInputStyle(interaction, 1500)).toEqual({
+      left: '20%',
+      top: '29.875%',
+      width: '60%',
+      height: '2.5%',
+      fontSize: '27px',
+      lineHeight: '37.5px',
+    });
+  });
+
+  it('spans a multi-line textarea over the whole writing area with matching line height', () => {
+    const interaction = freeText('free-text-1', 0.2, 0.3, 3);
+    expect(freeTextInputStyle(interaction, 1500)).toEqual({
+      left: '20%',
+      top: '30%',
+      width: '60%',
+      height: '6.75%',
+      fontSize: '24.3px',
+      lineHeight: '33.75px',
+    });
+  });
+
+  it('keeps the writing area attached under 90 rotation', () => {
+    const interaction = freeText('free-text-1', 0.2, 0.3, 3);
+    const style = freeTextInputStyle(interaction, 1500, 90);
+    expect(style.left).toBe('63.25%');
+    expect(style.top).toBe('20%');
+    expect(style.width).toBe('6.75%');
+    expect(style.height).toBe('60%');
+  });
+
+  it('keeps the writing area attached under 270 rotation', () => {
+    const interaction = freeText('free-text-1', 0.2, 0.3, 3);
+    const style = freeTextInputStyle(interaction, 1500, 270);
+    expect(style.left).toBe('30%');
+    expect(style.top).toBe('20%');
+    expect(style.width).toBe('6.75%');
+    expect(style.height).toBe('60%');
+  });
+
+  it('sorts writing areas top-to-bottom with a natural id tie-break', () => {
+    const sorted = sortFreeTextInteractions([
+      freeText('free-text-10', 0.2, 0.5, 3),
+      freeText('free-text-2', 0.2, 0.3, 3),
+      freeText('free-text-1', 0.1, 0.3, 3),
+    ]);
+    expect(sorted.map(({ id }) => id)).toEqual(['free-text-1', 'free-text-2', 'free-text-10']);
   });
 });

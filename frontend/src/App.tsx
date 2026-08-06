@@ -4,13 +4,14 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import PageViewer from './reader/PageViewer';
 import DebugPanel from './reader/DebugPanel';
 import SentenceOrderingPanel from './reader/SentenceOrderingPanel';
-import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './reader/types';
+import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './reader/types';
 import {
   emptyPageInteractionState,
   indexChoiceGroups,
   sortChoiceGrids,
   sortChoiceTargets,
   sortExerciseBlanks,
+  sortFreeTextInteractions,
   sortMatchingInteractions,
   sortSentenceOrderings,
   type PageInteractionState,
@@ -61,6 +62,7 @@ interface PendingPersist {
   grids: ChoiceGrid[];
   sentenceOrderings: SentenceOrderingInteraction[];
   matchings: MatchingInteraction[];
+  freeTexts: FreeTextInteraction[];
   schemaVersion: string;
 }
 
@@ -72,6 +74,7 @@ const SHOW_CHOICE_DETECTION_KEY = 'lexora.showChoiceDetection';
 const SHOW_GRID_DETECTION_KEY = 'lexora.showGridDetection';
 const SHOW_SENTENCE_ORDERING_DETECTION_KEY = 'lexora.showSentenceOrderingDetection';
 const SHOW_MATCHING_DETECTION_KEY = 'lexora.showMatchingDetection';
+const SHOW_FREE_TEXT_DETECTION_KEY = 'lexora.showFreeTextDetection';
 
 export default function App() {
   const [status, setStatus] = useState<Status>(() => (
@@ -102,6 +105,9 @@ export default function App() {
   ));
   const [showMatchingDetection, setShowMatchingDetection] = useState(() => (
     readBooleanPreference(SHOW_MATCHING_DETECTION_KEY, false)
+  ));
+  const [showFreeTextDetection, setShowFreeTextDetection] = useState(() => (
+    readBooleanPreference(SHOW_FREE_TEXT_DETECTION_KEY, false)
   ));
   const [zoom, setZoom] = useState<number>(() => readZoomPreference());
   const [rotation, setRotation] = useState<PageRotation>(0);
@@ -154,6 +160,7 @@ export default function App() {
       pending.grids,
       pending.sentenceOrderings,
       pending.matchings,
+      pending.freeTexts,
       pending.schemaVersion,
     );
   }, []);
@@ -190,6 +197,7 @@ export default function App() {
     const grids = sortChoiceGrids(analysis?.choiceGrids ?? []);
     const sentenceOrderings = sortSentenceOrderings(analysis?.sentenceOrderings ?? []);
     const matchings = sortMatchingInteractions(analysis?.matchingInteractions ?? []);
+    const freeTexts = sortFreeTextInteractions(analysis?.freeTextInteractions ?? []);
     const schemaVersion = analysis?.schemaVersion ?? '';
     const restoredAnswers = nextPage && analysis
       ? readAnswersForPage(
@@ -200,6 +208,7 @@ export default function App() {
           grids,
           sentenceOrderings,
           matchings,
+          freeTexts,
           schemaVersion,
         )
       : {};
@@ -211,6 +220,7 @@ export default function App() {
       grids,
       sentenceOrderings,
       matchings,
+      freeTexts,
       answers: restoredAnswers,
       schemaVersion,
       selectedSpan: null,
@@ -436,6 +446,7 @@ export default function App() {
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
       matchings: interaction.matchings,
+      freeTexts: interaction.freeTexts,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -454,6 +465,7 @@ export default function App() {
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
       matchings: interaction.matchings,
+      freeTexts: interaction.freeTexts,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -476,6 +488,7 @@ export default function App() {
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
       matchings: interaction.matchings,
+      freeTexts: interaction.freeTexts,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -494,6 +507,7 @@ export default function App() {
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
       matchings: interaction.matchings,
+      freeTexts: interaction.freeTexts,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -542,6 +556,7 @@ export default function App() {
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
       matchings: interaction.matchings,
+      freeTexts: interaction.freeTexts,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -782,6 +797,18 @@ export default function App() {
             Show matching detection
           </label>
 
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={showFreeTextDetection}
+              onChange={(event) => {
+                setShowFreeTextDetection(event.target.checked);
+                writeBooleanPreference(SHOW_FREE_TEXT_DETECTION_KEY, event.target.checked);
+              }}
+            />
+            Show free-text detection
+          </label>
+
           {pageStage === 'FAILED' && (
             <span className="status status-error">Failed. Retry is available.</span>
           )}
@@ -807,6 +834,7 @@ export default function App() {
               grids={interaction.grids}
               sentenceOrderings={interaction.sentenceOrderings}
               matchings={interaction.matchings}
+              freeTexts={interaction.freeTexts}
               answers={interaction.answers}
               activeOrderingPromptId={orderingActivePrompt}
               orderingFloat={orderingMode === 'floating' ? {
@@ -827,6 +855,7 @@ export default function App() {
               showGridDetection={showGridDetection}
               showSentenceOrderingDetection={showSentenceOrderingDetection}
               showMatchingDetection={showMatchingDetection}
+              showFreeTextDetection={showFreeTextDetection}
               selectedChoice={interaction.selectedChoice}
               processingStage={pageStage}
               onSpanClick={handleSpanClick}

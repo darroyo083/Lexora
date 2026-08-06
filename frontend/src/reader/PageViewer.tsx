@@ -1,13 +1,14 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
-import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './types';
+import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './types';
 import { bboxPercentageStyle, blankInputStyle, choiceHitStyle, choiceValueStyle, gridCellHitStyle, gridMarkStyle } from './overlay';
 import { normalizeRotation, type PageRotation } from './rotation';
 import ChoiceSelector from './ChoiceSelector';
 import SentenceOrderingOverlay from './SentenceOrderingOverlay';
 import OrderingFloatingLayer from './OrderingFloatingLayer';
 import MatchingOverlay from './MatchingOverlay';
+import FreeTextOverlay from './FreeTextOverlay';
 import type { MatchingSelection } from './matching';
 import {
   isProcessingStage,
@@ -94,6 +95,7 @@ interface Props {
   grids: ChoiceGrid[];
   sentenceOrderings: SentenceOrderingInteraction[];
   matchings: MatchingInteraction[];
+  freeTexts: FreeTextInteraction[];
   answers: Record<string, string>;
   activeOrderingPromptId: string | null;
   orderingFloat?: OrderingFloatControl;
@@ -105,6 +107,7 @@ interface Props {
   showGridDetection: boolean;
   showSentenceOrderingDetection: boolean;
   showMatchingDetection: boolean;
+  showFreeTextDetection: boolean;
   selectedChoice: ChoiceTarget | null;
   processingStage: PageProcessingStatus | null;
   loaderVariant?: LoaderVariant;
@@ -134,6 +137,7 @@ export default function PageViewer({
   grids,
   sentenceOrderings,
   matchings,
+  freeTexts,
   answers,
   activeOrderingPromptId,
   orderingFloat,
@@ -145,6 +149,7 @@ export default function PageViewer({
   showGridDetection,
   showSentenceOrderingDetection,
   showMatchingDetection,
+  showFreeTextDetection,
   selectedChoice,
   processingStage,
   loaderVariant = 'halftone-page',
@@ -525,6 +530,36 @@ export default function PageViewer({
               onReset={onMatchingReset}
             />
           )}
+          {freeTexts.length > 0 && (
+            <FreeTextOverlay
+              freeTexts={freeTexts}
+              answers={answers}
+              spans={spans}
+              viewportHeight={viewportHeight}
+              rotation={rotation}
+              disabled={processing}
+              onFreeTextChange={onAnswerChange}
+            />
+          )}
+          {showFreeTextDetection && freeTexts.map((interaction) => (
+            <div key={`debug-free-text-${interaction.id}`} className="free-text-debug-group">
+              <div
+                className="free-text-exercise-debug"
+                style={bboxPercentageStyle(interaction.bbox, rotation)}
+              >
+                <span>
+                  {interaction.id} | {interaction.candidateScore.toFixed(2)} | {interaction.responseLines.length} lines
+                </span>
+              </div>
+              {interaction.responseLines.map((line) => (
+                <div
+                  key={`debug-free-text-line-${line.id}`}
+                  className="free-text-line-debug"
+                  style={bboxPercentageStyle(line.bbox, rotation)}
+                />
+              ))}
+            </div>
+          ))}
           {showMatchingDetection && matchings.map((interaction) => (
             <div key={`debug-matching-${interaction.id}`} className="matching-debug-group">
               <div

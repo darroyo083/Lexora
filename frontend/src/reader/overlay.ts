@@ -1,4 +1,4 @@
-import type { BBox, ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './types';
+import type { BBox, ChoiceGrid, ChoiceGridCell, ChoiceGroup, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './types';
 import { rotateBBox, type PageRotation } from './rotation';
 
 export interface PageInteractionState {
@@ -9,6 +9,7 @@ export interface PageInteractionState {
   grids: ChoiceGrid[];
   sentenceOrderings: SentenceOrderingInteraction[];
   matchings: MatchingInteraction[];
+  freeTexts: FreeTextInteraction[];
   answers: Record<string, string>;
   schemaVersion: string;
   selectedSpan: TextSpan | null;
@@ -25,6 +26,7 @@ export function emptyPageInteractionState(): PageInteractionState {
     grids: [],
     sentenceOrderings: [],
     matchings: [],
+    freeTexts: [],
     answers: {},
     schemaVersion: '',
     selectedSpan: null,
@@ -167,6 +169,53 @@ export function sortMatchingInteractions(
     || a.bbox.x - b.bbox.x
     || a.id.localeCompare(b.id, undefined, { numeric: true })
   ));
+}
+
+export function sortFreeTextInteractions(
+  freeTexts: FreeTextInteraction[],
+): FreeTextInteraction[] {
+  return [...freeTexts].sort((a, b) => (
+    a.bbox.y - b.bbox.y
+    || a.bbox.x - b.bbox.x
+    || a.id.localeCompare(b.id, undefined, { numeric: true })
+  ));
+}
+
+/**
+ * Input placement for a FreeText writing area.
+ *
+ * Single response line: a single-line input centered on the printed line with
+ * a comfortable page-relative writing band. Multiple lines: one textarea over
+ * the whole writing area whose line height matches the printed line spacing,
+ * so typed text lands on the printed lines and zoom/rotation are handled by
+ * the shared normalized geometry like every other overlay.
+ */
+export function freeTextInputStyle(
+  interaction: FreeTextInteraction,
+  viewportHeight: number,
+  rotation: PageRotation = 0,
+) {
+  const box = rotateBBox(interaction.bbox, rotation);
+  if (interaction.responseLines.length <= 1) {
+    const band = Math.max(0.025, box.height);
+    return {
+      left: `${percent(box.x)}%`,
+      top: `${percent(box.y - (band - box.height) / 2)}%`,
+      width: `${percent(box.width)}%`,
+      height: `${percent(band)}%`,
+      fontSize: `${Math.round(band * viewportHeight * 0.72 * 100) / 100}px`,
+      lineHeight: `${Math.round(band * viewportHeight * 100) / 100}px`,
+    };
+  }
+  const band = box.height / interaction.responseLines.length;
+  return {
+    left: `${percent(box.x)}%`,
+    top: `${percent(box.y)}%`,
+    width: `${percent(box.width)}%`,
+    height: `${percent(box.height)}%`,
+    fontSize: `${Math.round(band * viewportHeight * 0.72 * 100) / 100}px`,
+    lineHeight: `${Math.round(band * viewportHeight * 100) / 100}px`,
+  };
 }
 
 /**

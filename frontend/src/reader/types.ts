@@ -159,6 +159,29 @@ export interface MatchingDetectionMetadata {
   durationMs: number;
 }
 
+export interface FreeTextLine {
+  id: string;
+  bbox: BBox;
+}
+
+export interface FreeTextInteraction {
+  id: string;
+  kind: 'free-text';
+  bbox: BBox;
+  detectionMethod: 'free-text-v1';
+  candidateScore: number;
+  nearbyTextSpanIds: string[];
+  responseLines: FreeTextLine[];
+}
+
+export interface FreeTextDetectionMetadata {
+  detectionMethod: 'free-text-v1';
+  rawCandidateCount: number;
+  acceptedCount: number;
+  groupCount: number;
+  durationMs: number;
+}
+
 export interface PageAnalysis {
   schemaVersion: string;
   pageNumber: number;
@@ -177,5 +200,7 @@ export interface PageAnalysis {
   sentenceOrderingDetection: SentenceOrderingDetectionMetadata | null;
   matchingInteractions: MatchingInteraction[];
   matchingDetection: MatchingDetectionMetadata | null;
+  freeTextInteractions: FreeTextInteraction[];
+  freeTextDetection: FreeTextDetectionMetadata | null;
   processor: ProcessorMetadata;
 }

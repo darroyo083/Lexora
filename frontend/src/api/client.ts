@@ -48,6 +48,8 @@ export function normalizePageAnalysis(value: unknown): PageAnalysis {
     sentenceOrderingDetection: analysis.sentenceOrderingDetection ?? null,
     matchingInteractions: Array.isArray(analysis.matchingInteractions) ? analysis.matchingInteractions : [],
     matchingDetection: analysis.matchingDetection ?? null,
+    freeTextInteractions: Array.isArray(analysis.freeTextInteractions) ? analysis.freeTextInteractions : [],
+    freeTextDetection: analysis.freeTextDetection ?? null,
     processor: analysis.processor as PageAnalysis['processor'],
   };
 }

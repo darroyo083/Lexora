@@ -210,6 +210,49 @@ describe('page API client', () => {
     expect(restored.analysis?.choiceDetection).toBeNull();
     expect(restored.analysis?.choiceGrids).toEqual([]);
     expect(restored.analysis?.choiceGridDetection).toBeNull();
+    expect(restored.analysis?.freeTextInteractions).toEqual([]);
+    expect(restored.analysis?.freeTextDetection).toBeNull();
+  });
+
+  it('normalizes free-text fields into the page analysis', async () => {
+    const freeTextPage = {
+      ...rawPage,
+      analysis: JSON.stringify({
+        schemaVersion: '0.2.0',
+        pageNumber: 28,
+        width: 2284,
+        height: 3121,
+        language: 'de',
+        textSpans,
+        exerciseBlanks: [],
+        blankDetection: {},
+        freeTextInteractions: [{
+          id: 'free-text-28-1',
+          kind: 'free-text',
+          bbox: { x: 0.451, y: 0.572, width: 0.468, height: 0.216 },
+          detectionMethod: 'free-text-v1',
+          candidateScore: 0.93,
+          nearbyTextSpanIds: ['span-1'],
+          responseLines: [{
+            id: 'free-text-28-1-line-1',
+            bbox: { x: 0.451, y: 0.572, width: 0.468, height: 0.0013 },
+          }],
+        }],
+        freeTextDetection: { detectionMethod: 'free-text-v1', rawCandidateCount: 1, acceptedCount: 1, groupCount: 1, durationMs: 88 },
+        processor: {},
+      }),
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([freeTextPage]), { status: 200 }),
+    ));
+
+    const [restored] = await getBookPages('book-id');
+
+    expect(restored.analysis?.freeTextInteractions).toHaveLength(1);
+    expect(restored.analysis?.freeTextInteractions[0].id).toBe('free-text-28-1');
+    expect(restored.analysis?.freeTextInteractions[0].responseLines[0].id)
+      .toBe('free-text-28-1-line-1');
+    expect(restored.analysis?.freeTextDetection?.acceptedCount).toBe(1);
   });
 
   it('loads a single page resource from its dedicated endpoint', async () => {

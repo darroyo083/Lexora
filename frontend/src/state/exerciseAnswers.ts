@@ -1,11 +1,11 @@
-import type { ChoiceGrid, ChoiceGridRow, ChoiceTarget, ExerciseBlank, MatchingInteraction, SentenceOrderingInteraction } from '../reader/types';
+import type { ChoiceGrid, ChoiceGridRow, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction } from '../reader/types';
 
 export const EXERCISE_ANSWERS_KEY = 'lexora.exerciseAnswers.v1';
 export const EXERCISE_ANSWERS_VERSION = 1;
 
 export interface StoredAnswer {
   fingerprint: string;
-  kind: 'fill-blank' | 'choice' | 'choice-grid' | 'sentence-ordering' | 'matching';
+  kind: 'fill-blank' | 'choice' | 'choice-grid' | 'sentence-ordering' | 'matching' | 'free-text';
   value: string;
   updatedAt: string;
 }
@@ -91,6 +91,21 @@ export function matchingFingerprint(
   ].join('|');
 }
 
+export function freeTextFingerprint(
+  interaction: FreeTextInteraction,
+  schemaVersion: string,
+): string {
+  return [
+    schemaVersion,
+    interaction.detectionMethod,
+    interaction.bbox.x.toFixed(4),
+    interaction.bbox.y.toFixed(4),
+    interaction.bbox.width.toFixed(4),
+    interaction.bbox.height.toFixed(4),
+    String(interaction.responseLines.length),
+  ].join('|');
+}
+
 export function loadAnswerStore(
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): AnswerStore {
@@ -123,6 +138,7 @@ export function readAnswersForPage(
   grids: ChoiceGrid[],
   sentenceOrderings: SentenceOrderingInteraction[],
   matchings: MatchingInteraction[],
+  freeTexts: FreeTextInteraction[],
   schemaVersion: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): Record<string, string> {
@@ -136,6 +152,7 @@ export function readAnswersForPage(
   );
   const orderingIds = new Map(sentenceOrderings.map((o) => [o.id, o]));
   const matchingIds = new Map(matchings.map((m) => [m.id, m]));
+  const freeTextIds = new Map(freeTexts.map((f) => [f.id, f]));
   const result: Record<string, string> = {};
   for (const [interactionId, stored] of Object.entries(byPage)) {
     const blank = blankIds.get(interactionId);
@@ -175,6 +192,12 @@ export function readAnswersForPage(
         continue;
       }
       if (stored.kind === 'matching') result[interactionId] = stored.value;
+      continue;
+    }
+    const freeText = freeTextIds.get(interactionId);
+    if (freeText) {
+      if (stored.fingerprint !== freeTextFingerprint(freeText, schemaVersion)) continue;
+      if (stored.kind === 'free-text') result[interactionId] = stored.value;
     }
   }
   return result;
@@ -189,6 +212,7 @@ export function writeAnswersForPage(
   grids: ChoiceGrid[],
   sentenceOrderings: SentenceOrderingInteraction[],
   matchings: MatchingInteraction[],
+  freeTexts: FreeTextInteraction[],
   schemaVersion: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): void {
@@ -200,6 +224,7 @@ export function writeAnswersForPage(
   );
   const orderingsById = new Map(sentenceOrderings.map((o) => [o.id, o]));
   const matchingsById = new Map(matchings.map((m) => [m.id, m]));
+  const freeTextsById = new Map(freeTexts.map((f) => [f.id, f]));
   const nextPage: PageAnswers = {};
   const previous = findAnswersByPage(store, bookId, pageNumber) ?? {};
   const ids = new Set([
@@ -254,6 +279,16 @@ export function writeAnswersForPage(
       nextPage[interactionId] = {
         fingerprint: matchingFingerprint(matching, schemaVersion),
         kind: 'matching',
+        value,
+        updatedAt: new Date().toISOString(),
+      };
+      continue;
+    }
+    const freeText = freeTextsById.get(interactionId);
+    if (freeText) {
+      nextPage[interactionId] = {
+        fingerprint: freeTextFingerprint(freeText, schemaVersion),
+        kind: 'free-text',
         value,
         updatedAt: new Date().toISOString(),
       };

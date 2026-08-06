@@ -6,6 +6,15 @@ export const ACTIVE_STAGES: PageProcessingStatus[] = [
 
 export const PROCESSING_MESSAGE_INTERVAL_MS = 3000;
 
+/**
+ * After F5 the in-flight browser POST is gone but the backend job may still
+ * be running. A read-only tracker poll follows an active-stage current page
+ * to its terminal state so the restored page does not stay stuck in a shell
+ * after the backend actually finished.
+ */
+export const RECOVERY_POLL_INTERVAL_MS = 1000;
+export const RECOVERY_POLL_MAX_TICKS = 60;
+
 export interface RectLike {
   top: number;
   bottom: number;

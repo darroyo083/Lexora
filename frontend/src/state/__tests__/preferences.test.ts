@@ -22,6 +22,15 @@ describe('boolean preferences', () => {
     writeBooleanPreference('boxes', true, storage);
     expect(storage.setItem).toHaveBeenCalledWith('boxes', 'true');
   });
+
+  it('falls back when storage access itself throws', () => {
+    const storage = {
+      getItem: vi.fn(() => {
+        throw new Error('storage unavailable');
+      }),
+    };
+    expect(readBooleanPreference('boxes', false, storage)).toBe(false);
+  });
 });
 
 describe('ordering presentation mode preference', () => {
@@ -39,5 +48,14 @@ describe('ordering presentation mode preference', () => {
     const storage = { setItem: vi.fn() };
     writeOrderingModePreference('floating', storage);
     expect(storage.setItem).toHaveBeenCalledWith('lexora.orderingMode', 'floating');
+  });
+
+  it('falls back to floating when storage access itself throws', () => {
+    const storage = {
+      getItem: vi.fn(() => {
+        throw new Error('storage unavailable');
+      }),
+    };
+    expect(readOrderingModePreference(storage)).toBe('floating');
   });
 });

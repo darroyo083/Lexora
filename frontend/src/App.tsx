@@ -17,10 +17,12 @@ import {
 import { parseOrderedAnswer, serializeOrderedAnswer, toggleItem } from './reader/ordering';
 import { emptyOrderingView, orderingViewReducer } from './reader/floatingOrdering';
 import { currentPageStage, isCurrentPageProcessing, isProcessingStage, processLabel, resolveProcessControl, type ProcessingTarget } from './reader/processing';
+import { useProcessingRecoveryTracker } from './reader/useProcessingRecovery';
 import { ZOOM_OPTIONS } from './reader/zoom';
 import {
-  getPageProcessAction,
+  getBookPage,
   getBookPages,
+  getPageProcessAction,
   processBookPage,
   type BookPageResource,
 } from './api/client';
@@ -105,6 +107,9 @@ export default function App() {
   const bookIdRef = useRef<string | null>(null);
   const persistTimer = useRef<number | null>(null);
   const pendingPersist = useRef<PendingPersist | null>(null);
+  // Monotonic token for document selection: restoration and uploads are
+  // async, and a late completion must never clobber a newer user action.
+  const uploadTokenRef = useRef(0);
   activePage.current = selectedPage;
 
   useEffect(() => {
@@ -151,10 +156,16 @@ export default function App() {
 
   const showPage = useCallback((nextPage: BookPageResource | null, bookId: string) => {
     setPage(nextPage);
-    setRotation(nextPage ? readPageRotation(bookId, nextPage.pageNumber) : 0);
-    const analysis = nextPage?.processingStatus === 'READY'
-      ? nextPage.analysis
-      : null;
+    // A missing page resource (never-processed page) must not reset rotation
+    // to 0: the state already holds the current page's saved rotation,
+    // preloaded by selectPage/restore before the fetch completed.
+    if (nextPage) setRotation(readPageRotation(bookId, nextPage.pageNumber));
+    // A failed forced refresh retains the previous analysis server-side
+    // (BookPage.markFailed keeps it). Keep it usable on FAILED pages so a
+    // failed Update analysis does not blank out the working page.
+    const analysis = nextPage && (
+      nextPage.processingStatus === 'READY' || nextPage.processingStatus === 'FAILED'
+    ) ? nextPage.analysis : null;
     const blanks = sortExerciseBlanks(analysis?.exerciseBlanks ?? []);
     const choices = sortChoiceTargets(analysis?.choiceTargets ?? []);
     const choiceGroups = indexChoiceGroups(analysis?.choiceGroups ?? []);
@@ -198,6 +209,10 @@ export default function App() {
     if (nextPage === activePage.current) return;
     flushPendingAnswers();
     clearPageInteraction();
+    // Preload the target page's saved rotation so the canvas is never drawn
+    // with the previous page's rotation while the page resource loads.
+    const bookId = bookIdRef.current;
+    if (bookId) setRotation(readPageRotation(bookId, nextPage));
     setSelectedPage(nextPage);
     localStorage.setItem(CURRENT_PAGE_KEY, String(nextPage));
   }, [clearPageInteraction, flushPendingAnswers]);
@@ -207,6 +222,7 @@ export default function App() {
     if (!bookId) return;
 
     const restore = async () => {
+      const restoreToken = uploadTokenRef.current;
       setStatus('restoring');
       try {
         const [bookRes, sourceRes, pages] = await Promise.all([
@@ -214,17 +230,21 @@ export default function App() {
           fetch(`/api/books/${bookId}/source`),
           getBookPages(bookId),
         ]);
+        if (uploadTokenRef.current !== restoreToken) return;
         if (!bookRes.ok || !sourceRes.ok) throw new Error('Stored book is unavailable');
 
         const storedBook: BookInfo = await bookRes.json();
         const restoredPage = Math.min(selectedPage, storedBook.pageCount);
+        if (uploadTokenRef.current !== restoreToken) return;
         setSelectedPage(restoredPage);
         localStorage.setItem(CURRENT_PAGE_KEY, String(restoredPage));
         setBook(storedBook);
         setPdfData(await sourceRes.arrayBuffer());
+        setRotation(readPageRotation(storedBook.id, restoredPage));
         showPage(pages.find((candidate) => candidate.pageNumber === restoredPage) ?? null, storedBook.id);
         setStatus('ready');
       } catch (error) {
+        if (uploadTokenRef.current !== restoreToken) return;
         localStorage.removeItem(CURRENT_BOOK_KEY);
         setStatus('idle');
         console.error('Restore failed:', error);
@@ -252,7 +272,19 @@ export default function App() {
     return () => controller.abort();
   }, [book, selectedPage, status, showPage, clearPageInteraction]);
 
+  const getActivePageNumber = useCallback(() => activePage.current, []);
+
+  useProcessingRecoveryTracker({
+    enabled: status === 'ready',
+    bookId: book?.id,
+    page,
+    processingTarget,
+    getCurrentPageNumber: getActivePageNumber,
+    onPageUpdate: showPage,
+  });
+
   const handleUpload = useCallback(async (file: File) => {
+    const uploadToken = ++uploadTokenRef.current;
     setStatus('uploading');
     setRotation(0);
     const form = new FormData();
@@ -260,12 +292,14 @@ export default function App() {
     form.append('language', 'de');
 
     const res = await fetch('/api/books', { method: 'POST', body: form });
+    if (uploadTokenRef.current !== uploadToken) return;
     if (!res.ok) {
       setStatus('idle');
       console.error('Upload failed:', res.status);
       return;
     }
     const info: BookInfo = await res.json();
+    if (uploadTokenRef.current !== uploadToken) return;
     if (!info?.id) {
       setStatus('idle');
       console.error('Upload returned invalid book info');
@@ -278,7 +312,9 @@ export default function App() {
     setSelectedPage(1);
     localStorage.setItem(CURRENT_BOOK_KEY, info.id);
     localStorage.setItem(CURRENT_PAGE_KEY, '1');
-    setPdfData(await file.arrayBuffer());
+    const data = await file.arrayBuffer();
+    if (uploadTokenRef.current !== uploadToken) return;
+    setPdfData(data);
     setStatus('ready');
   }, [clearPageInteraction, flushPendingAnswers]);
 
@@ -298,15 +334,17 @@ export default function App() {
     setInteraction(emptyPageInteractionState());
 
     const poll = window.setInterval(() => {
-      void getBookPages(bookId, controller.signal).then((pages) => {
-        if (activePage.current !== pageNumber) return;
-        const current = pages.find((candidate) => candidate.pageNumber === pageNumber);
-        if (current) showPage(current, bookId);
-      }).catch((error: unknown) => {
-        if ((error as { name?: string }).name !== 'AbortError') {
-          console.error('Page polling failed:', error);
-        }
-      });
+      if (activePage.current !== pageNumber) return;
+      void getBookPage(bookId, pageNumber, controller.signal)
+        .then((current) => {
+          if (activePage.current !== pageNumber) return;
+          showPage(current, bookId);
+        })
+        .catch((error: unknown) => {
+          const err = error as { name?: string; status?: number };
+          if (err.name === 'AbortError') return;
+          if (err.status !== 404) console.error('Page polling failed:', error);
+        });
     }, 250);
 
     try {

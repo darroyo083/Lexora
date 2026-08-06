@@ -19,6 +19,8 @@ public record PageAnalysis(
     ChoiceGridDetectionMetadata choiceGridDetection,
     List<SentenceOrderingInteraction> sentenceOrderings,
     SentenceOrderingDetectionMetadata sentenceOrderingDetection,
+    List<MatchingInteraction> matchingInteractions,
+    MatchingDetectionMetadata matchingDetection,
     ProcessorMetadata processor
 ) {
     public PageAnalysis {
@@ -29,6 +31,8 @@ public record PageAnalysis(
         choiceTargets = choiceTargets == null ? List.of() : List.copyOf(choiceTargets);
         choiceGrids = choiceGrids == null ? List.of() : List.copyOf(choiceGrids);
         sentenceOrderings = sentenceOrderings == null ? List.of() : List.copyOf(sentenceOrderings);
+        matchingInteractions = matchingInteractions == null
+            ? List.of() : List.copyOf(matchingInteractions);
     }
 
     public record BBox(double x, double y, double width, double height) {}
@@ -171,6 +175,47 @@ public record PageAnalysis(
     }
 
     public record SentenceOrderingDetectionMetadata(
+        String detectionMethod,
+        int rawCandidateCount,
+        int acceptedCount,
+        int groupCount,
+        long durationMs
+    ) {}
+
+    public record MatchingItem(
+        String id,
+        String label,
+        String text,
+        BBox bbox,
+        BBox anchorBbox,
+        List<String> nearbyTextSpanIds
+    ) {
+        public MatchingItem {
+            nearbyTextSpanIds = nearbyTextSpanIds == null
+                ? List.of() : List.copyOf(nearbyTextSpanIds);
+        }
+    }
+
+    public record MatchingInteraction(
+        String id,
+        String kind,
+        BBox bbox,
+        String detectionMethod,
+        double candidateScore,
+        String cardinality,
+        List<String> nearbyTextSpanIds,
+        List<MatchingItem> leftItems,
+        List<MatchingItem> rightItems
+    ) {
+        public MatchingInteraction {
+            nearbyTextSpanIds = nearbyTextSpanIds == null
+                ? List.of() : List.copyOf(nearbyTextSpanIds);
+            leftItems = leftItems == null ? List.of() : List.copyOf(leftItems);
+            rightItems = rightItems == null ? List.of() : List.copyOf(rightItems);
+        }
+    }
+
+    public record MatchingDetectionMetadata(
         String detectionMethod,
         int rawCandidateCount,
         int acceptedCount,

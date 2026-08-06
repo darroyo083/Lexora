@@ -305,4 +305,169 @@ class PageAnalysisTest {
         assertThat(analysis.sentenceOrderings()).isEmpty();
         assertThat(analysis.sentenceOrderingDetection()).isNull();
     }
+
+    @Test
+    void deserializesMatchingContract() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":49,
+              "width":2284,
+              "height":3121,
+              "language":"de",
+              "textSpans":[],
+              "exerciseBlanks":[],
+              "blankDetection":null,
+              "choiceGroups":[],
+              "choiceTargets":[],
+              "choiceDetection":null,
+              "choiceGrids":[],
+              "choiceGridDetection":null,
+              "sentenceOrderings":[],
+              "sentenceOrderingDetection":null,
+              "matchingInteractions":[{
+                "id":"matching-49-1","kind":"matching",
+                "bbox":{"x":0.175,"y":0.406,"width":0.715,"height":0.135},
+                "detectionMethod":"matching-v1","candidateScore":0.9875,
+                "cardinality":"one-to-one",
+                "nearbyTextSpanIds":["span-49-26","span-49-28"],
+                "leftItems":[{
+                  "id":"matching-49-1-left-1","label":"1",
+                  "text":"Synthetic left item text",
+                  "bbox":{"x":0.195,"y":0.406,"width":0.305,"height":0.014},
+                  "anchorBbox":{"x":0.545,"y":0.415,"width":0.003,"height":0.003},
+                  "nearbyTextSpanIds":["span-49-26"]
+                }],
+                "rightItems":[{
+                  "id":"matching-49-1-right-1","label":"A",
+                  "text":"Synthetic right item text",
+                  "bbox":{"x":0.593,"y":0.407,"width":0.219,"height":0.014},
+                  "anchorBbox":null,
+                  "nearbyTextSpanIds":["span-49-28"]
+                }]
+              }],
+              "matchingDetection":{"detectionMethod":"matching-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":88},
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.matchingInteractions()).hasSize(1);
+        var interaction = analysis.matchingInteractions().get(0);
+        assertThat(interaction.id()).isEqualTo("matching-49-1");
+        assertThat(interaction.kind()).isEqualTo("matching");
+        assertThat(interaction.detectionMethod()).isEqualTo("matching-v1");
+        assertThat(interaction.cardinality()).isEqualTo("one-to-one");
+        assertThat(interaction.bbox().y()).isEqualTo(0.406);
+        assertThat(interaction.nearbyTextSpanIds()).containsExactly("span-49-26", "span-49-28");
+        assertThat(interaction.leftItems()).hasSize(1);
+        assertThat(interaction.leftItems().get(0).id()).isEqualTo("matching-49-1-left-1");
+        assertThat(interaction.leftItems().get(0).label()).isEqualTo("1");
+        assertThat(interaction.leftItems().get(0).anchorBbox().x()).isEqualTo(0.545);
+        assertThat(interaction.rightItems()).hasSize(1);
+        assertThat(interaction.rightItems().get(0).label()).isEqualTo("A");
+        assertThat(interaction.rightItems().get(0).anchorBbox()).isNull();
+        assertThat(analysis.matchingDetection().acceptedCount()).isEqualTo(1);
+        assertThat(analysis.matchingDetection().groupCount()).isEqualTo(1);
+    }
+
+    @Test
+    void matchingContractRoundTripsThroughSerialization() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":49,
+              "width":2284,
+              "height":3121,
+              "language":"de",
+              "textSpans":[],
+              "exerciseBlanks":[],
+              "blankDetection":null,
+              "choiceGroups":[],
+              "choiceTargets":[],
+              "choiceDetection":null,
+              "choiceGrids":[],
+              "choiceGridDetection":null,
+              "sentenceOrderings":[],
+              "sentenceOrderingDetection":null,
+              "matchingInteractions":[{
+                "id":"matching-49-1","kind":"matching",
+                "bbox":{"x":0.175,"y":0.406,"width":0.715,"height":0.135},
+                "detectionMethod":"matching-v1","candidateScore":0.9875,
+                "cardinality":"one-to-one",
+                "nearbyTextSpanIds":[],
+                "leftItems":[{
+                  "id":"matching-49-1-left-1","label":"1",
+                  "text":"Synthetic left item text",
+                  "bbox":{"x":0.195,"y":0.406,"width":0.305,"height":0.014},
+                  "anchorBbox":{"x":0.545,"y":0.415,"width":0.003,"height":0.003},
+                  "nearbyTextSpanIds":["span-49-26"]
+                }],
+                "rightItems":[{
+                  "id":"matching-49-1-right-1","label":"A",
+                  "text":"Synthetic right item text",
+                  "bbox":{"x":0.593,"y":0.407,"width":0.219,"height":0.014},
+                  "anchorBbox":null,
+                  "nearbyTextSpanIds":["span-49-28"]
+                }]
+              }],
+              "matchingDetection":{"detectionMethod":"matching-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":88},
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        var serialized = json.writeValueAsString(analysis);
+        var restored = json.readValue(serialized, PageAnalysis.class);
+
+        assertThat(restored.matchingInteractions()).hasSize(1);
+        assertThat(restored.matchingInteractions().get(0).id())
+            .isEqualTo(analysis.matchingInteractions().get(0).id());
+        assertThat(restored.matchingInteractions().get(0).leftItems().get(0).text())
+            .isEqualTo("Synthetic left item text");
+        assertThat(restored.matchingInteractions().get(0).leftItems().get(0).anchorBbox())
+            .isEqualTo(analysis.matchingInteractions().get(0).leftItems().get(0).anchorBbox());
+        assertThat(restored.matchingDetection().durationMs())
+            .isEqualTo(analysis.matchingDetection().durationMs());
+        assertThat(restored.sentenceOrderings()).isEmpty();
+        assertThat(restored.choiceGrids()).isEmpty();
+    }
+
+    @Test
+    void version02AnalysisWithoutMatchingFieldsDefaultsToEmpty() {
+        var analysis = json.readValue("""
+            {
+              "schemaVersion":"0.2.0",
+              "pageNumber":2,
+              "width":1200,
+              "height":1600,
+              "language":"de",
+              "textSpans":[],"exerciseBlanks":[],"blankDetection":null,
+              "choiceGroups":[],"choiceTargets":[],"choiceDetection":null,
+              "choiceGrids":[],"choiceGridDetection":null,
+              "sentenceOrderings":[],"sentenceOrderingDetection":null,
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.matchingInteractions()).isEmpty();
+        assertThat(analysis.matchingDetection()).isNull();
+
+        var serialized = json.readTree(json.writeValueAsString(analysis));
+        assertThat(serialized.get("matchingInteractions").isArray()).isTrue();
+        assertThat(serialized.get("matchingInteractions").isEmpty()).isTrue();
+        assertThat(serialized.get("matchingDetection").isNull()).isTrue();
+    }
+
+    @Test
+    void legacyAnalysisWithoutMatchingFieldsDefaultsToEmpty() {
+        var analysis = json.readValue("""
+            {
+              "pageNumber":1,"width":800,"height":600,"language":"de",
+              "textSpans":[],"blankDetection":null,
+              "processor":{"engine":"test","engineVersion":"1","model":"model","language":"de","parameters":{},"processedAt":"2026-07-30T12:00:00Z","durationMs":12}
+            }
+            """, PageAnalysis.class);
+
+        assertThat(analysis.matchingInteractions()).isEmpty();
+        assertThat(analysis.matchingDetection()).isNull();
+    }
 }

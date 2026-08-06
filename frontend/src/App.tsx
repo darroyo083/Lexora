@@ -4,17 +4,25 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import PageViewer from './reader/PageViewer';
 import DebugPanel from './reader/DebugPanel';
 import SentenceOrderingPanel from './reader/SentenceOrderingPanel';
-import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, SentenceOrderingInteraction, TextSpan } from './reader/types';
+import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './reader/types';
 import {
   emptyPageInteractionState,
   indexChoiceGroups,
   sortChoiceGrids,
   sortChoiceTargets,
   sortExerciseBlanks,
+  sortMatchingInteractions,
   sortSentenceOrderings,
   type PageInteractionState,
 } from './reader/overlay';
 import { parseOrderedAnswer, serializeOrderedAnswer, toggleItem } from './reader/ordering';
+import {
+  matchItems,
+  matchingSelectionReducer,
+  parseMatchingAnswer,
+  serializeMatchingAnswer,
+  unmatchItem,
+} from './reader/matching';
 import { emptyOrderingView, orderingViewReducer } from './reader/floatingOrdering';
 import { currentPageStage, isCurrentPageProcessing, isProcessingStage, processLabel, resolveProcessControl, type ProcessingTarget } from './reader/processing';
 import { useProcessingRecoveryTracker } from './reader/useProcessingRecovery';
@@ -52,6 +60,7 @@ interface PendingPersist {
   choices: ChoiceTarget[];
   grids: ChoiceGrid[];
   sentenceOrderings: SentenceOrderingInteraction[];
+  matchings: MatchingInteraction[];
   schemaVersion: string;
 }
 
@@ -62,6 +71,7 @@ const SHOW_BLANK_DETECTION_KEY = 'lexora.showBlankDetection';
 const SHOW_CHOICE_DETECTION_KEY = 'lexora.showChoiceDetection';
 const SHOW_GRID_DETECTION_KEY = 'lexora.showGridDetection';
 const SHOW_SENTENCE_ORDERING_DETECTION_KEY = 'lexora.showSentenceOrderingDetection';
+const SHOW_MATCHING_DETECTION_KEY = 'lexora.showMatchingDetection';
 
 export default function App() {
   const [status, setStatus] = useState<Status>(() => (
@@ -90,11 +100,18 @@ export default function App() {
   const [showSentenceOrderingDetection, setShowSentenceOrderingDetection] = useState(() => (
     readBooleanPreference(SHOW_SENTENCE_ORDERING_DETECTION_KEY, false)
   ));
+  const [showMatchingDetection, setShowMatchingDetection] = useState(() => (
+    readBooleanPreference(SHOW_MATCHING_DETECTION_KEY, false)
+  ));
   const [zoom, setZoom] = useState<number>(() => readZoomPreference());
   const [rotation, setRotation] = useState<PageRotation>(0);
   const [railTab, setRailTab] = useState<'interactions' | 'debug'>('interactions');
   const [orderingActivePrompt, setOrderingActivePrompt] = useState<string | null>(null);
   const [orderingPanelCollapsed, setOrderingPanelCollapsed] = useState(false);
+  const [matchingSelection, dispatchMatchingSelection] = useReducer(
+    matchingSelectionReducer,
+    null,
+  );
   const [orderingView, dispatchOrderingView] = useReducer(
     orderingViewReducer,
     undefined,
@@ -136,6 +153,7 @@ export default function App() {
       pending.choices,
       pending.grids,
       pending.sentenceOrderings,
+      pending.matchings,
       pending.schemaVersion,
     );
   }, []);
@@ -171,6 +189,7 @@ export default function App() {
     const choiceGroups = indexChoiceGroups(analysis?.choiceGroups ?? []);
     const grids = sortChoiceGrids(analysis?.choiceGrids ?? []);
     const sentenceOrderings = sortSentenceOrderings(analysis?.sentenceOrderings ?? []);
+    const matchings = sortMatchingInteractions(analysis?.matchingInteractions ?? []);
     const schemaVersion = analysis?.schemaVersion ?? '';
     const restoredAnswers = nextPage && analysis
       ? readAnswersForPage(
@@ -180,6 +199,7 @@ export default function App() {
           choices,
           grids,
           sentenceOrderings,
+          matchings,
           schemaVersion,
         )
       : {};
@@ -190,6 +210,7 @@ export default function App() {
       choiceGroups,
       grids,
       sentenceOrderings,
+      matchings,
       answers: restoredAnswers,
       schemaVersion,
       selectedSpan: null,
@@ -197,6 +218,7 @@ export default function App() {
       selectedChoice: null,
     });
     setOrderingActivePrompt(null);
+    dispatchMatchingSelection({ type: 'clear' });
     dispatchOrderingView({ type: 'reset' });
   }, []);
 
@@ -413,6 +435,7 @@ export default function App() {
       choices: interaction.choices,
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
+      matchings: interaction.matchings,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -430,6 +453,7 @@ export default function App() {
       choices: interaction.choices,
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
+      matchings: interaction.matchings,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -451,6 +475,7 @@ export default function App() {
       choices: interaction.choices,
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
+      matchings: interaction.matchings,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -468,6 +493,7 @@ export default function App() {
       choices: interaction.choices,
       grids: interaction.grids,
       sentenceOrderings: interaction.sentenceOrderings,
+      matchings: interaction.matchings,
       schemaVersion: interaction.schemaVersion,
     });
   }, [interaction, scheduleAnswerPersist]);
@@ -493,6 +519,76 @@ export default function App() {
     );
     handleOrderingChange(interactionId, ordered);
   }, [interaction, orderingMode, handleOrderingChange]);
+
+  const persistMatchingAnswer = useCallback((
+    interactionId: string,
+    pairs: ReturnType<typeof parseMatchingAnswer>,
+  ) => {
+    const bookId = bookIdRef.current;
+    if (!bookId) return;
+    const answers = { ...interaction.answers };
+    if (Object.keys(pairs).length === 0) {
+      delete answers[interactionId];
+    } else {
+      answers[interactionId] = serializeMatchingAnswer(pairs);
+    }
+    setInteraction((current) => ({ ...current, answers }));
+    scheduleAnswerPersist({
+      bookId,
+      pageNumber: activePage.current,
+      answers,
+      blanks: interaction.blanks,
+      choices: interaction.choices,
+      grids: interaction.grids,
+      sentenceOrderings: interaction.sentenceOrderings,
+      matchings: interaction.matchings,
+      schemaVersion: interaction.schemaVersion,
+    });
+  }, [interaction, scheduleAnswerPersist]);
+
+  const handleMatchingItemClick = useCallback((
+    interactionId: string,
+    itemId: string,
+    side: 'left' | 'right',
+  ) => {
+    const current = matchingSelection;
+    if (
+      current
+      && current.interactionId === interactionId
+      && current.side !== side
+    ) {
+      const leftId = side === 'left' ? itemId : current.itemId;
+      const rightId = side === 'right' ? itemId : current.itemId;
+      const pairs = matchItems(
+        parseMatchingAnswer(interaction.answers[interactionId]),
+        leftId,
+        rightId,
+      );
+      persistMatchingAnswer(interactionId, pairs);
+      dispatchMatchingSelection({ type: 'clear' });
+      return;
+    }
+    dispatchMatchingSelection(
+      side === 'left'
+        ? { type: 'select-left', interactionId, itemId }
+        : { type: 'select-right', interactionId, itemId },
+    );
+  }, [interaction, matchingSelection, persistMatchingAnswer]);
+
+  const handleMatchingUnpair = useCallback((
+    interactionId: string,
+    itemId: string,
+  ) => {
+    const pairs = unmatchItem(
+      parseMatchingAnswer(interaction.answers[interactionId]),
+      itemId,
+    );
+    persistMatchingAnswer(interactionId, pairs);
+  }, [interaction, persistMatchingAnswer]);
+
+  const handleMatchingReset = useCallback((interactionId: string) => {
+    persistMatchingAnswer(interactionId, {});
+  }, [persistMatchingAnswer]);
 
   const handleOrderingDock = useCallback(() => {
     dispatchOrderingView({ type: 'dock' });
@@ -553,6 +649,7 @@ export default function App() {
                   min={1}
                   max={book.pageCount}
                   value={selectedPage}
+                  aria-label={`Go to page, currently page ${selectedPage} of ${book.pageCount}`}
                   onChange={(event) => {
                     const nextPage = Math.max(1, Math.min(book.pageCount, Number(event.target.value)));
                     selectPage(nextPage);
@@ -673,6 +770,18 @@ export default function App() {
             Show ordering detection
           </label>
 
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={showMatchingDetection}
+              onChange={(event) => {
+                setShowMatchingDetection(event.target.checked);
+                writeBooleanPreference(SHOW_MATCHING_DETECTION_KEY, event.target.checked);
+              }}
+            />
+            Show matching detection
+          </label>
+
           {pageStage === 'FAILED' && (
             <span className="status status-error">Failed. Retry is available.</span>
           )}
@@ -697,6 +806,7 @@ export default function App() {
               choiceGroups={interaction.choiceGroups}
               grids={interaction.grids}
               sentenceOrderings={interaction.sentenceOrderings}
+              matchings={interaction.matchings}
               answers={interaction.answers}
               activeOrderingPromptId={orderingActivePrompt}
               orderingFloat={orderingMode === 'floating' ? {
@@ -709,12 +819,14 @@ export default function App() {
                 onPromptChange: setOrderingActivePrompt,
                 onOrderingChange: handleOrderingChange,
               } : undefined}
+              matchingSelection={matchingSelection}
               zoom={zoom}
               showBoxes={showBoxes}
               showBlankDetection={showBlankDetection}
               showChoiceDetection={showChoiceDetection}
               showGridDetection={showGridDetection}
               showSentenceOrderingDetection={showSentenceOrderingDetection}
+              showMatchingDetection={showMatchingDetection}
               selectedChoice={interaction.selectedChoice}
               processingStage={pageStage}
               onSpanClick={handleSpanClick}
@@ -726,6 +838,9 @@ export default function App() {
               onGridSelect={handleGridSelect}
               onOrderingFragmentClick={handleOrderingFragmentClick}
               onOrderingChange={handleOrderingChange}
+              onMatchingItemClick={handleMatchingItemClick}
+              onMatchingUnpair={handleMatchingUnpair}
+              onMatchingReset={handleMatchingReset}
             />
           ) : (
             <div className="empty-state">Upload a scanned PDF to begin</div>

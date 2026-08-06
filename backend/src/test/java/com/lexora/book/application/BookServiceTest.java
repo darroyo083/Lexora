@@ -219,6 +219,7 @@ class BookServiceTest {
             List.of(), List.of(), null,
             List.of(), null,
             List.of(), null,
+            List.of(), null,
             new PageAnalysis.ProcessorMetadata("test", "1", "model", "de", Map.of(), null, 1)
         );
     }

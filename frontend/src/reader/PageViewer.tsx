@@ -1,12 +1,14 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
-import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, SentenceOrderingInteraction, TextSpan } from './types';
+import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './types';
 import { bboxPercentageStyle, blankInputStyle, choiceHitStyle, choiceValueStyle, gridCellHitStyle, gridMarkStyle } from './overlay';
 import { normalizeRotation, type PageRotation } from './rotation';
 import ChoiceSelector from './ChoiceSelector';
 import SentenceOrderingOverlay from './SentenceOrderingOverlay';
 import OrderingFloatingLayer from './OrderingFloatingLayer';
+import MatchingOverlay from './MatchingOverlay';
+import type { MatchingSelection } from './matching';
 import {
   isProcessingStage,
   PROCESSING_MESSAGE_INTERVAL_MS,
@@ -91,15 +93,18 @@ interface Props {
   choiceGroups: Record<string, ChoiceGroup>;
   grids: ChoiceGrid[];
   sentenceOrderings: SentenceOrderingInteraction[];
+  matchings: MatchingInteraction[];
   answers: Record<string, string>;
   activeOrderingPromptId: string | null;
   orderingFloat?: OrderingFloatControl;
+  matchingSelection: MatchingSelection | null;
   zoom: number;
   showBoxes: boolean;
   showBlankDetection: boolean;
   showChoiceDetection: boolean;
   showGridDetection: boolean;
   showSentenceOrderingDetection: boolean;
+  showMatchingDetection: boolean;
   selectedChoice: ChoiceTarget | null;
   processingStage: PageProcessingStatus | null;
   loaderVariant?: LoaderVariant;
@@ -113,6 +118,9 @@ interface Props {
   onGridSelect: (rowId: string, optionId: string) => void;
   onOrderingFragmentClick: (interactionId: string, itemId: string) => void;
   onOrderingChange: (interactionId: string, ordered: string[]) => void;
+  onMatchingItemClick: (interactionId: string, itemId: string, side: 'left' | 'right') => void;
+  onMatchingUnpair: (interactionId: string, itemId: string) => void;
+  onMatchingReset: (interactionId: string) => void;
 }
 
 export default function PageViewer({
@@ -125,15 +133,18 @@ export default function PageViewer({
   choiceGroups,
   grids,
   sentenceOrderings,
+  matchings,
   answers,
   activeOrderingPromptId,
   orderingFloat,
+  matchingSelection,
   zoom,
   showBoxes,
   showBlankDetection,
   showChoiceDetection,
   showGridDetection,
   showSentenceOrderingDetection,
+  showMatchingDetection,
   selectedChoice,
   processingStage,
   loaderVariant = 'halftone-page',
@@ -147,6 +158,9 @@ export default function PageViewer({
   onGridSelect,
   onOrderingFragmentClick,
   onOrderingChange,
+  onMatchingItemClick,
+  onMatchingUnpair,
+  onMatchingReset,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pageStackRef = useRef<HTMLDivElement>(null);
@@ -499,6 +513,57 @@ export default function PageViewer({
               onFragmentClick={onOrderingFragmentClick}
             />
           )}
+          {matchings.length > 0 && (
+            <MatchingOverlay
+              matchings={matchings}
+              matchingAnswers={answers}
+              rotation={rotation}
+              disabled={processing}
+              selection={matchingSelection}
+              onItemClick={onMatchingItemClick}
+              onUnpair={onMatchingUnpair}
+              onReset={onMatchingReset}
+            />
+          )}
+          {showMatchingDetection && matchings.map((interaction) => (
+            <div key={`debug-matching-${interaction.id}`} className="matching-debug-group">
+              <div
+                className="matching-exercise-debug"
+                style={bboxPercentageStyle(interaction.bbox, rotation)}
+              >
+                <span>
+                  {interaction.id} | {interaction.candidateScore.toFixed(2)} | {interaction.cardinality}
+                </span>
+              </div>
+              {interaction.leftItems.map((item) => (
+                <div
+                  key={`debug-matching-left-${item.id}`}
+                  className="matching-item-debug matching-item-debug-left"
+                  style={bboxPercentageStyle(item.bbox, rotation)}
+                >
+                  <span>{item.label || '·'} L</span>
+                </div>
+              ))}
+              {interaction.rightItems.map((item) => (
+                <div
+                  key={`debug-matching-right-${item.id}`}
+                  className="matching-item-debug matching-item-debug-right"
+                  style={bboxPercentageStyle(item.bbox, rotation)}
+                >
+                  <span>{item.label || '·'} R</span>
+                </div>
+              ))}
+              {interaction.leftItems.concat(interaction.rightItems).map((item) => (
+                item.anchorBbox && (
+                  <div
+                    key={`debug-matching-anchor-${item.id}`}
+                    className="matching-anchor-debug"
+                    style={bboxPercentageStyle(item.anchorBbox, rotation)}
+                  />
+                )
+              ))}
+            </div>
+          ))}
           {showSentenceOrderingDetection && (() => {
             const exercises = new Map<string, SentenceOrderingInteraction[]>();
             for (const interaction of sentenceOrderings) {

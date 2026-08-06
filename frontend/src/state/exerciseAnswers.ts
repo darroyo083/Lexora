@@ -1,11 +1,11 @@
-import type { ChoiceGrid, ChoiceGridRow, ChoiceTarget, ExerciseBlank, SentenceOrderingInteraction } from '../reader/types';
+import type { ChoiceGrid, ChoiceGridRow, ChoiceTarget, ExerciseBlank, MatchingInteraction, SentenceOrderingInteraction } from '../reader/types';
 
 export const EXERCISE_ANSWERS_KEY = 'lexora.exerciseAnswers.v1';
 export const EXERCISE_ANSWERS_VERSION = 1;
 
 export interface StoredAnswer {
   fingerprint: string;
-  kind: 'fill-blank' | 'choice' | 'choice-grid' | 'sentence-ordering';
+  kind: 'fill-blank' | 'choice' | 'choice-grid' | 'sentence-ordering' | 'matching';
   value: string;
   updatedAt: string;
 }
@@ -75,6 +75,22 @@ export function sentenceOrderingFingerprint(
   ].join('|');
 }
 
+export function matchingFingerprint(
+  interaction: MatchingInteraction,
+  schemaVersion: string,
+): string {
+  return [
+    schemaVersion,
+    interaction.detectionMethod,
+    interaction.bbox.x.toFixed(4),
+    interaction.bbox.y.toFixed(4),
+    interaction.bbox.width.toFixed(4),
+    interaction.bbox.height.toFixed(4),
+    String(interaction.leftItems.length),
+    String(interaction.rightItems.length),
+  ].join('|');
+}
+
 export function loadAnswerStore(
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): AnswerStore {
@@ -106,6 +122,7 @@ export function readAnswersForPage(
   choices: ChoiceTarget[],
   grids: ChoiceGrid[],
   sentenceOrderings: SentenceOrderingInteraction[],
+  matchings: MatchingInteraction[],
   schemaVersion: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): Record<string, string> {
@@ -118,6 +135,7 @@ export function readAnswersForPage(
     grids.flatMap((grid) => grid.rows.map((row) => [row.id, { grid, row } as const])),
   );
   const orderingIds = new Map(sentenceOrderings.map((o) => [o.id, o]));
+  const matchingIds = new Map(matchings.map((m) => [m.id, m]));
   const result: Record<string, string> = {};
   for (const [interactionId, stored] of Object.entries(byPage)) {
     const blank = blankIds.get(interactionId);
@@ -149,6 +167,14 @@ export function readAnswersForPage(
         continue;
       }
       if (stored.kind === 'sentence-ordering') result[interactionId] = stored.value;
+      continue;
+    }
+    const matching = matchingIds.get(interactionId);
+    if (matching) {
+      if (stored.fingerprint !== matchingFingerprint(matching, schemaVersion)) {
+        continue;
+      }
+      if (stored.kind === 'matching') result[interactionId] = stored.value;
     }
   }
   return result;
@@ -162,6 +188,7 @@ export function writeAnswersForPage(
   choices: ChoiceTarget[],
   grids: ChoiceGrid[],
   sentenceOrderings: SentenceOrderingInteraction[],
+  matchings: MatchingInteraction[],
   schemaVersion: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
 ): void {
@@ -172,6 +199,7 @@ export function writeAnswersForPage(
     grids.flatMap((grid) => grid.rows.map((row) => [row.id, { grid, row } as const])),
   );
   const orderingsById = new Map(sentenceOrderings.map((o) => [o.id, o]));
+  const matchingsById = new Map(matchings.map((m) => [m.id, m]));
   const nextPage: PageAnswers = {};
   const previous = findAnswersByPage(store, bookId, pageNumber) ?? {};
   const ids = new Set([
@@ -216,6 +244,16 @@ export function writeAnswersForPage(
       nextPage[interactionId] = {
         fingerprint: sentenceOrderingFingerprint(ordering, schemaVersion),
         kind: 'sentence-ordering',
+        value,
+        updatedAt: new Date().toISOString(),
+      };
+      continue;
+    }
+    const matching = matchingsById.get(interactionId);
+    if (matching) {
+      nextPage[interactionId] = {
+        fingerprint: matchingFingerprint(matching, schemaVersion),
+        kind: 'matching',
         value,
         updatedAt: new Date().toISOString(),
       };

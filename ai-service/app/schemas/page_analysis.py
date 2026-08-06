@@ -140,6 +140,35 @@ class SentenceOrderingDetectionMetadata(BaseModel):
     durationMs: int = Field(ge=0)
 
 
+class MatchingItem(BaseModel):
+    id: str
+    label: str = ""
+    text: str = ""
+    bbox: BBox
+    anchorBbox: BBox | None = None
+    nearbyTextSpanIds: list[str] = Field(default_factory=list)
+
+
+class MatchingInteraction(BaseModel):
+    id: str
+    kind: Literal["matching"] = "matching"
+    bbox: BBox
+    detectionMethod: Literal["matching-v1"] = "matching-v1"
+    candidateScore: float = Field(ge=0, le=1)
+    cardinality: Literal["one-to-one"] = "one-to-one"
+    nearbyTextSpanIds: list[str] = Field(default_factory=list)
+    leftItems: list[MatchingItem] = Field(default_factory=list)
+    rightItems: list[MatchingItem] = Field(default_factory=list)
+
+
+class MatchingDetectionMetadata(BaseModel):
+    detectionMethod: Literal["matching-v1"] = "matching-v1"
+    rawCandidateCount: int = Field(ge=0)
+    acceptedCount: int = Field(ge=0)
+    groupCount: int = Field(ge=0)
+    durationMs: int = Field(ge=0)
+
+
 class PageAnalysis(BaseModel):
     schemaVersion: Literal["0.2.0"] = "0.2.0"
     pageNumber: int = Field(ge=1)
@@ -156,6 +185,8 @@ class PageAnalysis(BaseModel):
     choiceGridDetection: ChoiceGridDetectionMetadata | None = None
     sentenceOrderings: list[SentenceOrderingInteraction] = Field(default_factory=list)
     sentenceOrderingDetection: SentenceOrderingDetectionMetadata | None = None
+    matchingInteractions: list[MatchingInteraction] = Field(default_factory=list)
+    matchingDetection: MatchingDetectionMetadata | None = None
     processor: ProcessorMetadata
 
 

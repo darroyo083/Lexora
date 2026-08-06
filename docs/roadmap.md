@@ -112,6 +112,43 @@ PoC 4 is intentionally structural. It detects ordering prompts and records the l
   known follow-up for later hardening — do NOT treat punctuation detection as
   fully solved.
 
+## PoC 5: Matching Interactions (Complete)
+
+- [x] Detect clean two-column one-to-one matching exercises locally without a VLM (`matching-v1`)
+- [x] Use printed connection anchor dots as the primary evidence: isolated small filled blobs forming two perfectly aligned vertical columns
+- [x] Reject punctuation glyphs (`?`/`!`/periods), prose, unrelated lists, vocabulary columns, FillBlank rows, ChoiceGrid tables, SentenceOrdering separator dots, headers/footers, and weak 1–2-dot candidates
+- [x] Persist interaction, item, and anchor normalized geometry additively in `PageAnalysis` v0.2 (no migration)
+- [x] Deterministic IDs (`matching-page-index`, items `-left-i` / `-right-j`)
+- [x] Tolerant label detection: numeric left (`1`–`6`) and alphabetic right (`A`–`F`) labels, standalone or glued; ordinary uppercase words never become labels
+- [x] Multi-line (wrapped) items grouped within their row band; reading order per side independent of the printed right-side scramble
+- [x] Multiple exercises per page: stacked exercises share anchor columns and split by row gap (page 106 = 3 exercises, page 188 = 2)
+- [x] Missing single anchors tolerated (`anchorBbox: null`, item still interactive)
+- [x] Click-to-pair UX directly on the page: left → right and right → left, active-item highlight, thin SVG connection lines between printed anchors
+- [x] One-to-one enforced structurally: rematching frees both previous partners; unpair via anchor ✕; compact reset pill per exercise
+- [x] Persist partial `leftItemId -> rightItemId` answers locally (kind `matching`)
+- [x] Fingerprints ignore rotation/zoom/view state; stale geometry or item-count changes invalidate answers
+- [x] Restore pairs across navigation and hard refresh; mixed stores with PoC 1–4 answers verified
+- [x] Lines and hitboxes rotate 0/90/180/270 and zoom to 200% with the shared normalized geometry (`rotateBBox`)
+- [x] Exercise-isolated state: clicks in exercise A never connect to exercise B
+- [x] Keyboard-accessible item buttons with aria labels and focus styles; no mouse-only paths
+- [x] Add a distinct matching debug overlay (exercise/items/anchors, left/right colored)
+- [x] Verify primary PDF 49 (printed 53, exercise 5: exactly 1 interaction, 6+6 items, 12/12 anchors) and secondaries 48, 106 (×3), 188 (×2), 130, 182, 8, 29
+- [x] Verify negatives: 5, 11, 15, 16, 18, 20, 21, 30, 33, 39, 44, 65, 70, 100, 120, 243 (0 detections; all prior interaction types unchanged)
+- [x] Detector runtime ~70–130 ms/page (matching-v1 alone)
+
+PoC 5 is intentionally structural. It detects clean two-column one-to-one
+exercises and records the learner's chosen pairs; it does NOT know which pairs
+are correct, does not parse the answer key, and does not implement grading or
+explanations (Answer Key + Correction is a later PoC).
+
+### Known follow-up (for later hardening)
+
+- Matching exercises without printed anchor dots are not detected.
+- One-to-many / many-to-many / image-to-text matching are out of scope.
+- Exercises stacked without a title-line gap merge into one interaction;
+  side-by-side exercises with horizontally interleaved columns are not
+  supported.
+
 ## Planned Product Capabilities
 
 ### Learning tools
@@ -122,6 +159,7 @@ PoC 4 is intentionally structural. It detects ordering prompts and records the l
 - [x] Interactive choice-marker placement
 - [x] Interactive choice-grid placement
 - [x] Interactive sentence-ordering placement
+- [x] Interactive matching placement (one-to-one)
 - [ ] Exercise correction and explanations
 - [ ] Highlights and annotations
 
@@ -133,7 +171,8 @@ PoC 4 is intentionally structural. It detects ordering prompts and records the l
 - [x] Choice-marker interactions (`targetId -> optionId`)
 - [x] Choice-grid interactions (`rowId -> selectedColumnOptionId`)
 - [x] Sentence-ordering interactions (`interactionId -> orderedItemIds`)
-- [ ] Matching interactions (`leftItemId -> rightItemId`)
+- [x] Matching interactions (`leftItemId -> rightItemId`, one-to-one)
+- [ ] Matching variants: one-to-many, many-to-many, image-to-text
 - [ ] Exercise correction and explanations
 
 ### Books and processing

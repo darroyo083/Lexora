@@ -152,8 +152,6 @@ export default function PageViewer({
   showFreeTextDetection,
   selectedChoice,
   processingStage,
-  loaderVariant = 'halftone-page',
-  cardStyle = 'card-minimal-light',
   onSpanClick,
   onBlankClick,
   onAnswerChange,
@@ -644,33 +642,19 @@ export default function PageViewer({
         </div>
         {processing && processingCopy && (
           <div
-            className={`page-processing variant-${loaderVariant}`}
+            className="page-processing"
             aria-hidden="true"
           >
-            {loaderVariant === 'light-beam' ? (
-              <div className="page-scan-beam" aria-hidden="true">
-                <div className="page-scan-glow" />
-                <div className="page-scan-line" />
-              </div>
-            ) : loaderVariant === 'halftone-page' ? (
-              <div className="halftone-bg halftone-bg-full-page" aria-hidden="true">
-                <div className="halftone-grid-base" />
-                <div className="halftone-grid-wave" />
-              </div>
-            ) : null}
+            <div className="page-scan-beam" aria-hidden="true">
+              <div className="page-scan-glow" />
+              <div className="page-scan-line" />
+            </div>
 
             <div
               ref={processingContentRef}
-              className={`page-processing-content ${cardStyle} ${
-                loaderVariant === 'halftone-card' ? 'halftone-navy-card' : ''
-              }`}
+              className="page-processing-content"
             >
-              {loaderVariant === 'halftone-card' && (
-                <div className="halftone-bg" aria-hidden="true">
-                  <div className="halftone-grid-base" />
-                  <div className="halftone-grid-wave" />
-                </div>
-              )}
+              <div className="processing-spinner-ring" />
               <div className="page-processing-body">
                 <div className="page-processing-status">
                   <span className="page-processing-title">{processingCopy.title}</span>

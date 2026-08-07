@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect, useRef, useReducer } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { FileText } from 'lucide-react';
 import PageViewer from './reader/PageViewer';
-import DebugPanel from './reader/DebugPanel';
-import SentenceOrderingPanel from './reader/SentenceOrderingPanel';
+import LeftRail from './components/LeftRail';
+import ReaderToolbar from './components/ReaderToolbar';
+import RightRail from './components/RightRail';
 import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './reader/types';
 import {
   emptyPageInteractionState,
@@ -27,7 +29,6 @@ import {
 import { emptyOrderingView, orderingViewReducer } from './reader/floatingOrdering';
 import { currentPageStage, isCurrentPageProcessing, isProcessingStage, processLabel, resolveProcessControl, type ProcessingTarget } from './reader/processing';
 import { useProcessingRecoveryTracker } from './reader/useProcessingRecovery';
-import { ZOOM_OPTIONS } from './reader/zoom';
 import {
   getBookPage,
   getBookPages,
@@ -45,6 +46,16 @@ import { readPageRotation, writePageRotation } from './state/pageRotation';
 import { readZoomPreference, writeZoomPreference } from './state/zoom';
 import { rotateLeft, rotateRight, type PageRotation } from './reader/rotation';
 import { readAnswersForPage, writeAnswersForPage } from './state/exerciseAnswers';
+import {
+  readDesignVariantPreference,
+  readDevModePreference,
+  readThemeModePreference,
+  writeDesignVariantPreference,
+  writeDevModePreference,
+  writeThemeModePreference,
+  type DesignVariant,
+  type ThemeMode,
+} from './state/designLab';
 
 type Status = 'idle' | 'restoring' | 'uploading' | 'ready';
 
@@ -77,6 +88,9 @@ const SHOW_MATCHING_DETECTION_KEY = 'lexora.showMatchingDetection';
 const SHOW_FREE_TEXT_DETECTION_KEY = 'lexora.showFreeTextDetection';
 
 export default function App() {
+  const [variant, setVariant] = useState<DesignVariant>(readDesignVariantPreference);
+  const [devMode, setDevMode] = useState<boolean>(readDevModePreference);
+
   const [status, setStatus] = useState<Status>(() => (
     localStorage.getItem(CURRENT_BOOK_KEY) ? 'restoring' : 'idle'
   ));
@@ -111,7 +125,6 @@ export default function App() {
   ));
   const [zoom, setZoom] = useState<number>(() => readZoomPreference());
   const [rotation, setRotation] = useState<PageRotation>(0);
-  const [railTab, setRailTab] = useState<'interactions' | 'debug'>('interactions');
   const [orderingActivePrompt, setOrderingActivePrompt] = useState<string | null>(null);
   const [orderingPanelCollapsed, setOrderingPanelCollapsed] = useState(false);
   const [matchingSelection, dispatchMatchingSelection] = useReducer(
@@ -125,15 +138,35 @@ export default function App() {
   );
   const { mode: orderingMode, expandedExerciseId: expandedOrderingExercise, closedExerciseIds: closedOrderingExercises } = orderingView;
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [theme, setTheme] = useState<ThemeMode>(() => readThemeModePreference());
   const activePage = useRef(selectedPage);
   const processingInFlight = useRef(false);
   const bookIdRef = useRef<string | null>(null);
   const persistTimer = useRef<number | null>(null);
   const pendingPersist = useRef<PendingPersist | null>(null);
-  // Monotonic token for document selection: restoration and uploads are
-  // async, and a late completion must never clobber a newer user action.
   const uploadTokenRef = useRef(0);
   activePage.current = selectedPage;
+
+  const handleVariantChange = useCallback((nextVariant: DesignVariant) => {
+    setVariant(nextVariant);
+    writeDesignVariantPreference(nextVariant);
+  }, []);
+
+  const handleToggleTheme = useCallback(() => {
+    setTheme((curr) => {
+      const next = curr === 'dark' ? 'light' : 'dark';
+      writeThemeModePreference(next);
+      return next;
+    });
+  }, []);
+
+  const handleToggleDevMode = useCallback(() => {
+    setDevMode((curr) => {
+      const next = !curr;
+      writeDevModePreference(next);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     bookIdRef.current = book?.id ?? null;
@@ -181,13 +214,7 @@ export default function App() {
 
   const showPage = useCallback((nextPage: BookPageResource | null, bookId: string) => {
     setPage(nextPage);
-    // A missing page resource (never-processed page) must not reset rotation
-    // to 0: the state already holds the current page's saved rotation,
-    // preloaded by selectPage/restore before the fetch completed.
     if (nextPage) setRotation(readPageRotation(bookId, nextPage.pageNumber));
-    // A failed forced refresh retains the previous analysis server-side
-    // (BookPage.markFailed keeps it). Keep it usable on FAILED pages so a
-    // failed Update analysis does not blank out the working page.
     const analysis = nextPage && (
       nextPage.processingStatus === 'READY' || nextPage.processingStatus === 'FAILED'
     ) ? nextPage.analysis : null;
@@ -241,13 +268,42 @@ export default function App() {
     if (nextPage === activePage.current) return;
     flushPendingAnswers();
     clearPageInteraction();
-    // Preload the target page's saved rotation so the canvas is never drawn
-    // with the previous page's rotation while the page resource loads.
     const bookId = bookIdRef.current;
     if (bookId) setRotation(readPageRotation(bookId, nextPage));
     setSelectedPage(nextPage);
     localStorage.setItem(CURRENT_PAGE_KEY, String(nextPage));
   }, [clearPageInteraction, flushPendingAnswers]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Toggle Dev Mode via Ctrl+Shift+D or Cmd+Shift+D
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'D' || event.key === 'd')) {
+        event.preventDefault();
+        handleToggleDevMode();
+        return;
+      }
+
+      // Check if user is typing in an input or textarea
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      if (!book) return;
+
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp' || event.key === 'k' || event.key === 'K') {
+        event.preventDefault();
+        selectPage(Math.max(1, activePage.current - 1));
+      } else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === 'j' || event.key === 'J') {
+        event.preventDefault();
+        selectPage(Math.min(book.pageCount, activePage.current + 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [book, selectPage, handleToggleDevMode]);
 
   useEffect(() => {
     const bookId = localStorage.getItem(CURRENT_BOOK_KEY);
@@ -521,7 +577,6 @@ export default function App() {
     const exerciseId = interaction.sentenceOrderings
       .find((i) => i.id === interactionId)?.exerciseId;
     if (orderingMode === 'docked') {
-      setRailTab('interactions');
       setOrderingPanelCollapsed(false);
     } else if (exerciseId) {
       dispatchOrderingView({ type: 'expand', exerciseId });
@@ -607,7 +662,6 @@ export default function App() {
 
   const handleOrderingDock = useCallback(() => {
     dispatchOrderingView({ type: 'dock' });
-    setRailTab('interactions');
   }, []);
 
   const handleOrderingFloat = useCallback(() => {
@@ -630,6 +684,11 @@ export default function App() {
     writePageRotation(bookId, activePage.current, next);
   }, [rotation]);
 
+  const handleUpdateBoxPref = useCallback((key: string, value: boolean, setter: (val: boolean) => void) => {
+    setter(value);
+    writeBooleanPreference(key, value);
+  }, []);
+
   const currentPageProcessing = isCurrentPageProcessing(processingTarget, book?.id, selectedPage);
   const pageStage = currentPageStage(page?.processingStatus, currentPageProcessing);
   const processing = isProcessingStage(pageStage);
@@ -638,297 +697,159 @@ export default function App() {
   const processButtonLabel = processLabel(processControl);
 
   return (
-    <div className="app">
-      <header className="toolbar">
-        <h1>Lexora PoC 1</h1>
-        <div className="toolbar-controls">
-          <label className="upload-btn">
-            Upload PDF
-            <input
-              type="file"
-              accept=".pdf"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void handleUpload(file);
-              }}
-            />
-          </label>
+    <div className={`app ${theme}`} data-design={variant} data-theme={theme} data-dev-mode={devMode}>
+      <LeftRail devMode={devMode} onToggleDevMode={handleToggleDevMode} />
 
-          {book && (
-            <>
-              <span className="page-info">
-                Page
-                <input
-                  type="number"
-                  min={1}
-                  max={book.pageCount}
-                  value={selectedPage}
-                  aria-label={`Go to page, currently page ${selectedPage} of ${book.pageCount}`}
-                  onChange={(event) => {
-                    const nextPage = Math.max(1, Math.min(book.pageCount, Number(event.target.value)));
-                    selectPage(nextPage);
-                  }}
-                  className="page-input"
-                />
-                / {book.pageCount}
-              </span>
-              <button
-                onClick={() => void handleProcessPage()}
-                disabled={processControl === 'none' || processControl === 'processed' || processing || processingBusy}
-              >
-                {processButtonLabel}
-              </button>
-              {processingBusy && !processing && (
-                <span className="status">Processing page {processingTarget?.pageNumber}…</span>
-              )}
-            </>
-          )}
+      <div className="app-main-workspace">
+        <ReaderToolbar
+          book={book}
+          selectedPage={selectedPage}
+          onSelectPage={selectPage}
+          onUpload={(file) => void handleUpload(file)}
+          onProcessPage={() => void handleProcessPage()}
+          processControl={processControl}
+          processButtonLabel={processButtonLabel}
+          processing={processing}
+          processingBusy={processingBusy}
+          processingTarget={processingTarget}
+          pageStage={pageStage}
+          status={status}
+          zoom={zoom}
+          onZoomChange={(nextZoom) => {
+            setZoom(nextZoom);
+            writeZoomPreference(nextZoom);
+          }}
+          rotation={rotation}
+          onRotateLeft={handleRotateLeft}
+          onRotateRight={handleRotateRight}
+          devMode={devMode}
+          onToggleDevMode={handleToggleDevMode}
+          variant={variant}
+          onVariantChange={handleVariantChange}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
 
-          <select
-            value={zoom}
-            onChange={(event) => {
-              const nextZoom = Number(event.target.value);
-              setZoom(nextZoom);
-              writeZoomPreference(nextZoom);
-            }}
-            className="zoom-select"
-          >
-            {ZOOM_OPTIONS.map((option) => (
-              <option key={option} value={option}>{Math.round(option * 100)}%</option>
-            ))}
-          </select>
-
-          {book && (
-            <div className="rotate-controls" aria-label="Page rotation">
-              <button
-                type="button"
-                className="rotate-btn"
-                aria-label="Rotate page left"
-                title="Rotate page left"
-                onClick={handleRotateLeft}
-              >
-                ↺
-              </button>
-              <span className="rotate-degree" aria-live="polite">
-                {rotation}°
-              </span>
-              <button
-                type="button"
-                className="rotate-btn"
-                aria-label="Rotate page right"
-                title="Rotate page right"
-                onClick={handleRotateRight}
-              >
-                ↻
-              </button>
-            </div>
-          )}
-
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={showBoxes}
-              onChange={(event) => {
-                setShowBoxes(event.target.checked);
-                writeBooleanPreference(SHOW_BOXES_KEY, event.target.checked);
-              }}
-            />
-            Show OCR boxes
-          </label>
-
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={showBlankDetection}
-              onChange={(event) => {
-                setShowBlankDetection(event.target.checked);
-                writeBooleanPreference(SHOW_BLANK_DETECTION_KEY, event.target.checked);
-              }}
-            />
-            Show blank detection
-          </label>
-
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={showChoiceDetection}
-              onChange={(event) => {
-                setShowChoiceDetection(event.target.checked);
-                writeBooleanPreference(SHOW_CHOICE_DETECTION_KEY, event.target.checked);
-              }}
-            />
-            Show choice detection
-          </label>
-
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={showGridDetection}
-              onChange={(event) => {
-                setShowGridDetection(event.target.checked);
-                writeBooleanPreference(SHOW_GRID_DETECTION_KEY, event.target.checked);
-              }}
-            />
-            Show grid detection
-          </label>
-
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={showSentenceOrderingDetection}
-              onChange={(event) => {
-                setShowSentenceOrderingDetection(event.target.checked);
-                writeBooleanPreference(SHOW_SENTENCE_ORDERING_DETECTION_KEY, event.target.checked);
-              }}
-            />
-            Show ordering detection
-          </label>
-
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={showMatchingDetection}
-              onChange={(event) => {
-                setShowMatchingDetection(event.target.checked);
-                writeBooleanPreference(SHOW_MATCHING_DETECTION_KEY, event.target.checked);
-              }}
-            />
-            Show matching detection
-          </label>
-
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={showFreeTextDetection}
-              onChange={(event) => {
-                setShowFreeTextDetection(event.target.checked);
-                writeBooleanPreference(SHOW_FREE_TEXT_DETECTION_KEY, event.target.checked);
-              }}
-            />
-            Show free-text detection
-          </label>
-
-          {pageStage === 'FAILED' && (
-            <span className="status status-error">Failed. Retry is available.</span>
-          )}
-          {status === 'uploading' && <span className="status">Uploading...</span>}
-        </div>
-      </header>
-
-      <main className="reader-layout">
-        <div className="page-area">
-          {status === 'restoring' ? (
-            <div className="restoration-skeleton" aria-label="Restoring PDF">
-              <Skeleton width="100%" height="100%" />
-            </div>
-          ) : pdfData ? (
-            <PageViewer
-              pdfData={pdfData}
-              pageNumber={selectedPage}
-              rotation={rotation}
-              spans={interaction.spans}
-              blanks={interaction.blanks}
-              choices={interaction.choices}
-              choiceGroups={interaction.choiceGroups}
-              grids={interaction.grids}
-              sentenceOrderings={interaction.sentenceOrderings}
-              matchings={interaction.matchings}
-              freeTexts={interaction.freeTexts}
-              answers={interaction.answers}
-              activeOrderingPromptId={orderingActivePrompt}
-              orderingFloat={orderingMode === 'floating' ? {
-                expandedExerciseId: expandedOrderingExercise,
-                closedExerciseIds: closedOrderingExercises,
-                onExpand: (exerciseId) => dispatchOrderingView({ type: 'expand', exerciseId }),
-                onCollapse: () => dispatchOrderingView({ type: 'collapse' }),
-                onClose: (exerciseId) => dispatchOrderingView({ type: 'close', exerciseId }),
-                onDock: handleOrderingDock,
-                onPromptChange: setOrderingActivePrompt,
-                onOrderingChange: handleOrderingChange,
-              } : undefined}
-              matchingSelection={matchingSelection}
-              zoom={zoom}
-              showBoxes={showBoxes}
-              showBlankDetection={showBlankDetection}
-              showChoiceDetection={showChoiceDetection}
-              showGridDetection={showGridDetection}
-              showSentenceOrderingDetection={showSentenceOrderingDetection}
-              showMatchingDetection={showMatchingDetection}
-              showFreeTextDetection={showFreeTextDetection}
-              selectedChoice={interaction.selectedChoice}
-              processingStage={pageStage}
-              onSpanClick={handleSpanClick}
-              onBlankClick={handleBlankClick}
-              onAnswerChange={handleAnswerChange}
-              onChoiceClick={handleChoiceClick}
-              onChoiceSelect={handleChoiceSelect}
-              onChoiceClose={handleChoiceClose}
-              onGridSelect={handleGridSelect}
-              onOrderingFragmentClick={handleOrderingFragmentClick}
-              onOrderingChange={handleOrderingChange}
-              onMatchingItemClick={handleMatchingItemClick}
-              onMatchingUnpair={handleMatchingUnpair}
-              onMatchingReset={handleMatchingReset}
-            />
-          ) : (
-            <div className="empty-state">Upload a scanned PDF to begin</div>
-          )}
-        </div>
-        <aside className="interaction-rail">
-          {orderingMode === 'docked' ? (
-            <>
-              <div className="rail-tabs" role="tablist" aria-label="Reader tools">
-                {interaction.sentenceOrderings.length > 0 && (
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={railTab === 'interactions'}
-                    className={`rail-tab${railTab === 'interactions' ? ' rail-tab-active' : ''}`}
-                    onClick={() => setRailTab('interactions')}
-                  >
-                    Ordering ({interaction.sentenceOrderings.length})
-                  </button>
-                )}
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={railTab === 'debug'}
-                  className={`rail-tab${railTab === 'debug' ? ' rail-tab-active' : ''}`}
-                  onClick={() => setRailTab('debug')}
-                >
-                  Debug
-                </button>
+        <main className="reader-layout">
+          <div className="page-area">
+            {status === 'restoring' ? (
+              <div className="restoration-skeleton" aria-label="Restoring PDF">
+                <Skeleton width="100%" height="100%" />
               </div>
-              {railTab === 'interactions' && interaction.sentenceOrderings.length > 0 ? (
-                <SentenceOrderingPanel
-                  sentenceOrderings={interaction.sentenceOrderings}
-                  orderingAnswers={interaction.answers}
-                  activePromptId={orderingActivePrompt}
-                  disabled={processing}
-                  collapsed={orderingPanelCollapsed}
-                  onPromptChange={setOrderingActivePrompt}
-                  onOrderingChange={handleOrderingChange}
-                  onCollapseChange={setOrderingPanelCollapsed}
-                  onFloat={handleOrderingFloat}
-                />
-              ) : (
-                <DebugPanel
-                  span={interaction.selectedSpan}
-                  blank={interaction.selectedBlank}
-                  choice={interaction.selectedChoice}
-                />
-              )}
-            </>
-          ) : (
-            <DebugPanel
-              span={interaction.selectedSpan}
-              blank={interaction.selectedBlank}
-              choice={interaction.selectedChoice}
-            />
-          )}
-        </aside>
-      </main>
+            ) : pdfData ? (
+              <PageViewer
+                pdfData={pdfData}
+                pageNumber={selectedPage}
+                rotation={rotation}
+                spans={interaction.spans}
+                blanks={interaction.blanks}
+                choices={interaction.choices}
+                choiceGroups={interaction.choiceGroups}
+                grids={interaction.grids}
+                sentenceOrderings={interaction.sentenceOrderings}
+                matchings={interaction.matchings}
+                freeTexts={interaction.freeTexts}
+                answers={interaction.answers}
+                activeOrderingPromptId={orderingActivePrompt}
+                orderingFloat={orderingMode === 'floating' ? {
+                  expandedExerciseId: expandedOrderingExercise,
+                  closedExerciseIds: closedOrderingExercises,
+                  onExpand: (exerciseId) => dispatchOrderingView({ type: 'expand', exerciseId }),
+                  onCollapse: () => dispatchOrderingView({ type: 'collapse' }),
+                  onClose: (exerciseId) => dispatchOrderingView({ type: 'close', exerciseId }),
+                  onDock: handleOrderingDock,
+                  onPromptChange: setOrderingActivePrompt,
+                  onOrderingChange: handleOrderingChange,
+                } : undefined}
+                matchingSelection={matchingSelection}
+                zoom={zoom}
+                showBoxes={devMode ? showBoxes : false}
+                showBlankDetection={devMode ? showBlankDetection : false}
+                showChoiceDetection={devMode ? showChoiceDetection : false}
+                showGridDetection={devMode ? showGridDetection : false}
+                showSentenceOrderingDetection={devMode ? showSentenceOrderingDetection : false}
+                showMatchingDetection={devMode ? showMatchingDetection : false}
+                showFreeTextDetection={devMode ? showFreeTextDetection : false}
+                selectedChoice={interaction.selectedChoice}
+                processingStage={pageStage}
+                onSpanClick={handleSpanClick}
+                onBlankClick={handleBlankClick}
+                onAnswerChange={handleAnswerChange}
+                onChoiceClick={handleChoiceClick}
+                onChoiceSelect={handleChoiceSelect}
+                onChoiceClose={handleChoiceClose}
+                onGridSelect={handleGridSelect}
+                onOrderingFragmentClick={handleOrderingFragmentClick}
+                onOrderingChange={handleOrderingChange}
+                onMatchingItemClick={handleMatchingItemClick}
+                onMatchingUnpair={handleMatchingUnpair}
+                onMatchingReset={handleMatchingReset}
+              />
+            ) : (
+              <div className="empty-state">
+                <div className="empty-hero">
+                  <div className="empty-hero-icon">
+                    <FileText size={36} strokeWidth={1.5} />
+                  </div>
+                  <h2>Welcome to Lexora Study Reader</h2>
+                  <p>Upload a scanned German workbook PDF to begin interactive exercise practice.</p>
+                  <label className="upload-hero-btn">
+                    <span>Select Workbook PDF</span>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      hidden
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void handleUpload(file);
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <RightRail
+            devMode={devMode}
+            spans={interaction.spans}
+            blanks={interaction.blanks}
+            choices={interaction.choices}
+            grids={interaction.grids}
+            sentenceOrderings={interaction.sentenceOrderings}
+            matchings={interaction.matchings}
+            freeTexts={interaction.freeTexts}
+            answers={interaction.answers}
+            selectedSpan={interaction.selectedSpan}
+            selectedBlank={interaction.selectedBlank}
+            selectedChoice={interaction.selectedChoice}
+            orderingActivePrompt={orderingActivePrompt}
+            orderingPanelCollapsed={orderingPanelCollapsed}
+            processing={processing}
+            orderingMode={orderingMode}
+            onPromptChange={setOrderingActivePrompt}
+            onOrderingChange={handleOrderingChange}
+            onCollapseChange={setOrderingPanelCollapsed}
+            onFloat={handleOrderingFloat}
+            showBoxes={showBoxes}
+            setShowBoxes={(val) => handleUpdateBoxPref(SHOW_BOXES_KEY, val, setShowBoxes)}
+            showBlankDetection={showBlankDetection}
+            setShowBlankDetection={(val) => handleUpdateBoxPref(SHOW_BLANK_DETECTION_KEY, val, setShowBlankDetection)}
+            showChoiceDetection={showChoiceDetection}
+            setShowChoiceDetection={(val) => handleUpdateBoxPref(SHOW_CHOICE_DETECTION_KEY, val, setShowChoiceDetection)}
+            showGridDetection={showGridDetection}
+            setShowGridDetection={(val) => handleUpdateBoxPref(SHOW_GRID_DETECTION_KEY, val, setShowGridDetection)}
+            showSentenceOrderingDetection={showSentenceOrderingDetection}
+            setShowSentenceOrderingDetection={(val) => handleUpdateBoxPref(SHOW_SENTENCE_ORDERING_DETECTION_KEY, val, setShowSentenceOrderingDetection)}
+            showMatchingDetection={showMatchingDetection}
+            setShowMatchingDetection={(val) => handleUpdateBoxPref(SHOW_MATCHING_DETECTION_KEY, val, setShowMatchingDetection)}
+            showFreeTextDetection={showFreeTextDetection}
+            setShowFreeTextDetection={(val) => handleUpdateBoxPref(SHOW_FREE_TEXT_DETECTION_KEY, val, setShowFreeTextDetection)}
+            onBlankClick={handleBlankClick}
+            onChoiceClick={handleChoiceClick}
+          />
+        </main>
+      </div>
     </div>
   );
 }

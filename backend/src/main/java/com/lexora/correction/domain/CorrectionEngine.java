@@ -16,9 +16,13 @@ public final class CorrectionEngine {
         String learnerValue,
         AnswerResolutionStatus resolution
     ) {
-        if (entry == null || resolution != AnswerResolutionStatus.RESOLVED) {
-            var res = resolution != null ? resolution : AnswerResolutionStatus.MISSING;
-            return new CorrectionResult(CorrectionVerdict.NOT_AUTO_GRADABLE, res);
+        if (entry == null) {
+            return new CorrectionResult(CorrectionVerdict.NOT_AUTO_GRADABLE,
+                resolution != null ? resolution : AnswerResolutionStatus.MISSING);
+        }
+
+        if (resolution != AnswerResolutionStatus.RESOLVED) {
+            return new CorrectionResult(CorrectionVerdict.NOT_AUTO_GRADABLE, resolution);
         }
 
         if (isNotAutoGradable(entry.interactionKind())) {

@@ -1,0 +1,44 @@
+name: OCR Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  ocr-smoke:
+    name: OCR full install + real inference smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PADDLE_PDX_MODEL_SOURCE: BOS
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ai-service/pyproject.toml
+      - name: Full install (incl. paddlepaddle/paddleocr)
+        working-directory: ai-service
+        run: pip install ".[test]"
+      - name: Run full test suite (incl. OCR)
+        working-directory: ai-service
+        run: python -m pytest
+      - name: Real-inference smoke on synthetic image
+        working-directory: ai-service
+        run: |
+          python - <<'EOF'
+          from PIL import Image, ImageDraw
+          from app.document.ocr import create_page_analysis
+
+          img = Image.new("RGB", (400, 120), "white")
+          draw = ImageDraw.Draw(img)
+          draw.text((20, 40), "Lexora CI smoke 2026", fill="black")
+          path = "/tmp/lexora_ci_smoke.png"
+          img.save(path)
+
+          analysis = create_page_analysis("ci-smoke", 1, path)
+          assert analysis.schemaVersion == "0.2.0"
+          print(f"OCR smoke OK: schemaVersion={analysis.schemaVersion}")
+          EOF

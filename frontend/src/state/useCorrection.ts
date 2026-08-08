@@ -121,10 +121,11 @@ export function useCorrection(params: UseCorrectionParams): UseCorrectionReturn 
       entry: findEntry(entries, pageNumber, 'matching', index),
     }));
 
-    const freeTextInputs = freeTexts.map((freeText) => ({
+    const freeTextInputs = freeTexts.map((freeText, index) => ({
       id: freeText.id,
       freeText,
       learnerValue: answers[freeText.id],
+      entry: findEntry(entries, pageNumber, 'free-text', index),
     }));
 
     const result = computeCorrectionMap({
@@ -187,11 +188,11 @@ export function useCorrection(params: UseCorrectionParams): UseCorrectionReturn 
   );
 
   const totalCorrect = Object.values(state.verdictByItem).filter(
-    (v) => v === CorrectionVerdict.CORRECT,
+    (v) => v !== undefined && v === CorrectionVerdict.CORRECT,
   ).length;
 
   const totalGradable = Object.values(state.verdictByItem).filter(
-    (v) => v !== CorrectionVerdict.NOT_AUTO_GRADABLE,
+    (v) => v !== undefined && v !== CorrectionVerdict.NOT_AUTO_GRADABLE,
   ).length;
 
   return {

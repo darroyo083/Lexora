@@ -13,7 +13,7 @@ interface CorrectionGlyphsProps {
     id: string;
     rows: Array<{ id: string; rowBbox: BBox; cells: Array<{ id: string; cellBbox: BBox }> }>;
   }>;
-  verdictByItem: Record<string, CorrectionVerdict>;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
   rotation: PageRotation;
   viewportHeight: number;
   suppressed: boolean;

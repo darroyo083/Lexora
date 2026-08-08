@@ -46,7 +46,7 @@ interface Props {
   setShowFreeTextDetection: (val: boolean) => void;
   onBlankClick: (blank: ExerciseBlank) => void;
   onChoiceClick: (choice: ChoiceTarget) => void;
-  verdictByItem: Record<string, CorrectionVerdict>;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
   resolutionByItem: Record<string, AnswerResolutionStatus>;
   correctionDetails: Record<string, { correctCount: number; totalCount: number }>;
   correctionReveal: Record<string, boolean>;
@@ -321,12 +321,12 @@ export default function RightRail({
             <CheckBar
               totalGradable={
                 Object.values(verdictByItem).filter(
-                  (v) => v !== CorrectionVerdict.NOT_AUTO_GRADABLE,
+                  (v) => v !== undefined && v !== CorrectionVerdict.NOT_AUTO_GRADABLE,
                 ).length
               }
               totalCorrect={
                 Object.values(verdictByItem).filter(
-                  (v) => v === CorrectionVerdict.CORRECT,
+                  (v) => v !== undefined && v === CorrectionVerdict.CORRECT,
                 ).length
               }
               uiState={correctionUiState}

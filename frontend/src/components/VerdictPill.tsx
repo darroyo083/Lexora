@@ -2,7 +2,7 @@ import { Check, X, Eye, Minus } from 'lucide-react';
 import { CorrectionVerdict, AnswerResolutionStatus } from '../state/correction';
 
 interface VerdictPillProps {
-  verdict: CorrectionVerdict | null;
+  verdict: CorrectionVerdict | null | undefined;
   resolution: AnswerResolutionStatus | null;
   revealed: boolean;
   details?: { correctCount: number; totalCount: number };
@@ -37,7 +37,7 @@ export default function VerdictPill({
       return (
         <span className="verdict-pill neutral" aria-label="No answer key available">
           <Minus size={13} />
-          <span>No key</span>
+          <span>No answer key available</span>
         </span>
       );
     }

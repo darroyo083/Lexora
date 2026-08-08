@@ -121,7 +121,7 @@ interface Props {
   onMatchingItemClick: (interactionId: string, itemId: string, side: 'left' | 'right') => void;
   onMatchingUnpair: (interactionId: string, itemId: string) => void;
   onMatchingReset: (interactionId: string) => void;
-  verdictByItem: Record<string, CorrectionVerdict>;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
   resolutionByItem: Record<string, AnswerResolutionStatus>;
   reveal: Record<string, boolean>;
 }

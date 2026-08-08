@@ -145,7 +145,7 @@ export default function App() {
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => readThemeModePreference());
   const [answerKey, setAnswerKey] = useState<AnswerKey | null>(null);
-  const [correctionVerdicts, setCorrectionVerdicts] = useState<Record<string, CorrectionVerdict>>({});
+  const [correctionVerdicts, setCorrectionVerdicts] = useState<Record<string, CorrectionVerdict | undefined>>({});
   const [correctionResolutions, setCorrectionResolutions] = useState<Record<string, AnswerResolutionStatus>>({});
   const [correctionDetails, setCorrectionDetails] = useState<Record<string, { correctCount: number; totalCount: number }>>({});
   const [correctionUiState, setCorrectionUiState] = useState<string>('IDLE');
@@ -789,10 +789,11 @@ export default function App() {
         learnerValue: interaction.answers[matching.id],
         entry: findEntry('matching', index),
       })),
-      freeTexts: interaction.freeTexts.map((freeText) => ({
+      freeTexts: interaction.freeTexts.map((freeText, index) => ({
         id: freeText.id,
         freeText,
         learnerValue: interaction.answers[freeText.id],
+        entry: findEntry('free-text', index),
       })),
     });
 

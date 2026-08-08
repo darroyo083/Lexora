@@ -68,7 +68,9 @@ jobs:
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && (d('backend/**') || d('**/db/migration/**')))
+      (github.event_name == 'pull_request' &&
+       (contains(join(github.event.pull_request.changed_files, ','), 'backend/') ||
+        contains(join(github.event.pull_request.changed_files, ','), 'db/migration/')))
     services:
       postgres:
         image: postgres:18-alpine

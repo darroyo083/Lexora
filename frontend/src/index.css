@@ -1,5 +1,7 @@
 ﻿/* ==========================================================================
-   LEXORA READER DESIGN SYSTEM & DESIGN LAB VARIANTS
+   LEXORA READER DESIGN SYSTEM — STITCH / OBSIDIAN
+   Single design system: deep black shell, mineral sage accent,
+   pristine light PDF hero, with dark and light themes.
    ========================================================================== */
 
 *, *::before, *::after {
@@ -14,121 +16,10 @@
 }
 
 /* --------------------------------------------------------------------------
-   Variant A: Editorial Calm (Graphite + Warm Amber Gold)
-   Timeless, calm, document-first, quiet paper neutrals, warm gold accent
-   -------------------------------------------------------------------------- */
-[data-design="editorial"], :root:not([data-design]) {
-  --bg-app: #F6F5F2;
-  --bg-canvas: #F3F2EE;
-  --bg-surface: #FFFFFF;
-  --bg-surface-subtle: #F8F7F4;
-  --bg-surface-hover: #F1F0EC;
-
-  --text-primary: #1C1917;
-  --text-secondary: #44403C;
-  --text-tertiary: #78716C;
-  --text-inverse: #FFFFFF;
-
-  --border-subtle: #E7E5E4;
-  --border-strong: #D6D3D1;
-  --border-focus: #B45309;
-
-  --accent-primary: #B45309;
-  --accent-hover: #92400E;
-  --accent-active: #78350F;
-  --accent-soft: rgba(180, 83, 9, 0.09);
-
-  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
-  --shadow-md: 0 4px 12px rgba(28, 25, 23, 0.06);
-  --shadow-page: 0 8px 30px rgba(28, 25, 23, 0.08);
-
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-
-  --toolbar-glass-backdrop: none;
-  --toolbar-bg: #FFFFFF;
-}
-
-/* --------------------------------------------------------------------------
-   Variant B: Distinctive Premium (Muted Plum / Deep Aubergine)
-   High-end, elegant, non-generic, warm plum neutrals, rich mature contrast
-   -------------------------------------------------------------------------- */
-[data-design="liquid"] {
-  --bg-app: #FAF7FD;
-  --bg-canvas: #F5EFEB;
-  --bg-surface: #FFFFFF;
-  --bg-surface-subtle: #F8F5FC;
-  --bg-surface-hover: #F3E8FF;
-
-  --text-primary: #2E1065;
-  --text-secondary: #4C1D95;
-  --text-tertiary: #7E22CE;
-  --text-inverse: #FFFFFF;
-
-  --border-subtle: #F3E8FF;
-  --border-strong: #E9D5FF;
-  --border-focus: #6B21A8;
-
-  --accent-primary: #6B21A8;
-  --accent-hover: #581C87;
-  --accent-active: #3B0764;
-  --accent-soft: rgba(107, 33, 168, 0.1);
-
-  --shadow-sm: 0 2px 4px rgba(46, 16, 101, 0.04);
-  --shadow-md: 0 8px 24px rgba(46, 16, 101, 0.08);
-  --shadow-page: 0 10px 32px rgba(46, 16, 101, 0.1);
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-
-  --toolbar-glass-backdrop: none;
-  --toolbar-bg: #FFFFFF;
-}
-
-/* --------------------------------------------------------------------------
-   Variant C: Study Clarity (Forest / Sage Green - Refined)
-   Neutral graphite typography, warm sage paper neutrals, forest sage accents
-   -------------------------------------------------------------------------- */
-[data-design="interactive"] {
-  --bg-app: #F4F6F1;
-  --bg-canvas: #F0F2EC;
-  --bg-surface: #FFFEFC;
-  --bg-surface-subtle: #F7F8F4;
-  --bg-surface-hover: #EEF1E8;
-
-  --text-primary: #1C201D;
-  --text-secondary: #59605B;
-  --text-tertiary: #858C87;
-  --text-inverse: #FFFFFF;
-
-  --border-subtle: #E1E5DE;
-  --border-strong: #D0D7CE;
-  --border-focus: #41765A;
-
-  --accent-primary: #35634A;
-  --accent-hover: #41765A;
-  --accent-active: #294D3A;
-  --accent-soft: rgba(53, 99, 74, 0.09);
-
-  --shadow-sm: 0 1px 2px rgba(28, 32, 29, 0.04);
-  --shadow-md: 0 4px 12px rgba(28, 32, 29, 0.06);
-  --shadow-page: 0 8px 30px rgba(28, 32, 29, 0.08);
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-
-  --toolbar-glass-backdrop: none;
-  --toolbar-bg: #FFFEFC;
-}
-
-/* --------------------------------------------------------------------------
-   Variant D: Stitch / Obsidian (Deep Black Shell + Muted Mineral Sage Accent)
+   Stitch / Obsidian (Deep Black Shell + Muted Mineral Sage Accent)
    Architectural dark precision shell, 1px subtle outlines, pristine light PDF hero
    -------------------------------------------------------------------------- */
-[data-design="stitch"] {
+[data-design="stitch"], :root:not([data-design]) {
   --bg-app: #09090B;
   --bg-canvas: #121215;
   --bg-surface: #18181B;
@@ -161,7 +52,7 @@
   --toolbar-bg: #18181B;
 }
 
-/* Variant D Specific Architectural Dark Shell Polish */
+/* Stitch / Obsidian Specific Architectural Dark Shell Polish */
 .app[data-design="stitch"] .left-rail {
   background: #09090B;
   border-right: 1px solid #27272A;
@@ -287,13 +178,13 @@
 
 .app[data-design="stitch"] .theme-toggle-btn {
   border-radius: 4px;
-  border: none !important;
-  background: transparent !important;
+  border: none;
+  background: transparent;
   color: #A1A1AA;
 }
 
 .app[data-design="stitch"] .theme-toggle-btn:hover {
-  background: transparent !important;
+  background: transparent;
   color: #FAFAFA;
 }
 
@@ -500,8 +391,7 @@
 .app[data-theme="light"] .page-nav-group,
 .app[data-theme="light"] .rotate-controls,
 .app[data-theme="light"] .zoom-select,
-.app[data-theme="light"] .dev-toggle-btn,
-.app[data-theme="light"] .theme-toggle-btn {
+.app[data-theme="light"] .dev-toggle-btn {
   background: #FFFFFF;
   border: 1px solid #D8DFD4;
   color: #181E19;
@@ -520,7 +410,7 @@
 }
 
 .app[data-theme="light"] .rail-header {
-  background: #FFFFFF;
+  background: #F0F4EC;
   border-bottom: 1px solid #D8DFD4;
 }
 
@@ -559,22 +449,22 @@
 }
 
 .app[data-theme="light"] .theme-toggle-btn {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   color: #525E55;
 }
 
 .app[data-theme="light"] .theme-toggle-btn:hover {
   color: #181E19;
-  background: transparent !important;
+  background: transparent;
 }
 
 .app[data-theme="light"] .exercise-type-badge {
   background: #F0F4EC;
   border: 1px solid #D8DFD4;
   color: #35634A;
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 .app[data-theme="light"] .item-status.empty {
@@ -727,20 +617,13 @@ html, body, #root {
   z-index: 9;
 }
 
-.toolbar-liquid-wrapper {
+.toolbar-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   height: 100%;
   gap: 16px;
-}
-
-.app[data-design="liquid"] .reader-toolbar {
-  padding: 0 16px;
-  background: var(--toolbar-bg);
-  border-bottom: 1px solid var(--border-subtle);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 4px 20px rgba(15, 23, 42, 0.06);
 }
 
 .toolbar-left, .toolbar-center, .toolbar-right {
@@ -987,9 +870,9 @@ html, body, #root {
 }
 
 .dev-toggle-btn.active {
-  background: #FEF3C7;
-  border-color: #F59E0B;
-  color: #B45309;
+  background: var(--accent-soft);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .dev-toggle-badge {
@@ -1354,7 +1237,7 @@ html, body, #root {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #B45309;
+  color: var(--accent-primary);
   margin-bottom: 10px;
 }
 
@@ -2288,15 +2171,6 @@ html, body, #root {
    PROCESSING LOADER & REDUCED MOTION SUPPORT (TEST CONTRACT)
    ========================================================================== */
 
-.card-minimal-light {
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 14px;
-}
-
-.halftone-grid-wave {
-  mask-image: linear-gradient(135deg, transparent 0%, transparent 25%, #000 50%, transparent 75%);
-}
-
 .page-processing-detail-message {
   animation: fade-in 0.2s ease;
 }
@@ -2524,16 +2398,68 @@ html, body, #root {
   to { transform: rotate(360deg); }
 }
 
-.halftone-bg, .halftone-grid-base, .halftone-grid-wave {
-  display: none !important;
+/* ==========================================================================
+   RESTRAINED MOTION LAYER
+   --------------------------------------------------------------------------
+   Motion only where it communicates state, continuity, or hierarchy.
+   150-200ms, ease-out curves, transform/opacity only. Never layout.
+   ========================================================================== */
+
+/* Theme toggle: shell surfaces crossfade so the switch feels like one
+   continuous surface instead of a hard cut. */
+.reader-toolbar,
+.left-rail,
+.right-rail,
+.rail-header,
+.page-area,
+.exercise-card,
+.empty-hero {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+
+/* Dev Inspector: appearing panel gets a light fade. */
+.dev-view {
+  animation: view-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Contextual popover (choice selector): anchored reveal. The inline
+   translateX(-50%) is preserved across the keyframe. */
+.choice-selector {
+  animation: selector-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top center;
+}
+
+@keyframes selector-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+/* SentenceOrdering: a newly placed token enters the constructed sentence. */
+.ordering-chip {
+  animation: chip-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes chip-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Floating ordering bubble: expanding a bubble acknowledges the new surface. */
+.ordering-bubble-expanded {
+  animation: bubble-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bubble-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes view-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .halftone-grid-wave {
-    animation: none;
-    transition: none;
-    display: none;
-  }
   .page-scan-line, .processing-spinner-ring {
     animation: none !important;
     transition: none !important;
@@ -2541,5 +2467,19 @@ html, body, #root {
   .page-processing, .page-processing * {
     animation: none;
     transition: none;
+  }
+  .reader-toolbar,
+  .left-rail,
+  .right-rail,
+  .rail-header,
+  .page-area,
+  .exercise-card,
+  .empty-hero,
+  .choice-selector,
+  .ordering-chip,
+  .ordering-bubble-expanded,
+  .dev-view {
+    animation: none !important;
+    transition: none !important;
   }
 }

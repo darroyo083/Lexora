@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Sun, Moon } from 'lucide-react';
-import type { DesignVariant, ThemeMode } from '../state/designLab';
+import type { ThemeMode } from '../state/theme';
 import { ZOOM_OPTIONS } from '../reader/zoom';
 import type { ProcessControl, ProcessingTarget } from '../reader/processing';
-import LiquidGlassContainer from './LiquidGlassContainer';
 
 interface BookInfo {
   id: string;
@@ -30,8 +29,6 @@ interface Props {
   onRotateRight: () => void;
   devMode: boolean;
   onToggleDevMode: () => void;
-  variant: DesignVariant;
-  onVariantChange: (variant: DesignVariant) => void;
   theme: ThemeMode;
   onToggleTheme: () => void;
 }
@@ -110,7 +107,6 @@ export default function ReaderToolbar({
   onRotateRight,
   devMode,
   onToggleDevMode,
-  variant,
   theme,
   onToggleTheme,
 }: Props) {
@@ -299,9 +295,9 @@ export default function ReaderToolbar({
 
   return (
     <header className="toolbar reader-toolbar">
-      <LiquidGlassContainer active={variant === 'liquid'} className="toolbar-liquid-wrapper">
+      <div className="toolbar-inner">
         {innerContent}
-      </LiquidGlassContainer>
+      </div>
     </header>
   );
 }

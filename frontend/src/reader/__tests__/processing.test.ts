@@ -238,19 +238,20 @@ describe('reduced-motion support', () => {
       fileURLToPath(new URL('../../index.css', import.meta.url)),
       'utf-8',
     );
-    expect(css).toContain('halftone-grid-wave');
     expect(css).toMatch(/prefers-reduced-motion\s*:\s*reduce/);
-    expect(css).toMatch(/halftone-grid-wave\s*\{[^}]*animation\s*:\s*none/);
-    expect(css).toMatch(/halftone-grid-wave\s*\{[^}]*transition\s*:\s*none/);
-    expect(css).toMatch(/halftone-grid-wave\s*\{[^}]*display\s*:\s*none/);
+    expect(css).toMatch(/\.page-scan-line,\s*\.processing-spinner-ring\s*\{[^}]*animation\s*:\s*none/);
+    expect(css).toMatch(/\.page-scan-line,\s*\.processing-spinner-ring\s*\{[^}]*transition\s*:\s*none/);
     expect(css).toMatch(/page-processing,\s*\.page-processing \*\s*\{[^}]*animation\s*:\s*none/);
     expect(css).toMatch(/page-processing,\s*\.page-processing \*\s*\{[^}]*transition\s*:\s*none/);
     expect(css).toMatch(/page-stack-processing \.page-canvas[\s\S]*filter:\s*blur\(/);
     expect(css).toMatch(/page-processing-detail-message\s*\{[^}]*animation/);
     expect(css).not.toContain('.page-processing-dim');
-    expect(css).toMatch(/border-radius:\s*14px/);
-    expect(css).toMatch(/\.card-minimal-light\s*\{[^}]*background/);
-    expect(css).toMatch(/\.halftone-grid-wave\s*\{[^}]*mask-image:\s*linear-gradient/);
+    expect(css).toMatch(/\.page-processing-content\s*\{[^}]*border-radius:\s*6px/);
+    expect(css).toMatch(/\.page-scan-line\s*\{[^}]*animation:\s*scan-sweep-antigravity/);
+    expect(css).toMatch(/\.processing-spinner-ring\s*\{[^}]*animation:\s*spinner-rotate/);
+    expect(css).toMatch(/\.page-processing-title\s*\{[^}]*animation:\s*text-shimmer-lr/);
+    expect(css).not.toContain('halftone-grid-wave');
+    expect(css).not.toContain('card-minimal-light');
   });
 });
 

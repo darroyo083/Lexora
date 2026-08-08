@@ -47,15 +47,13 @@ import { readZoomPreference, writeZoomPreference } from './state/zoom';
 import { rotateLeft, rotateRight, type PageRotation } from './reader/rotation';
 import { readAnswersForPage, writeAnswersForPage } from './state/exerciseAnswers';
 import {
-  readDesignVariantPreference,
+  migrateDesignVariantPreference,
   readDevModePreference,
   readThemeModePreference,
-  writeDesignVariantPreference,
   writeDevModePreference,
   writeThemeModePreference,
-  type DesignVariant,
   type ThemeMode,
-} from './state/designLab';
+} from './state/theme';
 
 type Status = 'idle' | 'restoring' | 'uploading' | 'ready';
 
@@ -88,7 +86,6 @@ const SHOW_MATCHING_DETECTION_KEY = 'lexora.showMatchingDetection';
 const SHOW_FREE_TEXT_DETECTION_KEY = 'lexora.showFreeTextDetection';
 
 export default function App() {
-  const [variant, setVariant] = useState<DesignVariant>(readDesignVariantPreference);
   const [devMode, setDevMode] = useState<boolean>(readDevModePreference);
 
   const [status, setStatus] = useState<Status>(() => (
@@ -147,11 +144,6 @@ export default function App() {
   const uploadTokenRef = useRef(0);
   activePage.current = selectedPage;
 
-  const handleVariantChange = useCallback((nextVariant: DesignVariant) => {
-    setVariant(nextVariant);
-    writeDesignVariantPreference(nextVariant);
-  }, []);
-
   const handleToggleTheme = useCallback(() => {
     setTheme((curr) => {
       const next = curr === 'dark' ? 'light' : 'dark';
@@ -171,6 +163,10 @@ export default function App() {
   useEffect(() => {
     bookIdRef.current = book?.id ?? null;
   }, [book]);
+
+  useEffect(() => {
+    migrateDesignVariantPreference();
+  }, []);
 
   useEffect(() => {
     writeOrderingModePreference(orderingMode);
@@ -697,7 +693,7 @@ export default function App() {
   const processButtonLabel = processLabel(processControl);
 
   return (
-    <div className={`app ${theme}`} data-design={variant} data-theme={theme} data-dev-mode={devMode}>
+    <div className="app" data-design="stitch" data-theme={theme} data-dev-mode={devMode}>
       <LeftRail devMode={devMode} onToggleDevMode={handleToggleDevMode} />
 
       <div className="app-main-workspace">
@@ -724,8 +720,6 @@ export default function App() {
           onRotateRight={handleRotateRight}
           devMode={devMode}
           onToggleDevMode={handleToggleDevMode}
-          variant={variant}
-          onVariantChange={handleVariantChange}
           theme={theme}
           onToggleTheme={handleToggleTheme}
         />

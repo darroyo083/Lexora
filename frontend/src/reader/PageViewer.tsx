@@ -70,9 +70,6 @@ function ProcessingDetail({ messages, prefersReducedMotion }: ProcessingDetailPr
   );
 }
 
-export type LoaderVariant = 'halftone-page' | 'light-beam' | 'halftone-card';
-export type CardStyle = 'card-minimal-light' | 'card-slate-mono' | 'card-lexora-cyan' | 'card-borderless-float';
-
 export interface OrderingFloatControl {
   expandedExerciseId: string | null;
   closedExerciseIds: string[];
@@ -110,8 +107,6 @@ interface Props {
   showFreeTextDetection: boolean;
   selectedChoice: ChoiceTarget | null;
   processingStage: PageProcessingStatus | null;
-  loaderVariant?: LoaderVariant;
-  cardStyle?: CardStyle;
   onSpanClick: (span: TextSpan) => void;
   onBlankClick: (blank: ExerciseBlank) => void;
   onAnswerChange: (blankId: string, value: string) => void;

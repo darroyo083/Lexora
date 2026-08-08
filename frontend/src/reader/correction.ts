@@ -92,11 +92,12 @@ function matchesAnyAlternative(
 
 export function compareBlank(input: FillBlankInput): CorrectionResult {
   const { learnerValue, entry } = input;
-  const resolution = entry ? AnswerResolutionStatus.RESOLVED : AnswerResolutionStatus.UNMAPPED;
 
   if (!entry) {
-    return { verdict: CorrectionVerdict.NOT_AUTO_GRADABLE, resolution };
+    return { verdict: undefined, resolution: AnswerResolutionStatus.UNMAPPED };
   }
+
+  const resolution = AnswerResolutionStatus.RESOLVED;
 
   if (!learnerValue || learnerValue.trim() === '') {
     return { verdict: CorrectionVerdict.UNANSWERED, resolution };
@@ -129,7 +130,7 @@ export function compareChoice(input: ChoiceInput): CorrectionResult {
 
   if (!entry) {
     return {
-      verdict: CorrectionVerdict.NOT_AUTO_GRADABLE,
+      verdict: undefined,
       resolution: AnswerResolutionStatus.UNMAPPED,
     };
   }
@@ -158,7 +159,7 @@ export function compareGrid(input: ChoiceGridInput): CorrectionResult {
 
   if (!entry) {
     return {
-      verdict: CorrectionVerdict.NOT_AUTO_GRADABLE,
+      verdict: undefined,
       resolution: AnswerResolutionStatus.UNMAPPED,
     };
   }
@@ -213,7 +214,7 @@ export function compareOrdering(input: OrderingInput): CorrectionResult {
 
   if (!entry) {
     return {
-      verdict: CorrectionVerdict.NOT_AUTO_GRADABLE,
+      verdict: undefined,
       resolution: AnswerResolutionStatus.UNMAPPED,
     };
   }
@@ -267,7 +268,7 @@ export function compareMatching(input: MatchingInput): CorrectionResult {
 
   if (!entry) {
     return {
-      verdict: CorrectionVerdict.NOT_AUTO_GRADABLE,
+      verdict: undefined,
       resolution: AnswerResolutionStatus.UNMAPPED,
     };
   }
@@ -317,10 +318,12 @@ function parseMatchingPairsFromEntry(
   return pairs;
 }
 
-export function checkFreeText(): CorrectionResult {
+export function checkFreeText(hasReference: boolean): CorrectionResult {
   return {
     verdict: CorrectionVerdict.NOT_AUTO_GRADABLE,
-    resolution: AnswerResolutionStatus.RESOLVED,
+    resolution: hasReference
+      ? AnswerResolutionStatus.RESOLVED
+      : AnswerResolutionStatus.MISSING,
   };
 }
 
@@ -361,17 +364,18 @@ export interface CorrectionMapInput {
     id: string;
     freeText: { kind: string };
     learnerValue: string | undefined;
+    entry: AnswerKeyEntry | undefined;
   }>;
 }
 
 export function computeCorrectionMap(
   input: CorrectionMapInput,
 ): {
-  verdictByItem: Record<string, CorrectionVerdict>;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
   resolutionByItem: Record<string, AnswerResolutionStatus>;
   resultDetailsByItem: Record<string, { correctCount: number; totalCount: number }>;
 } {
-  const verdictByItem: Record<string, CorrectionVerdict> = {};
+  const verdictByItem: Record<string, CorrectionVerdict | undefined> = {};
   const resolutionByItem: Record<string, AnswerResolutionStatus> = {};
   const resultDetailsByItem: Record<string, { correctCount: number; totalCount: number }> = {};
 
@@ -445,8 +449,10 @@ export function computeCorrectionMap(
   }
 
   for (const freeText of input.freeTexts) {
-    verdictByItem[freeText.id] = CorrectionVerdict.NOT_AUTO_GRADABLE;
-    resolutionByItem[freeText.id] = AnswerResolutionStatus.RESOLVED;
+    const hasReference = freeText.entry?.typedPayload?.kind === 'reference';
+    const result = checkFreeText(hasReference);
+    verdictByItem[freeText.id] = result.verdict;
+    resolutionByItem[freeText.id] = result.resolution;
   }
 
   return { verdictByItem, resolutionByItem, resultDetailsByItem };

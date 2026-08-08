@@ -26,7 +26,7 @@ export enum AnswerResolutionStatus {
 export type UICorrectionState = 'IDLE' | 'CHECKING' | 'CHECKED' | 'REVEALED' | 'RETRYING';
 
 export interface CorrectionResult {
-  verdict: CorrectionVerdict;
+  verdict: CorrectionVerdict | undefined;
   resolution: AnswerResolutionStatus;
   details?: {
     correctCount?: number;
@@ -35,7 +35,7 @@ export interface CorrectionResult {
 }
 
 export interface CorrectionState {
-  verdictByItem: Record<string, CorrectionVerdict>;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
   resolutionByItem: Record<string, AnswerResolutionStatus>;
   resultDetailsByItem: Record<string, { correctCount: number; totalCount: number }>;
   uiState: UICorrectionState;
@@ -61,21 +61,21 @@ export function emptyCorrectionState(): CorrectionState {
 }
 
 export function correctionUIState(
-  _verdictByItem: Record<string, CorrectionVerdict>,
+  _verdictByItem: Record<string, CorrectionVerdict | undefined>,
   _reveal: Record<string, boolean>,
   _itemIds: string[],
 ): UICorrectionState {
   if (_itemIds.length === 0) return 'IDLE';
-  const hasVerdicts = _itemIds.some((id) => id in _verdictByItem);
+  const hasVerdicts = _itemIds.some((id) => _verdictByItem[id] !== undefined);
   if (!hasVerdicts) return 'IDLE';
   return 'CHECKED';
 }
 
 export function hasAnyVerdict(
-  verdictByItem: Record<string, CorrectionVerdict>,
+  verdictByItem: Record<string, CorrectionVerdict | undefined>,
   itemIds: string[],
 ): boolean {
-  return itemIds.some((id) => id in verdictByItem);
+  return itemIds.some((id) => verdictByItem[id] !== undefined);
 }
 
 export function emptyRevealStore(): RevealStore {

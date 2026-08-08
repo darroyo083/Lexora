@@ -123,9 +123,9 @@ describe('compareBlank', () => {
     expect(compareBlank({ learnerValue: undefined, entry }).verdict).toBe(CorrectionVerdict.UNANSWERED);
   });
 
-  it('returns NOT_AUTO_GRADABLE with UNMAPPED when no entry exists', () => {
+  it('returns UNMAPPED with no verdict when no entry exists', () => {
     const result = compareBlank({ learnerValue: 'bin', entry: undefined });
-    expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
   });
 
@@ -178,13 +178,13 @@ describe('compareChoice', () => {
     expect(result.verdict).toBe(CorrectionVerdict.UNANSWERED);
   });
 
-  it('returns NOT_AUTO_GRADABLE with UNMAPPED when no entry', () => {
+  it('returns UNMAPPED with no verdict when no entry', () => {
     const result = compareChoice({
       learnerValue: 'opt-a', entry: undefined,
       choiceGroups: { g1: CHOICE_GROUP },
       optionGroupId: 'g1',
     });
-    expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
   });
 });
@@ -220,12 +220,12 @@ describe('compareGrid', () => {
     expect(result.verdict).toBe(CorrectionVerdict.UNANSWERED);
   });
 
-  it('returns NOT_AUTO_GRADABLE with UNMAPPED when no entry', () => {
+  it('returns UNMAPPED with no verdict when no entry', () => {
     const result = compareGrid({
       learnerValues: { 'row-1': 'opt-a' }, rows, entry: undefined,
       choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
     });
-    expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
   });
 });
@@ -261,9 +261,9 @@ describe('compareOrdering', () => {
     expect(result.verdict).toBe(CorrectionVerdict.UNANSWERED);
   });
 
-  it('returns NOT_AUTO_GRADABLE with UNMAPPED when no entry', () => {
+  it('returns UNMAPPED with no verdict when no entry', () => {
     const result = compareOrdering({ learnerValue: 'item1,item2', entry: undefined, itemCount: 2 });
-    expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
   });
 });
@@ -290,47 +290,85 @@ describe('compareMatching', () => {
     expect(result.verdict).toBe(CorrectionVerdict.UNANSWERED);
   });
 
-  it('returns NOT_AUTO_GRADABLE with UNMAPPED when no entry', () => {
+  it('returns UNMAPPED with no verdict when no entry', () => {
     const result = compareMatching({ learnerValue: JSON.stringify({ A: '1' }), entry: undefined });
-    expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
   });
 });
 
 describe('UNMAPPED', () => {
-  it('Choice UNMAPPED never renders as INCORRECT', () => {
+  it('Choice UNMAPPED has undefined verdict, never INCORRECT', () => {
     const result = compareChoice({
       learnerValue: 'opt-a', entry: undefined,
       choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
     });
-    expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
     expect(result.verdict).not.toBe(CorrectionVerdict.INCORRECT);
   });
 
-  it('ChoiceGrid UNMAPPED never renders as INCORRECT', () => {
+  it('ChoiceGrid UNMAPPED has undefined verdict', () => {
     const rows = [makeGridRow('row-1', 0)];
     const result = compareGrid({
       learnerValues: {}, rows, entry: undefined,
       choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
     });
-    expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
   });
 
-  it('SentenceOrdering UNMAPPED never renders as INCORRECT', () => {
+  it('SentenceOrdering UNMAPPED has undefined verdict', () => {
     const result = compareOrdering({ learnerValue: 'a,b', entry: undefined, itemCount: 2 });
-    expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
   });
 });
 
 describe('FreeText NOT_AUTO_GRADABLE', () => {
-  it('checkFreeText always returns NOT_AUTO_GRADABLE', () => {
-    const result = checkFreeText();
+  it('checkFreeText always returns NOT_AUTO_GRADABLE verdict', () => {
+    const result = checkFreeText(false);
     expect(result.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
     expect(result.verdict).not.toBe(CorrectionVerdict.CORRECT);
     expect(result.verdict).not.toBe(CorrectionVerdict.INCORRECT);
+  });
+
+  it('FreeText resolution is MISSING when no reference', () => {
+    const result = checkFreeText(false);
+    expect(result.resolution).toBe(AnswerResolutionStatus.MISSING);
+  });
+
+  it('FreeText resolution is RESOLVED when reference present', () => {
+    const result = checkFreeText(true);
+    expect(result.resolution).toBe(AnswerResolutionStatus.RESOLVED);
+  });
+});
+
+describe('UNMAPPED vs NOT_AUTO_GRADABLE distinction', () => {
+  it('UNMAPPED FillBlank has undefined verdict, never NOT_AUTO_GRADABLE', () => {
+    const result = compareBlank({ learnerValue: 'test', entry: undefined });
+    expect(result.verdict).toBeUndefined();
+    expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
+  });
+
+  it('NOT_AUTO_GRADABLE is only for FreeText', () => {
+    const freeTextResult = checkFreeText(false);
+    expect(freeTextResult.verdict).toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+
+    const blankResult = compareBlank({ learnerValue: 'test', entry: undefined });
+    expect(blankResult.verdict).not.toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(blankResult.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
+  });
+
+  it('UNMAPPED never resolves to MISSING for gradable kinds', () => {
+    const blankResult = compareBlank({ learnerValue: 'test', entry: undefined });
+    expect(blankResult.resolution).not.toBe(AnswerResolutionStatus.MISSING);
+
+    const choiceResult = compareChoice({
+      learnerValue: 'opt-a', entry: undefined,
+      choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
+    });
+    expect(choiceResult.resolution).not.toBe(AnswerResolutionStatus.MISSING);
   });
 });
 

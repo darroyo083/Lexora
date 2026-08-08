@@ -9,6 +9,8 @@ import SentenceOrderingOverlay from './SentenceOrderingOverlay';
 import OrderingFloatingLayer from './OrderingFloatingLayer';
 import MatchingOverlay from './MatchingOverlay';
 import FreeTextOverlay from './FreeTextOverlay';
+import CorrectionGlyphs from './CorrectionGlyphs';
+import type { CorrectionVerdict, AnswerResolutionStatus } from '../state/correction';
 import type { MatchingSelection } from './matching';
 import {
   isProcessingStage,
@@ -119,6 +121,9 @@ interface Props {
   onMatchingItemClick: (interactionId: string, itemId: string, side: 'left' | 'right') => void;
   onMatchingUnpair: (interactionId: string, itemId: string) => void;
   onMatchingReset: (interactionId: string) => void;
+  verdictByItem: Record<string, CorrectionVerdict>;
+  resolutionByItem: Record<string, AnswerResolutionStatus>;
+  reveal: Record<string, boolean>;
 }
 
 export default function PageViewer({
@@ -159,6 +164,9 @@ export default function PageViewer({
   onMatchingItemClick,
   onMatchingUnpair,
   onMatchingReset,
+  verdictByItem,
+  reveal: _reveal,
+  resolutionByItem: _resolutionByItem,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pageStackRef = useRef<HTMLDivElement>(null);
@@ -255,6 +263,9 @@ export default function PageViewer({
 
   const processing = isProcessingStage(processingStage);
   const processingCopy = stageCopy(processingStage);
+  const debugOverlaysActive =
+    showBlankDetection || showChoiceDetection || showGridDetection ||
+    showSentenceOrderingDetection || showMatchingDetection || showFreeTextDetection;
 
   useLayoutEffect(() => {
     if (!processing) return;
@@ -534,6 +545,22 @@ export default function PageViewer({
               onFreeTextChange={onAnswerChange}
             />
           )}
+          <CorrectionGlyphs
+            blanks={blanks.map((b) => ({ id: b.id, interactionBbox: b.interactionBbox }))}
+            choices={choices.map((c) => ({ id: c.id, targetBbox: c.targetBbox, optionGroupId: c.optionGroupId }))}
+            grids={grids.map((g) => ({
+              id: g.id,
+              rows: g.rows.map((r) => ({
+                id: r.id,
+                rowBbox: r.rowBbox,
+                cells: r.cells.map((cell) => ({ id: cell.id, cellBbox: cell.cellBbox })),
+              })),
+            }))}
+            verdictByItem={verdictByItem}
+            rotation={rotation}
+            viewportHeight={viewportHeight}
+            suppressed={debugOverlaysActive}
+          />
           {showFreeTextDetection && freeTexts.map((interaction) => (
             <div key={`debug-free-text-${interaction.id}`} className="free-text-debug-group">
               <div

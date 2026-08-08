@@ -3,6 +3,10 @@ import { BookOpen, PenTool, Code } from 'lucide-react';
 import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from '../reader/types';
 import DebugPanel from '../reader/DebugPanel';
 import SentenceOrderingPanel from '../reader/SentenceOrderingPanel';
+import VerdictPill from './VerdictPill';
+import CheckBar from './CheckBar';
+import { CorrectionVerdict, AnswerResolutionStatus } from '../state/correction';
+import type { AnswerKeyEntry } from '../api/correction';
 
 interface Props {
   devMode: boolean;
@@ -42,6 +46,16 @@ interface Props {
   setShowFreeTextDetection: (val: boolean) => void;
   onBlankClick: (blank: ExerciseBlank) => void;
   onChoiceClick: (choice: ChoiceTarget) => void;
+  verdictByItem: Record<string, CorrectionVerdict>;
+  resolutionByItem: Record<string, AnswerResolutionStatus>;
+  correctionDetails: Record<string, { correctCount: number; totalCount: number }>;
+  correctionReveal: Record<string, boolean>;
+  correctionUiState: string;
+  hasAnswerKey: boolean;
+  answerKeyEntries: AnswerKeyEntry[];
+  onCheck: () => void;
+  onRetry: (itemId: string) => void;
+  onReveal: (itemId: string) => void;
 }
 
 export default function RightRail({
@@ -81,6 +95,16 @@ export default function RightRail({
   setShowFreeTextDetection,
   onBlankClick,
   onChoiceClick,
+  verdictByItem,
+  resolutionByItem,
+  correctionDetails,
+  correctionReveal,
+  correctionUiState,
+  hasAnswerKey,
+  answerKeyEntries: _answerKeyEntries,
+  onCheck,
+  onRetry: _onRetry,
+  onReveal: _onReveal,
 }: Props) {
   const [activeTab, setActiveTab] = useState<'exercises' | 'dev'>('exercises');
 
@@ -170,6 +194,9 @@ export default function RightRail({
                     <ul className="exercise-items-list">
                       {blanks.slice(0, 8).map((blank, idx) => {
                         const filled = Boolean(answers[blank.id]);
+                        const verdict = verdictByItem[blank.id];
+                        const resolution = resolutionByItem[blank.id];
+                        const revealed = correctionReveal[blank.id] === true;
                         return (
                           <li key={blank.id} className="exercise-item-row">
                             <button
@@ -183,6 +210,11 @@ export default function RightRail({
                                 {filled ? 'Filled' : 'Empty'}
                               </span>
                             </button>
+                            <VerdictPill
+                              verdict={verdict ?? null}
+                              resolution={resolution ?? null}
+                              revealed={revealed}
+                            />
                           </li>
                         );
                       })}
@@ -203,6 +235,9 @@ export default function RightRail({
                     <ul className="exercise-items-list">
                       {choices.slice(0, 5).map((choice, idx) => {
                         const selected = Boolean(answers[choice.id]);
+                        const verdict = verdictByItem[choice.id];
+                        const resolution = resolutionByItem[choice.id];
+                        const revealed = correctionReveal[choice.id] === true;
                         return (
                           <li key={choice.id} className="exercise-item-row">
                             <button
@@ -216,6 +251,11 @@ export default function RightRail({
                                 {selected ? 'Selected' : 'Unselected'}
                               </span>
                             </button>
+                            <VerdictPill
+                              verdict={verdict ?? null}
+                              resolution={resolution ?? null}
+                              revealed={revealed}
+                            />
                           </li>
                         );
                       })}
@@ -230,7 +270,24 @@ export default function RightRail({
                       <span className="exercise-type-badge">Matching</span>
                       <span className="card-count">{matchings.length} pairing exercises</span>
                     </div>
-                    <p className="card-hint">Click anchors directly on the page to draw connection lines.</p>
+                    {matchings.map((matching) => {
+                      const verdict = verdictByItem[matching.id];
+                      const resolution = resolutionByItem[matching.id];
+                      const revealed = correctionReveal[matching.id] === true;
+                      const details = correctionDetails[matching.id];
+                      return (
+                        <div key={matching.id} className="exercise-item-row">
+                          <p className="card-hint">Click anchors directly on the page to draw connection lines.</p>
+                          <VerdictPill
+                            verdict={verdict ?? null}
+                            resolution={resolution ?? null}
+                            revealed={revealed}
+                            details={details}
+                            interactionKind="matching"
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -242,10 +299,40 @@ export default function RightRail({
                       <span className="card-count">{freeTexts.length} response areas</span>
                     </div>
                     <p className="card-hint">Write directly onto the printed lines on the page.</p>
+                    {freeTexts.slice(0, 3).map((ft) => {
+                      const verdict = verdictByItem[ft.id];
+                      const revealed = correctionReveal[ft.id] === true;
+                      return (
+                        <div key={ft.id} className="exercise-item-row">
+                          <span className="item-id">Response {ft.id}</span>
+                          <VerdictPill
+                            verdict={verdict ?? null}
+                            resolution={null}
+                            revealed={revealed}
+                            interactionKind="free-text"
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             )}
+            <CheckBar
+              totalGradable={
+                Object.values(verdictByItem).filter(
+                  (v) => v !== CorrectionVerdict.NOT_AUTO_GRADABLE,
+                ).length
+              }
+              totalCorrect={
+                Object.values(verdictByItem).filter(
+                  (v) => v === CorrectionVerdict.CORRECT,
+                ).length
+              }
+              uiState={correctionUiState}
+              hasAnswerKey={hasAnswerKey}
+              onCheck={onCheck}
+            />
           </div>
         )}
 

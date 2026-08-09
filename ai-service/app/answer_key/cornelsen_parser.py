@@ -141,7 +141,9 @@ def _split_numbered_items(text: str) -> list[str] | None:
     """Deterministically split a block into numbered answer items.
 
     Only accepted when the text contains >= 2 numbered items ("N. ") and every
-    fragment between them is non-empty after cleaning. Never guesses.
+    fragment between them is non-empty after cleaning. Fragments containing
+    unreadable OCR characters (U+FFFD) are rejected (fail-closed: they must
+    never become authoritative expected answers). Never guesses.
     """
     markers = list(NUMBERED_ITEM_RE.finditer(text))
     if len(markers) < 2:
@@ -151,6 +153,11 @@ def _split_numbered_items(text: str) -> list[str] | None:
         start = m.end()
         end = markers[idx + 1].start() if idx + 1 < len(markers) else len(text)
         fragment = text[start:end]
+        if "\ufffd" in fragment:
+            return None
+        fragment = fragment.replace("|", " ")
+        # join hyphen line-break splits of a single word (e.g. "alleiner- ziehende")
+        fragment = re.sub(r"-\s+(?=[a-zäöüß])", "", fragment)
         fragment = re.sub(r"[�?]", "", fragment)
         fragment = fragment.strip().strip(" \t–—/-=|·").strip()
         if not fragment:

@@ -192,7 +192,13 @@ public class CorrectionResolutionService {
                 var view = entry.items().isEmpty()
                     ? ResolvedAnswerEntry.single(entry)
                     : ResolvedAnswerEntry.item(entry, i);
-                result.put(cursor + i, view);
+                // Unreadable OCR characters can never be authoritative:
+                // fail closed (AMBIGUOUS) instead of grading against garbage.
+                if (view.expectedValue().indexOf('\uFFFD') >= 0) {
+                    result.put(cursor + i, null);
+                } else {
+                    result.put(cursor + i, view);
+                }
             }
             cursor += itemCount;
         }

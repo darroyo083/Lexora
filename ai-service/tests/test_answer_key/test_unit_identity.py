@@ -63,7 +63,8 @@ class TestValidatedUnitHeaders:
 
     def test_marker_inside_section_not_header(self):
         # A standalone "2" followed by dash-separated answer text must NOT
-        # become a header; the section stays 84 and the marker is captured.
+        # become a header; the section stays 84 and the marker "2" is captured
+        # on its own block.
         lines = LOESUNGEN + [
             (0.05, "84 Adjektivdeklination mit und ohne Artikel"),
             (0.10, "2"),
@@ -71,12 +72,13 @@ class TestValidatedUnitHeaders:
             (0.15, "31. ein weinendes Kind – 2. eine spielende Katze"),
         ]
         entries = parse_lines(lines, page=230)
-        assert len(entries) == 1
-        assert entries[0].unitNumber == 84
-        assert entries[0].subExerciseMarker == "3"
+        assert len(entries) == 2
+        assert all(e.unitNumber == 84 for e in entries)
+        assert [e.subExerciseMarker for e in entries] == ["2", "3"]
 
     def test_multicolumn_marker_not_header(self):
-        # "6" followed by a dash-separated answer sentence.
+        # "6" followed by a dash-separated answer sentence is a block marker,
+        # never a header; all entries stay under unit 82.
         lines = LOESUNGEN + [
             (0.05, "82 Präpositionen mit Genitiv"),
             (0.10, "1 1B-2D-3A-4C"),
@@ -85,9 +87,9 @@ class TestValidatedUnitHeaders:
             (0.22, "2 1D-2C-3A-4B"),
         ]
         entries = parse_lines(lines)
-        assert len(entries) == 2
+        assert len(entries) == 3
         assert all(e.unitNumber == 82 for e in entries)
-        assert [e.subExerciseMarker for e in entries] == ["1", "2"]
+        assert [e.subExerciseMarker for e in entries] == ["1", "6", "2"]
 
     def test_page_footer_rejected(self):
         # Footers 232/234 sit at y > 0.9 and must never become identity.
@@ -102,7 +104,8 @@ class TestValidatedUnitHeaders:
         assert all(e.unitNumber != 232 for e in entries)
 
     def test_unit_exercise_number_collision(self):
-        # "2" as an exercise marker inside unit 85 must not create unit 2.
+        # "2" as an exercise marker inside unit 85 must not create unit 2
+        # identity; the marker blocks stay under unit 85.
         lines = LOESUNGEN + [
             (0.05, "85 Partizip 1 als Adjektiv"),
             (0.10, "2"),
@@ -110,8 +113,9 @@ class TestValidatedUnitHeaders:
             (0.16, "3 1. ein weinendes Kind – 2. eine spielende Katze"),
         ]
         entries = parse_lines(lines, page=230)
-        assert len(entries) == 1
-        assert entries[0].unitNumber == 85
+        assert len(entries) == 2
+        assert all(e.unitNumber == 85 for e in entries)
+        assert [e.subExerciseMarker for e in entries] == ["2", "3"]
 
     def test_monotonic_regression(self):
         # After header 85, a candidate 84 must be rejected; both entries stay

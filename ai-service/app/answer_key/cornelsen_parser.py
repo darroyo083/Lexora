@@ -159,20 +159,27 @@ def _split_numbered_items(text: str) -> list[str] | None:
     return items
 
 
+def _last_numbered_item(text: str) -> int | None:
+    markers = list(NUMBERED_ITEM_RE.finditer(text))
+    if not markers:
+        return None
+    return int(markers[-1].group(1))
+
+
 def _is_numbered_continuation(text: str, prev: AnswerKeyEntry | None) -> bool:
     """True when a 'N. <text>' line continues the previous block's numbered
-    item sequence (N == previous item count + 1). Deterministic; never guesses.
+    item sequence (N == last numbered item + 1). Deterministic; never guesses.
     """
     if prev is None:
         return False
     je = JE_DESTO_RE.match(text)
     if je is None:
         return False
-    prev_items = _split_numbered_items(prev.rawSolutionText)
-    if prev_items is None:
+    last = _last_numbered_item(prev.rawSolutionText)
+    if last is None:
         return False
     try:
-        return int(je.group("num")) == len(prev_items) + 1
+        return int(je.group("num")) == last + 1
     except ValueError:
         return False
 
@@ -293,6 +300,7 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
         current_interaction_kind: InteractionKind = "FillBlank"
         current_unit_number: int | None = None
         last_productive_unit: int | None = None
+        pending_marker: str | None = None
         ordinal = 0
         in_answer_key = False
 
@@ -368,14 +376,47 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
                 i += 1
                 continue
 
+            # Standalone number followed (or preceded, per OCR line-split
+            # jitter) by answer content marks a NEW answer block. It must NOT
+            # become identity (header rules above already rejected it).
+            if STANDALONE_NUM_RE.match(text) and i + 1 < len(lines):
+                nxt = lines[i + 1]
+                nxt_text = _line_text(nxt)
+                if (
+                    _line_y(line) <= FOOTER_BAND_Y
+                    and abs(_line_y(nxt) - _line_y(line)) <= 0.006
+                    and not EXERCISE_HEADER_RE.match(nxt_text)
+                    and not SUB_EXERCISE_RE.match(nxt_text)
+                    and not NO_SPACE_SUB_EXERCISE_RE.match(nxt_text)
+                    and not _valid_header_title(nxt_text)
+                ):
+                    pending_marker = text.strip().rstrip(".")
+                    i += 1
+                    continue
+
             sub_match = SUB_EXERCISE_RE.match(text)
             no_space_match = NO_SPACE_SUB_EXERCISE_RE.match(text)
             je_match = JE_DESTO_RE.match(text)
             y = _line_y(line)
 
+            # A standalone marker whose content line precedes it in OCR order.
+            lookahead_marker: str | None = None
+            if (
+                pending_marker is None
+                and i + 1 < len(lines)
+                and STANDALONE_NUM_RE.match(_line_text(lines[i + 1]))
+                and abs(_line_y(lines[i + 1]) - y) <= 0.006
+            ):
+                lookahead_marker = _line_text(lines[i + 1]).strip().rstrip(".")
+
             # A 'N. <text>' line continuing the previous block's numbered item
             # sequence is a continuation, not a new block.
-            if je_match and _is_numbered_continuation(text, entries[-1] if entries else None):
+            if (
+                pending_marker is None
+                and lookahead_marker is None
+                and je_match
+                and _is_numbered_continuation(text, entries[-1] if entries else None)
+            ):
                 prev = entries[-1]
                 prev.expectedValue += " " + text
                 prev.rawSolutionText += " | " + text
@@ -388,14 +429,17 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
                 ordinal += 1
                 if sub_match:
                     match_obj = sub_match
-                    marker = match_obj.group("marker")
+                    parsed_marker = match_obj.group("marker")
                 elif no_space_match:
                     match_obj = no_space_match
-                    marker = match_obj.group("marker")
+                    parsed_marker = match_obj.group("marker")
                 else:
                     match_obj = je_match
-                    marker = match_obj.group("num")
+                    parsed_marker = match_obj.group("num")
                 items_text = match_obj.group("items")
+                marker = pending_marker or lookahead_marker or parsed_marker
+                pending_marker = None
+                i_step = 2 if lookahead_marker is not None else 1
 
                 warnings: list[str] = []
                 alternatives: list[str] = []
@@ -449,7 +493,67 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
                     typedPayload=typed_payload,
                 ))
                 last_productive_unit = current_unit_number
-                i += 1
+                i += i_step
+                continue
+
+            # Bare answer content after a standalone marker (content and
+            # marker split across OCR lines, either order).
+            if (pending_marker is not None or lookahead_marker is not None):
+                ordinal += 1
+                marker = pending_marker or lookahead_marker
+                pending_marker = None
+                items_text = text
+
+                warnings: list[str] = []
+                alternatives: list[str] = []
+                if "—" in items_text and not _is_complex_sentence(items_text):
+                    parts = DASH_SEPARATED_RE.split(items_text)
+                    primary = parts[0].strip()
+                    alternatives = [p.strip() for p in parts[1:] if p.strip()]
+                elif "/" in items_text and len(items_text) < 200:
+                    parts = items_text.split("/")
+                    primary = parts[0].strip()
+                    alternatives = [p.strip() for p in parts[1:] if p.strip()]
+                elif "," in items_text and _looks_comma_separated(items_text):
+                    parts = _split_answers(items_text)
+                    primary = parts[0].strip()
+                    alternatives = [p.strip() for p in parts[1:] if p.strip()]
+                else:
+                    primary = items_text.strip()
+
+                confidence = _line_confidence(line)
+                if _is_low_confidence_line(line):
+                    warnings.append(
+                        "low_ocr_confidence: "
+                        + ",".join(
+                            f"{s.text}={s.confidence:.2f}" for s in line
+                            if s.confidence < 0.90
+                        )
+                    )
+                if _looks_corrupted(items_text):
+                    warnings.append("possible_ocr_corruption")
+
+                typed_payload = _build_typed_payload(
+                    current_interaction_kind, primary, text
+                )
+
+                entries.append(AnswerKeyEntry(
+                    pageNumber=page_number,
+                    exerciseNumber=current_exercise_num,
+                    unitNumber=current_unit_number,
+                    subExerciseMarker=marker,
+                    items=None,
+                    interactionKind=current_interaction_kind,
+                    ordinal=ordinal,
+                    expectedValue=primary,
+                    alternatives=alternatives,
+                    rawSolutionText=text,
+                    confidence=round(confidence, 4),
+                    mappingWarnings=warnings,
+                    typedPayload=typed_payload,
+                ))
+                last_productive_unit = current_unit_number
+                i += 2 if lookahead_marker is not None else 1
                 continue
 
             if _is_continuation_line(text) and entries:

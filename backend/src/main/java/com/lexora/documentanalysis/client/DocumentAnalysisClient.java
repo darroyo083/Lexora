@@ -1,5 +1,6 @@
 package com.lexora.documentanalysis.client;
 
+import com.lexora.documentanalysis.contract.ExtractAnswerKeyResponse;
 import com.lexora.documentanalysis.contract.PageAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +12,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
@@ -53,6 +56,22 @@ public class DocumentAnalysisClient {
             "/internal/document-analysis/pages/interactions",
             new DetectInteractionsRequest(imagePath, analysis),
             PageAnalysis.class
+        );
+    }
+
+    public ExtractAnswerKeyResponse extractAnswerKey(String bookId,
+                                                     List<Path> rasterPaths,
+                                                     String publisher) {
+        log.info("requesting answer key extraction bookId={} pages={}",
+            bookId, rasterPaths.size());
+        return post(
+            "/internal/answer-key/extract",
+            new ExtractAnswerKeyRequest(
+                bookId,
+                rasterPaths.stream().map(Path::toString).toList(),
+                publisher
+            ),
+            ExtractAnswerKeyResponse.class
         );
     }
 
@@ -101,5 +120,11 @@ public class DocumentAnalysisClient {
     private record DetectInteractionsRequest(
         String imagePath,
         PageAnalysis analysis
+    ) {}
+
+    private record ExtractAnswerKeyRequest(
+        String bookId,
+        List<String> rasterPaths,
+        String publisher
     ) {}
 }

@@ -197,30 +197,24 @@ class CorrectionResolutionServiceTest {
     }
 
     @Test
-    void singleEntryResolvesSingleInteractionOnRequestedPage() {
+    void singleItemBlockIsNeverCountAssignedToInteractions() {
         stubProfile();
         stubKey(List.of(entry(227, "1", "FillBlank", 1, "der Hund", 4, "1", List.of())));
         stubPage(12, analysis(12, List.of(blank("b1")), List.of(), List.of(), List.of()));
 
         var result = service.resolve(bookId, 12);
 
-        assertThat(result.status()).isEqualTo(PageCorrectionResolution.RESOLVED);
+        // A single-item block's expected value is often a whole answer list;
+        // count-assigning it would risk silent wrong grading. Fail closed.
+        assertThat(result.status()).isEqualTo(PageCorrectionResolution.AMBIGUOUS);
         assertThat(result.unitNumber()).isEqualTo(4);
         assertThat(result.slots()).hasSize(1);
-        var slot = result.slots().get(0);
-        assertThat(slot.interactionKind()).isEqualTo("fill-in-line");
-        assertThat(slot.ordinal()).isZero();
-        assertThat(slot.resolution()).isEqualTo(PageCorrectionResolution.RESOLVED);
-        assertThat(slot.entry()).isNotNull();
-        assertThat(slot.entry().expectedValue()).isEqualTo("der Hund");
-        assertThat(slot.entry().alternatives()).isEmpty();
-        assertThat(slot.entry().itemIndex()).isNull();
-        assertThat(slot.entry().unitNumber()).isEqualTo(4);
-        assertThat(slot.entry().pageNumber()).isEqualTo(227);
+        assertThat(result.slots().get(0).resolution()).isEqualTo(PageCorrectionResolution.AMBIGUOUS);
+        assertThat(result.slots().get(0).entry()).isNull();
     }
 
     @Test
-    void itemBlockConsumedAcrossUnitPagesInPageOrder() {
+    void itemBlockMustFitEntirelyWithinOnePage() {
         stubProfile();
         stubKey(List.of(entry(227, "1", "FillBlank", 1, "a,b,c", 4, "1",
             List.of("a", "b", "c"))));
@@ -229,20 +223,38 @@ class CorrectionResolutionServiceTest {
 
         var first = service.resolve(bookId, 12);
 
-        assertThat(first.status()).isEqualTo(PageCorrectionResolution.RESOLVED);
+        // 3 items cannot fit page 12's 2 blanks: the block is carried to the
+        // next page and page 12's remainder is AMBIGUOUS (fail-closed).
+        assertThat(first.status()).isEqualTo(PageCorrectionResolution.AMBIGUOUS);
         assertThat(first.slots()).hasSize(2);
-        assertThat(first.slots().get(0).entry().expectedValue()).isEqualTo("a");
-        assertThat(first.slots().get(0).entry().itemIndex()).isZero();
-        assertThat(first.slots().get(0).entry().alternatives()).isEmpty();
-        assertThat(first.slots().get(1).entry().expectedValue()).isEqualTo("b");
-        assertThat(first.slots().get(1).entry().itemIndex()).isEqualTo(1);
+        assertThat(first.slots().get(0).resolution()).isEqualTo(PageCorrectionResolution.AMBIGUOUS);
+        assertThat(first.slots().get(0).entry()).isNull();
 
         var second = service.resolve(bookId, 13);
 
-        assertThat(second.status()).isEqualTo(PageCorrectionResolution.RESOLVED);
+        // Nor page 13's single blank: 3 > 1, still ambiguous.
+        assertThat(second.status()).isEqualTo(PageCorrectionResolution.AMBIGUOUS);
         assertThat(second.slots()).hasSize(1);
-        assertThat(second.slots().get(0).entry().expectedValue()).isEqualTo("c");
-        assertThat(second.slots().get(0).entry().itemIndex()).isEqualTo(2);
+        assertThat(second.slots().get(0).resolution()).isEqualTo(PageCorrectionResolution.AMBIGUOUS);
+        assertThat(second.slots().get(0).entry()).isNull();
+    }
+
+    @Test
+    void itemBlockFittingAPageResolvesOnThatPage() {
+        stubProfile();
+        stubKey(List.of(entry(227, "1", "FillBlank", 1, "a,b,c", 4, "1",
+            List.of("a", "b", "c"))));
+        stubPage(12, analysis(12, List.of(blank("b1"), blank("b2"), blank("b3")),
+            List.of(), List.of(), List.of()));
+
+        var result = service.resolve(bookId, 12);
+
+        assertThat(result.status()).isEqualTo(PageCorrectionResolution.RESOLVED);
+        assertThat(result.slots()).hasSize(3);
+        assertThat(result.slots().get(0).entry().expectedValue()).isEqualTo("a");
+        assertThat(result.slots().get(0).entry().itemIndex()).isZero();
+        assertThat(result.slots().get(1).entry().expectedValue()).isEqualTo("b");
+        assertThat(result.slots().get(2).entry().expectedValue()).isEqualTo("c");
     }
 
     @Test
@@ -263,7 +275,7 @@ class CorrectionResolutionServiceTest {
     @Test
     void interactionsNotConsumedByAnyBlockAreUnmapped() {
         stubProfile();
-        stubKey(List.of(entry(227, "1", "FillBlank", 1, "x", 4, "1", List.of())));
+        stubKey(List.of(entry(227, "1", "FillBlank", 1, "a,b", 4, "1", List.of("a", "b"))));
         stubPage(12, analysis(12, List.of(blank("b1"), blank("b2"), blank("b3")), List.of(), List.of(), List.of()));
 
         var result = service.resolve(bookId, 12);
@@ -271,17 +283,17 @@ class CorrectionResolutionServiceTest {
         assertThat(result.status()).isEqualTo(PageCorrectionResolution.RESOLVED);
         assertThat(result.slots()).hasSize(3);
         assertThat(result.slots().get(0).resolution()).isEqualTo(PageCorrectionResolution.RESOLVED);
-        assertThat(result.slots().get(1).resolution()).isEqualTo(PageCorrectionResolution.UNMAPPED);
+        assertThat(result.slots().get(1).resolution()).isEqualTo(PageCorrectionResolution.RESOLVED);
         assertThat(result.slots().get(2).resolution()).isEqualTo(PageCorrectionResolution.UNMAPPED);
-        assertThat(result.slots().get(1).entry()).isNull();
+        assertThat(result.slots().get(2).entry()).isNull();
     }
 
     @Test
     void entriesResolveByUnitNumberOnlyNotExerciseNumber() {
         stubProfile();
         stubKey(List.of(
-            entry(227, "2", "FillBlank", 1, "unit2", 2, "1", List.of()),
-            entry(228, "2", "FillBlank", 1, "unit4", 4, "1", List.of())
+            entry(227, "2", "FillBlank", 1, "unit2", 2, "1", List.of("unit2")),
+            entry(228, "2", "FillBlank", 1, "unit4", 4, "1", List.of("unit4"))
         ));
         stubPage(12, analysis(12, List.of(blank("b1")), List.of(), List.of(), List.of()));
 
@@ -294,7 +306,7 @@ class CorrectionResolutionServiceTest {
     @Test
     void sourceLoesungenPageNumberIsNotExerciseIdentity() {
         stubProfile();
-        stubKey(List.of(entry(228, "1", "FillBlank", 1, "der Hund", 4, "1", List.of())));
+        stubKey(List.of(entry(228, "1", "FillBlank", 1, "der Hund", 4, "1", List.of("der Hund"))));
         stubPage(12, analysis(12, List.of(blank("b1")), List.of(), List.of(), List.of()));
 
         var result = service.resolve(bookId, 12);
@@ -308,8 +320,8 @@ class CorrectionResolutionServiceTest {
     void parserKindsMapToFrontendKindStrings() {
         stubProfile();
         stubKey(List.of(
-            entry(227, "1", "Choice", 1, "b", 4, "1", List.of()),
-            entry(228, "2", "ChoiceGrid", 1, "a,b", 4, "1", List.of())
+            entry(227, "1", "Choice", 1, "b", 4, "1", List.of("b")),
+            entry(228, "2", "ChoiceGrid", 1, "a", 4, "1", List.of("a"))
         ));
         stubPage(12, analysis(12, List.of(),
             List.of(choice("c1")), List.of(grid("g1")), List.of()));
@@ -327,8 +339,8 @@ class CorrectionResolutionServiceTest {
     void subExerciseMarkerOrdersBlocks() {
         stubProfile();
         stubKey(List.of(
-            entry(227, "1", "FillBlank", 0, "first", 4, "2", List.of()),
-            entry(228, "1", "FillBlank", 0, "second", 4, "1", List.of())
+            entry(227, "1", "FillBlank", 0, "first", 4, "2", List.of("first")),
+            entry(228, "1", "FillBlank", 0, "second", 4, "1", List.of("second"))
         ));
         stubPage(12, analysis(12, List.of(blank("b1"), blank("b2")), List.of(), List.of(), List.of()));
 
@@ -388,7 +400,7 @@ class CorrectionResolutionServiceTest {
     void ambiguousOnOneKindDoesNotPoisonResolvedKinds() {
         stubProfile();
         stubKey(List.of(
-            entry(227, "1", "FillBlank", 1, "x", 4, "1", List.of()),
+            entry(227, "1", "FillBlank", 1, "x", 4, "1", List.of("x")),
             entry(228, "2", "Choice", 1, "a,b", 4, "1", List.of("a", "b"))
         ));
         stubPage(12, analysis(12, List.of(blank("b1")),
@@ -440,19 +452,5 @@ class CorrectionResolutionServiceTest {
         assertThat(result.slots().get(0).entry().itemIndex()).isZero();
         assertThat(result.slots().get(1).entry().expectedValue()).isEqualTo("model two");
         assertThat(result.slots().get(1).entry().itemIndex()).isEqualTo(1);
-    }
-
-    @Test
-    void singleItemViewKeepsOriginalAlternatives() {
-        stubProfile();
-        var e = new AnswerKeyEntry(227, "1", "FillBlank", 1, "der Hund", List.of("der Kater"),
-            false, false, "strict", "", 1.0, List.of(), null, 4, "1", List.of());
-        stubKey(List.of(e));
-        stubPage(12, analysis(12, List.of(blank("b1")), List.of(), List.of(), List.of()));
-
-        var result = service.resolve(bookId, 12);
-
-        assertThat(result.slots()).hasSize(1);
-        assertThat(result.slots().get(0).entry().alternatives()).containsExactly("der Kater");
     }
 }

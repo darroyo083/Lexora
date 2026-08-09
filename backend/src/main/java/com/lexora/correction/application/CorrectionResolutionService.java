@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -145,7 +146,7 @@ public class CorrectionResolutionService {
             }
         }
 
-        var resolutionByIndex = consume(interactions.size(), kindEntries);
+        var resolutionByIndex = consume(interactions, kindEntries);
 
         var slots = new ArrayList<CorrectionSlot>();
         var requested = requestedAnalysis.orElse(null);
@@ -171,36 +172,57 @@ public class CorrectionResolutionService {
 
     /**
      * Walks the unit's entries of one kind in order; each entry is ONE answer
-     * block consuming itemCount interactions. Blocks are never partially
-     * applied: when fewer interactions remain than itemCount, the remaining
-     * interactions are AMBIGUOUS (fail-closed, no guessing or skipping ahead).
+     * block consuming its itemCount interactions. Only blocks with a
+     * deterministic item split are count-assigned; single-item blocks (whose
+     * expected value is often a whole answer list) are never guessed onto
+     * individual interactions. A block must fit ENTIRELY within one page's
+     * remaining interactions (no cross-page spanning): if it does not fit,
+     * the page's remaining interactions are AMBIGUOUS and the block is carried
+     * to the next page (fail-closed, no skipping ahead or guessing).
      * Interactions beyond all blocks stay UNMAPPED (absent from the map).
      */
-    private static Map<Integer, ResolvedAnswerEntry> consume(int interactionCount,
+    private static Map<Integer, ResolvedAnswerEntry> consume(List<InteractionRef> interactions,
                                                              List<AnswerKeyEntry> entries) {
         var result = new HashMap<Integer, ResolvedAnswerEntry>();
-        int cursor = 0;
-        for (var entry : entries) {
-            int itemCount = entry.items().isEmpty() ? 1 : entry.items().size();
-            if (cursor + itemCount > interactionCount) {
-                for (int i = cursor; i < interactionCount; i++) {
-                    result.put(i, null);
+        var pageIndices = new LinkedHashMap<Integer, List<Integer>>();
+        for (int i = 0; i < interactions.size(); i++) {
+            pageIndices.computeIfAbsent(interactions.get(i).pdfPage(), k -> new ArrayList<>()).add(i);
+        }
+        int blockCursor = 0;
+        for (var page : pageIndices.entrySet()) {
+            var indices = page.getValue();
+            int assigned = 0;
+            boolean ambiguousRemainder = false;
+            while (blockCursor < entries.size() && assigned < indices.size()) {
+                var block = entries.get(blockCursor);
+                if (block.items().isEmpty()) {
+                    blockCursor++;
+                    ambiguousRemainder = true;
+                    continue;
                 }
-                break;
+                int itemCount = block.items().size();
+                if (assigned + itemCount > indices.size()) {
+                    ambiguousRemainder = true;
+                    break;
+                }
+                for (int i = 0; i < itemCount; i++) {
+                    var view = ResolvedAnswerEntry.item(block, i);
+                    // Unreadable OCR characters can never be authoritative:
+                    // fail closed (AMBIGUOUS) instead of grading against garbage.
+                    if (view.expectedValue().indexOf('\uFFFD') >= 0) {
+                        result.put(indices.get(assigned + i), null);
+                    } else {
+                        result.put(indices.get(assigned + i), view);
+                    }
+                }
+                assigned += itemCount;
+                blockCursor++;
             }
-            for (int i = 0; i < itemCount; i++) {
-                var view = entry.items().isEmpty()
-                    ? ResolvedAnswerEntry.single(entry)
-                    : ResolvedAnswerEntry.item(entry, i);
-                // Unreadable OCR characters can never be authoritative:
-                // fail closed (AMBIGUOUS) instead of grading against garbage.
-                if (view.expectedValue().indexOf('\uFFFD') >= 0) {
-                    result.put(cursor + i, null);
-                } else {
-                    result.put(cursor + i, view);
+            if (ambiguousRemainder) {
+                for (int i = assigned; i < indices.size(); i++) {
+                    result.put(indices.get(i), null);
                 }
             }
-            cursor += itemCount;
         }
         return result;
     }

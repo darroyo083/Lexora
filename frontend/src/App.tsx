@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useReducer } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, useReducer } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { FileText } from 'lucide-react';
@@ -46,6 +46,14 @@ import { readPageRotation, writePageRotation } from './state/pageRotation';
 import { readZoomPreference, writeZoomPreference } from './state/zoom';
 import { rotateLeft, rotateRight, type PageRotation } from './reader/rotation';
 import { readAnswersForPage, writeAnswersForPage } from './state/exerciseAnswers';
+import {
+  CorrectionVerdict,
+  AnswerResolutionStatus,
+  readRevealBitsForPage,
+  writeRevealBit,
+} from './state/correction';
+import { fetchAnswerKey, type AnswerKey } from './api/correction';
+import { computeCorrectionMap, parseMatchingPairsFromEntry } from './reader/correction';
 import {
   migrateDesignVariantPreference,
   readDevModePreference,
@@ -136,12 +144,19 @@ export default function App() {
   const { mode: orderingMode, expandedExerciseId: expandedOrderingExercise, closedExerciseIds: closedOrderingExercises } = orderingView;
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => readThemeModePreference());
+  const [answerKey, setAnswerKey] = useState<AnswerKey | null>(null);
+  const [correctionVerdicts, setCorrectionVerdicts] = useState<Record<string, CorrectionVerdict | undefined>>({});
+  const [correctionResolutions, setCorrectionResolutions] = useState<Record<string, AnswerResolutionStatus>>({});
+  const [correctionDetails, setCorrectionDetails] = useState<Record<string, { correctCount: number; totalCount: number }>>({});
+  const [correctionUiState, setCorrectionUiState] = useState<string>('IDLE');
+  const [correctionReveal, setCorrectionReveal] = useState<Record<string, boolean>>({});
   const activePage = useRef(selectedPage);
   const processingInFlight = useRef(false);
   const bookIdRef = useRef<string | null>(null);
   const persistTimer = useRef<number | null>(null);
   const pendingPersist = useRef<PendingPersist | null>(null);
   const uploadTokenRef = useRef(0);
+  const correctionCheckRef = useRef<() => void>(() => {});
   activePage.current = selectedPage;
 
   const handleToggleTheme = useCallback(() => {
@@ -253,6 +268,20 @@ export default function App() {
     setOrderingActivePrompt(null);
     dispatchMatchingSelection({ type: 'clear' });
     dispatchOrderingView({ type: 'reset' });
+    if (bookId && nextPage) {
+      const revealBits = readRevealBitsForPage(
+        bookId, nextPage.pageNumber,
+        blanks, choices, grids, sentenceOrderings, matchings, freeTexts,
+        schemaVersion,
+      );
+      setCorrectionReveal(revealBits);
+    } else {
+      setCorrectionReveal({});
+    }
+    setCorrectionVerdicts({});
+    setCorrectionResolutions({});
+    setCorrectionDetails({});
+    setCorrectionUiState('IDLE');
   }, []);
 
   const clearPageInteraction = useCallback(() => {
@@ -287,6 +316,25 @@ export default function App() {
       }
 
       if (!book) return;
+
+      // Ctrl+Enter: Check answers
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        correctionCheckRef.current();
+        return;
+      }
+
+      // Ctrl+Shift+F: Focus next incorrect item
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'F' || event.key === 'f')) {
+        event.preventDefault();
+        return;
+      }
+
+      // Ctrl+Shift+R: Reveal answer
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'R' || event.key === 'r')) {
+        event.preventDefault();
+        return;
+      }
 
       if (event.key === 'ArrowLeft' || event.key === 'PageUp' || event.key === 'k' || event.key === 'K') {
         event.preventDefault();
@@ -327,6 +375,12 @@ export default function App() {
         setRotation(readPageRotation(storedBook.id, restoredPage));
         showPage(pages.find((candidate) => candidate.pageNumber === restoredPage) ?? null, storedBook.id);
         setStatus('ready');
+
+        fetchAnswerKey(storedBook.id)
+          .then((key) => setAnswerKey(key))
+          .catch((err) => {
+            if (err.status !== 404) console.warn('Answer key fetch failed:', err);
+          });
       } catch (error) {
         if (uploadTokenRef.current !== restoreToken) return;
         localStorage.removeItem(CURRENT_BOOK_KEY);
@@ -400,6 +454,13 @@ export default function App() {
     if (uploadTokenRef.current !== uploadToken) return;
     setPdfData(data);
     setStatus('ready');
+    setAnswerKey(null);
+
+    fetchAnswerKey(info.id)
+      .then((key) => setAnswerKey(key))
+      .catch((err) => {
+        if (err.status !== 404) console.warn('Answer key fetch failed:', err);
+      });
   }, [clearPageInteraction, flushPendingAnswers]);
 
   const handleProcessPage = useCallback(async () => {
@@ -680,6 +741,149 @@ export default function App() {
     writePageRotation(bookId, activePage.current, next);
   }, [rotation]);
 
+  const handleCorrectionCheck = useCallback(() => {
+    if (!answerKey) return;
+    const entries = answerKey.entries;
+    const pageNum = selectedPage;
+
+    function findEntry(kind: string, index: number) {
+      const matching = entries.filter(
+        (e) => e.pageNumber === pageNum && e.interactionKind === kind,
+      );
+      matching.sort((a, b) => a.ordinal - b.ordinal);
+      return matching[index];
+    }
+
+    const result = computeCorrectionMap({
+      blanks: interaction.blanks.map((blank, index) => ({
+        id: blank.id,
+        blank,
+        learnerValue: interaction.answers[blank.id],
+        entry: findEntry('fill-in-line', index),
+      })),
+      choices: interaction.choices.map((choice, index) => ({
+        id: choice.id,
+        choice,
+        learnerValue: interaction.answers[choice.id],
+        entry: findEntry('choice', index),
+      })),
+      choiceGroups: interaction.choiceGroups,
+      grids: interaction.grids.map((grid, index) => ({
+        id: grid.id,
+        grid,
+        learnerValues: Object.fromEntries(
+          grid.rows.map((row) => [row.id, interaction.answers[row.id]]),
+        ),
+        rows: grid.rows,
+        entry: findEntry('choice-grid', index),
+      })),
+      orderings: interaction.sentenceOrderings.map((ordering, index) => ({
+        id: ordering.id,
+        ordering,
+        learnerValue: interaction.answers[ordering.id],
+        entry: findEntry('sentence-ordering', index),
+      })),
+      matchings: interaction.matchings.map((matching, index) => ({
+        id: matching.id,
+        matching,
+        learnerValue: interaction.answers[matching.id],
+        entry: findEntry('matching', index),
+      })),
+      freeTexts: interaction.freeTexts.map((freeText, index) => ({
+        id: freeText.id,
+        freeText,
+        learnerValue: interaction.answers[freeText.id],
+        entry: findEntry('free-text', index),
+      })),
+    });
+
+    setCorrectionVerdicts(result.verdictByItem);
+    setCorrectionResolutions(result.resolutionByItem);
+    setCorrectionDetails(result.resultDetailsByItem);
+    setCorrectionUiState('CHECKED');
+  }, [answerKey, interaction, selectedPage]);
+
+  correctionCheckRef.current = handleCorrectionCheck;
+
+  const orderingExpectedByItem = useMemo(() => {
+    const expected: Record<string, string[]> = {};
+    if (!answerKey) return expected;
+    const entries = answerKey.entries.filter(
+      (e) => e.pageNumber === selectedPage && e.interactionKind === 'sentence-ordering',
+    );
+    entries.sort((a, b) => a.ordinal - b.ordinal);
+    interaction.sentenceOrderings.forEach((ordering, index) => {
+      const entry = entries[index];
+      if (entry) expected[ordering.id] = parseOrderedAnswer(entry.expectedValue);
+    });
+    return expected;
+  }, [answerKey, interaction.sentenceOrderings, selectedPage]);
+
+  const expectedChoiceLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    if (!answerKey) return labels;
+    const entries = answerKey.entries.filter(
+      (e) => e.pageNumber === selectedPage && e.interactionKind === 'choice',
+    );
+    entries.sort((a, b) => a.ordinal - b.ordinal);
+    interaction.choices.forEach((choice, index) => {
+      const entry = entries[index];
+      if (entry) labels[choice.id] = entry.expectedValue;
+    });
+    return labels;
+  }, [answerKey, interaction.choices, selectedPage]);
+
+  const expectedPairsByItem = useMemo(() => {
+    const pairs: Record<string, Array<{ left: string; right: string }>> = {};
+    if (!answerKey) return pairs;
+    const entries = answerKey.entries.filter(
+      (e) => e.pageNumber === selectedPage && e.interactionKind === 'matching',
+    );
+    entries.sort((a, b) => a.ordinal - b.ordinal);
+    interaction.matchings.forEach((matching, index) => {
+      const entry = entries[index];
+      if (entry) pairs[matching.id] = parseMatchingPairsFromEntry(entry);
+    });
+    return pairs;
+  }, [answerKey, interaction.matchings, selectedPage]);
+
+  const handleCorrectionRetry = useCallback((itemId: string) => {
+    setCorrectionVerdicts((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    setCorrectionResolutions((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    setCorrectionDetails((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    setCorrectionReveal((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    setCorrectionUiState('RETRYING');
+    const bookId = bookIdRef.current;
+    if (bookId) {
+      writeRevealBit(bookId, selectedPage, itemId, false);
+    }
+  }, [selectedPage]);
+
+  const handleCorrectionReveal = useCallback((itemId: string) => {
+    setCorrectionReveal((prev) => ({ ...prev, [itemId]: true }));
+    setCorrectionUiState('REVEALED');
+    const bookId = bookIdRef.current;
+    if (bookId) {
+      writeRevealBit(bookId, selectedPage, itemId, true);
+    }
+  }, [selectedPage]);
+
   const handleUpdateBoxPref = useCallback((key: string, value: boolean, setter: (val: boolean) => void) => {
     setter(value);
     writeBooleanPreference(key, value);
@@ -778,6 +982,12 @@ export default function App() {
                 onMatchingItemClick={handleMatchingItemClick}
                 onMatchingUnpair={handleMatchingUnpair}
                 onMatchingReset={handleMatchingReset}
+                verdictByItem={correctionVerdicts}
+                resolutionByItem={correctionResolutions}
+                reveal={correctionReveal}
+                expectedChoiceLabels={expectedChoiceLabels}
+                expectedSequencesByItem={orderingExpectedByItem}
+                expectedPairsByItem={expectedPairsByItem}
               />
             ) : (
               <div className="empty-state">
@@ -814,6 +1024,9 @@ export default function App() {
             matchings={interaction.matchings}
             freeTexts={interaction.freeTexts}
             answers={interaction.answers}
+            choiceGroups={interaction.choiceGroups}
+            expectedSequencesByItem={orderingExpectedByItem}
+            pageNumber={selectedPage}
             selectedSpan={interaction.selectedSpan}
             selectedBlank={interaction.selectedBlank}
             selectedChoice={interaction.selectedChoice}
@@ -841,6 +1054,16 @@ export default function App() {
             setShowFreeTextDetection={(val) => handleUpdateBoxPref(SHOW_FREE_TEXT_DETECTION_KEY, val, setShowFreeTextDetection)}
             onBlankClick={handleBlankClick}
             onChoiceClick={handleChoiceClick}
+            verdictByItem={correctionVerdicts}
+            resolutionByItem={correctionResolutions}
+            correctionDetails={correctionDetails}
+            correctionReveal={correctionReveal}
+            correctionUiState={correctionUiState}
+            hasAnswerKey={answerKey !== null}
+            answerKeyEntries={answerKey?.entries ?? []}
+            onCheck={handleCorrectionCheck}
+            onRetry={handleCorrectionRetry}
+            onReveal={handleCorrectionReveal}
           />
         </main>
       </div>

@@ -7,6 +7,7 @@ import {
   parseMatchingAnswer,
   type MatchingSelection,
 } from './matching';
+import { CorrectionVerdict } from '../state/correction';
 
 interface Props {
   matchings: MatchingInteraction[];
@@ -14,10 +15,28 @@ interface Props {
   rotation: PageRotation;
   disabled: boolean;
   selection: MatchingSelection | null;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
+  expectedPairsByItem: Record<string, Array<{ left: string; right: string }>>;
+  revealedByItem: Record<string, boolean>;
   onItemClick: (interactionId: string, itemId: string, side: 'left' | 'right') => void;
   onUnpair: (interactionId: string, itemId: string) => void;
   onReset: (interactionId: string) => void;
 }
+
+interface Line {
+  key: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  className: string;
+}
+
+const GRADED_VERDICTS = new Set<CorrectionVerdict>([
+  CorrectionVerdict.CORRECT,
+  CorrectionVerdict.INCORRECT,
+  CorrectionVerdict.PARTIALLY_CORRECT,
+]);
 
 /**
  * In-page matching layer: selectable item hit areas plus a connection SVG.
@@ -27,6 +46,13 @@ interface Props {
  * unpair button at its anchor; pairs are drawn as thin lines between the
  * printed anchor dots, in the same normalized coordinate space as the rest
  * of the overlays, so they follow zoom and rotation automatically.
+ *
+ * After a check with legitimate grading (CORRECT / INCORRECT /
+ * PARTIALLY_CORRECT), learner pairs are distinguished per-pair: correct pairs
+ * use a solid key-colored line, incorrect pairs a dashed error-colored line.
+ * Correctness is never communicated by color alone — the dash pattern and the
+ * button accessibility text carry the same information. When no legitimate
+ * verdict exists (UNMAPPED / AMBIGUOUS / unresolved), lines stay neutral.
  */
 export default function MatchingOverlay({
   matchings,
@@ -34,6 +60,9 @@ export default function MatchingOverlay({
   rotation,
   disabled,
   selection,
+  verdictByItem,
+  expectedPairsByItem,
+  revealedByItem,
   onItemClick,
   onUnpair,
   onReset,
@@ -46,6 +75,32 @@ export default function MatchingOverlay({
         const activeSelection = selection?.interactionId === interaction.id
           ? selection
           : null;
+
+        const verdict = verdictByItem[interaction.id];
+        const graded = verdict !== undefined && GRADED_VERDICTS.has(verdict);
+        const revealed = revealedByItem[interaction.id] === true;
+        const expectedPairs = expectedPairsByItem[interaction.id] ?? [];
+        const leftIdByLabel = new Map(
+          interaction.leftItems.map((item) => [item.label, item.id]),
+        );
+        const rightIdByLabel = new Map(
+          interaction.rightItems.map((item) => [item.label, item.id]),
+        );
+        const expectedRightIdForLeft = new Map<string, string>();
+        for (const pair of expectedPairs) {
+          const leftId = leftIdByLabel.get(pair.left);
+          const rightId = rightIdByLabel.get(pair.right);
+          if (leftId && rightId) expectedRightIdForLeft.set(leftId, rightId);
+        }
+        const gradedPairsAvailable = graded && expectedPairs.length > 0;
+
+        const pairCorrect = (leftId: string): boolean | undefined => {
+          if (!gradedPairsAvailable) return undefined;
+          const expectedRightId = expectedRightIdForLeft.get(leftId);
+          if (expectedRightId === undefined) return false;
+          return pairs[leftId] === expectedRightId;
+        };
+
         const renderItem = (item: MatchingItem, side: 'left' | 'right') => {
           const matched = isItemMatched(pairs, item.id);
           const active = activeSelection?.itemId === item.id
@@ -66,6 +121,14 @@ export default function MatchingOverlay({
               : undefined;
             return left ? left.text : null;
           })();
+          const correctness = side === 'left'
+            ? pairCorrect(item.id)
+            : (pairedLeft ? pairCorrect(pairedLeft) : undefined);
+          const correctnessText = matched && correctness === true
+            ? ', correct pair'
+            : matched && correctness === false
+              ? ', incorrect pair'
+              : '';
           const isPairSource = side === 'right' && active;
           return (
             <div key={item.id} className={`matching-item-zone matching-item-zone-${side}`}>
@@ -78,7 +141,7 @@ export default function MatchingOverlay({
                 ].filter(Boolean).join(' ')}
                 aria-label={`${side === 'left' ? 'Left' : 'Right'} matching item ${
                   item.label ? `${item.label} — ` : ''
-                }${item.text}${matched && partnerText ? `, matched to ${partnerText}` : ''}`}
+                }${item.text}${matched && partnerText ? `, matched to ${partnerText}` : ''}${correctnessText}`}
                 aria-pressed={active}
                 aria-disabled={disabled}
                 style={matchingHitStyle(item, side, rotation)}
@@ -114,20 +177,46 @@ export default function MatchingOverlay({
             </div>
           );
         };
-        const lines = interaction.leftItems.flatMap((left) => {
+        const lines: Line[] = interaction.leftItems.flatMap((left) => {
           const rightId = pairs[left.id];
           const right = interaction.rightItems.find((item) => item.id === rightId);
           if (!right) return [];
           const from = matchingEndpoint(left, 'left', rotation);
           const to = matchingEndpoint(right, 'right', rotation);
+          const correct = pairCorrect(left.id);
+          const className = correct === undefined
+            ? ''
+            : correct ? 'matching-line-ok' : 'matching-line-err';
           return [{
             key: left.id,
             x1: from.x * 100,
             y1: from.y * 100,
             x2: to.x * 100,
             y2: to.y * 100,
+            className,
           }];
         });
+        const expectedLines: Line[] = (revealed && gradedPairsAvailable)
+          ? expectedPairs.flatMap((pair) => {
+              const leftId = leftIdByLabel.get(pair.left);
+              const rightId = rightIdByLabel.get(pair.right);
+              if (!leftId || !rightId) return [];
+              if (pairs[leftId] === rightId) return [];
+              const left = interaction.leftItems.find((item) => item.id === leftId);
+              const right = interaction.rightItems.find((item) => item.id === rightId);
+              if (!left || !right) return [];
+              const from = matchingEndpoint(left, 'left', rotation);
+              const to = matchingEndpoint(right, 'right', rotation);
+              return [{
+                key: `expected-${leftId}`,
+                x1: from.x * 100,
+                y1: from.y * 100,
+                x2: to.x * 100,
+                y2: to.y * 100,
+                className: 'matching-line-expected',
+              }];
+            })
+          : [];
         return (
           <div key={interaction.id} className="matching-layer">
             {hasPairs && (
@@ -152,7 +241,7 @@ export default function MatchingOverlay({
               preserveAspectRatio="none"
               aria-hidden="true"
             >
-              {lines.map((line) => (
+              {lines.concat(expectedLines).map((line) => (
                 <g key={line.key}>
                   <line
                     className="matching-line-halo"
@@ -162,7 +251,7 @@ export default function MatchingOverlay({
                     y2={line.y2}
                   />
                   <line
-                    className="matching-line"
+                    className={`matching-line ${line.className}`.trim()}
                     x1={line.x1}
                     y1={line.y1}
                     x2={line.x2}

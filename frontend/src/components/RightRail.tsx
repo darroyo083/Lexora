@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { BookOpen, PenTool, Code } from 'lucide-react';
-import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from '../reader/types';
+import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from '../reader/types';
 import DebugPanel from '../reader/DebugPanel';
 import SentenceOrderingPanel from '../reader/SentenceOrderingPanel';
+import VerdictPill from './VerdictPill';
+import CheckBar from './CheckBar';
+import RevealBlock from './RevealBlock';
+import { CorrectionVerdict, AnswerResolutionStatus } from '../state/correction';
+import type { AnswerKeyEntry } from '../api/correction';
+import { parseMatchingAnswer } from '../reader/matching';
+import { parseOrderedAnswer } from '../reader/ordering';
 
 interface Props {
   devMode: boolean;
@@ -14,6 +21,9 @@ interface Props {
   matchings: MatchingInteraction[];
   freeTexts: FreeTextInteraction[];
   answers: Record<string, string>;
+  choiceGroups: Record<string, ChoiceGroup>;
+  expectedSequencesByItem: Record<string, string[]>;
+  pageNumber: number;
   selectedSpan: TextSpan | null;
   selectedBlank: ExerciseBlank | null;
   selectedChoice: ChoiceTarget | null;
@@ -42,6 +52,56 @@ interface Props {
   setShowFreeTextDetection: (val: boolean) => void;
   onBlankClick: (blank: ExerciseBlank) => void;
   onChoiceClick: (choice: ChoiceTarget) => void;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
+  resolutionByItem: Record<string, AnswerResolutionStatus>;
+  correctionDetails: Record<string, { correctCount: number; totalCount: number }>;
+  correctionReveal: Record<string, boolean>;
+  correctionUiState: string;
+  hasAnswerKey: boolean;
+  answerKeyEntries: AnswerKeyEntry[];
+  onCheck: () => void;
+  onRetry: (itemId: string) => void;
+  onReveal: (itemId: string) => void;
+}
+
+function findEntry(
+  entries: AnswerKeyEntry[],
+  pageNumber: number,
+  interactionKind: string,
+  index: number,
+): AnswerKeyEntry | undefined {
+  const matching = entries.filter(
+    (e) => e.pageNumber === pageNumber && e.interactionKind === interactionKind,
+  );
+  matching.sort((a, b) => a.ordinal - b.ordinal);
+  return matching[index];
+}
+
+function optionLabel(optionId: string, choiceGroups: Record<string, ChoiceGroup>): string {
+  for (const group of Object.values(choiceGroups)) {
+    const option = group.options.find((o) => o.id === optionId);
+    if (option) return option.label;
+  }
+  return optionId;
+}
+
+function formatMatchingPairs(
+  interaction: MatchingInteraction,
+  pairs: ReturnType<typeof parseMatchingAnswer>,
+): string {
+  const leftLabel = (id: string) =>
+    interaction.leftItems.find((item) => item.id === id)?.label ?? id;
+  const rightLabel = (id: string) =>
+    interaction.rightItems.find((item) => item.id === id)?.label ?? id;
+  return Object.entries(pairs)
+    .map(([leftId, rightId]) => `${leftLabel(leftId)} → ${rightLabel(rightId)}`)
+    .join(', ');
+}
+
+function orderingLabel(interaction: SentenceOrderingInteraction, sequence: string[]): string {
+  return sequence
+    .map((id) => interaction.items.find((item) => item.id === id)?.text ?? id)
+    .join(' ');
 }
 
 export default function RightRail({
@@ -54,6 +114,9 @@ export default function RightRail({
   matchings,
   freeTexts,
   answers,
+  choiceGroups,
+  expectedSequencesByItem,
+  pageNumber,
   selectedSpan,
   selectedBlank,
   selectedChoice,
@@ -81,11 +144,26 @@ export default function RightRail({
   setShowFreeTextDetection,
   onBlankClick,
   onChoiceClick,
+  verdictByItem,
+  resolutionByItem,
+  correctionDetails,
+  correctionReveal,
+  correctionUiState,
+  hasAnswerKey,
+  answerKeyEntries,
+  onCheck,
+  onRetry,
+  onReveal,
 }: Props) {
   const [activeTab, setActiveTab] = useState<'exercises' | 'dev'>('exercises');
 
   // Total detected exercise primitives
   const totalExercises = blanks.length + choices.length + grids.length + sentenceOrderings.length + matchings.length + freeTexts.length;
+
+  const anyRevealed = Object.values(correctionReveal).some(Boolean);
+
+  const activeOrdering = sentenceOrderings.find((i) => i.id === orderingActivePrompt)
+    ?? sentenceOrderings[0];
 
   return (
     <aside className="right-rail" aria-label="Contextual Study Panel">
@@ -148,6 +226,8 @@ export default function RightRail({
                         onOrderingChange={onOrderingChange}
                         onCollapseChange={onCollapseChange}
                         onFloat={onFloat}
+                        verdictByItem={verdictByItem}
+                        expectedSequencesByItem={expectedSequencesByItem}
                       />
                     ) : (
                       <div className="floating-mode-note">
@@ -157,6 +237,40 @@ export default function RightRail({
                         </button>
                       </div>
                     )}
+
+                    {activeOrdering && (() => {
+                      const orderingIndex = sentenceOrderings.findIndex((i) => i.id === activeOrdering.id);
+                      const entry = findEntry(answerKeyEntries, pageNumber, 'sentence-ordering', orderingIndex);
+                      const verdict = verdictByItem[activeOrdering.id];
+                      const resolution = resolutionByItem[activeOrdering.id];
+                      const revealed = correctionReveal[activeOrdering.id] === true;
+                      const expectedSequence = expectedSequencesByItem[activeOrdering.id];
+                      if (!entry && !verdict) return null;
+                      return (
+                        <div className="exercise-item-cell ordering-feedback">
+                          <div className="exercise-item-row">
+                            <span className="item-id">Satz {orderingIndex + 1}</span>
+                            <VerdictPill
+                              verdict={verdict ?? null}
+                              resolution={resolution ?? null}
+                              revealed={revealed}
+                              details={correctionDetails[activeOrdering.id]}
+                              interactionKind="sentence-ordering"
+                            />
+                          </div>
+                          {entry && expectedSequence && (
+                            <RevealBlock
+                              itemId={activeOrdering.id}
+                              revealed={revealed}
+                              learnerLabel={orderingLabel(activeOrdering, parseOrderedAnswer(answers[activeOrdering.id])) || '(empty)'}
+                              expectedLabel={orderingLabel(activeOrdering, expectedSequence) || '(empty)'}
+                              onReveal={onReveal}
+                              onRetry={onRetry}
+                            />
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -170,19 +284,41 @@ export default function RightRail({
                     <ul className="exercise-items-list">
                       {blanks.slice(0, 8).map((blank, idx) => {
                         const filled = Boolean(answers[blank.id]);
+                        const verdict = verdictByItem[blank.id];
+                        const resolution = resolutionByItem[blank.id];
+                        const revealed = correctionReveal[blank.id] === true;
+                        const entry = findEntry(answerKeyEntries, pageNumber, 'fill-in-line', idx);
                         return (
-                          <li key={blank.id} className="exercise-item-row">
-                            <button
-                              type="button"
-                              className="exercise-item-btn"
-                              onClick={() => onBlankClick(blank)}
-                            >
-                              <span className="item-num">{idx + 1}.</span>
-                              <span className="item-id">Blank {blank.id}</span>
-                              <span className={`item-status ${filled ? 'filled' : 'empty'}`}>
-                                {filled ? 'Filled' : 'Empty'}
-                              </span>
-                            </button>
+                          <li key={blank.id} className="exercise-item-cell">
+                            <div className="exercise-item-row">
+                              <button
+                                type="button"
+                                className="exercise-item-btn"
+                                onClick={() => onBlankClick(blank)}
+                              >
+                                <span className="item-num">{idx + 1}.</span>
+                                <span className="item-id">Blank {blank.id}</span>
+                                <span className={`item-status ${filled ? 'filled' : 'empty'}`}>
+                                  {filled ? 'Filled' : 'Empty'}
+                                </span>
+                              </button>
+                              <VerdictPill
+                                verdict={verdict ?? null}
+                                resolution={resolution ?? null}
+                                revealed={revealed}
+                              />
+                            </div>
+                            {entry && resolution !== AnswerResolutionStatus.AMBIGUOUS && (
+                              <RevealBlock
+                                itemId={blank.id}
+                                revealed={revealed}
+                                learnerLabel={answers[blank.id] ?? ''}
+                                expectedLabel={entry.expectedValue}
+                                acceptedAlternatives={entry.alternatives}
+                                onReveal={onReveal}
+                                onRetry={onRetry}
+                              />
+                            )}
                           </li>
                         );
                       })}
@@ -203,19 +339,79 @@ export default function RightRail({
                     <ul className="exercise-items-list">
                       {choices.slice(0, 5).map((choice, idx) => {
                         const selected = Boolean(answers[choice.id]);
+                        const verdict = verdictByItem[choice.id];
+                        const resolution = resolutionByItem[choice.id];
+                        const revealed = correctionReveal[choice.id] === true;
+                        const entry = findEntry(answerKeyEntries, pageNumber, 'choice', idx);
+                        const selectedLabel = answers[choice.id]
+                          ? optionLabel(answers[choice.id], choiceGroups)
+                          : '';
                         return (
-                          <li key={choice.id} className="exercise-item-row">
-                            <button
-                              type="button"
-                              className="exercise-item-btn"
-                              onClick={() => onChoiceClick(choice)}
-                            >
-                              <span className="item-num">{idx + 1}.</span>
-                              <span className="item-id">Option {choice.id}</span>
-                              <span className={`item-status ${selected ? 'filled' : 'empty'}`}>
-                                {selected ? 'Selected' : 'Unselected'}
-                              </span>
-                            </button>
+                          <li key={choice.id} className="exercise-item-cell">
+                            <div className="exercise-item-row">
+                              <button
+                                type="button"
+                                className="exercise-item-btn"
+                                onClick={() => onChoiceClick(choice)}
+                              >
+                                <span className="item-num">{idx + 1}.</span>
+                                <span className="item-id">Option {choice.id}</span>
+                                <span className={`item-status ${selected ? 'filled' : 'empty'}`}>
+                                  {selected ? 'Selected' : 'Unselected'}
+                                </span>
+                              </button>
+                              <VerdictPill
+                                verdict={verdict ?? null}
+                                resolution={resolution ?? null}
+                                revealed={revealed}
+                              />
+                            </div>
+                            {entry && resolution !== AnswerResolutionStatus.AMBIGUOUS && (
+                              <RevealBlock
+                                itemId={choice.id}
+                                revealed={revealed}
+                                learnerLabel={selectedLabel || '(empty)'}
+                                expectedLabel={entry.expectedValue}
+                                acceptedAlternatives={entry.alternatives}
+                                onReveal={onReveal}
+                                onRetry={onRetry}
+                              />
+                            )}
+                          </li>
+                        );
+                      })}
+                      {grids.map((grid, idx) => {
+                        const verdict = verdictByItem[grid.id];
+                        const resolution = resolutionByItem[grid.id];
+                        const revealed = correctionReveal[grid.id] === true;
+                        const entry = findEntry(answerKeyEntries, pageNumber, 'choice-grid', idx);
+                        const learnerLabels = grid.rows
+                          .map((row) => answers[row.id] ? optionLabel(answers[row.id], choiceGroups) : null)
+                          .filter((label): label is string => Boolean(label))
+                          .join(', ');
+                        return (
+                          <li key={grid.id} className="exercise-item-cell">
+                            <div className="exercise-item-row">
+                              <span className="item-id">Grid {grid.id}</span>
+                              <VerdictPill
+                                verdict={verdict ?? null}
+                                resolution={resolution ?? null}
+                                revealed={revealed}
+                                details={correctionDetails[grid.id]}
+                                interactionKind="choice-grid"
+                              />
+                            </div>
+                            {entry && resolution !== AnswerResolutionStatus.AMBIGUOUS && (
+                              <RevealBlock
+                                itemId={grid.id}
+                                revealed={revealed}
+                                learnerLabel={learnerLabels || '(empty)'}
+                                expectedLabel={entry.expectedValue}
+                                acceptedAlternatives={entry.alternatives}
+                                onReveal={onReveal}
+                                onRetry={onRetry}
+                              />
+                            )}
                           </li>
                         );
                       })}
@@ -230,7 +426,38 @@ export default function RightRail({
                       <span className="exercise-type-badge">Matching</span>
                       <span className="card-count">{matchings.length} pairing exercises</span>
                     </div>
-                    <p className="card-hint">Click anchors directly on the page to draw connection lines.</p>
+                    {matchings.map((matching, idx) => {
+                      const verdict = verdictByItem[matching.id];
+                      const resolution = resolutionByItem[matching.id];
+                      const revealed = correctionReveal[matching.id] === true;
+                      const details = correctionDetails[matching.id];
+                      const entry = findEntry(answerKeyEntries, pageNumber, 'matching', idx);
+                      const pairs = parseMatchingAnswer(answers[matching.id]);
+                      return (
+                        <div key={matching.id} className="exercise-item-cell">
+                          <div className="exercise-item-row">
+                            <p className="card-hint">Click anchors directly on the page to draw connection lines.</p>
+                            <VerdictPill
+                              verdict={verdict ?? null}
+                              resolution={resolution ?? null}
+                              revealed={revealed}
+                              details={details}
+                              interactionKind="matching"
+                            />
+                          </div>
+                          {entry && resolution !== AnswerResolutionStatus.AMBIGUOUS && (
+                            <RevealBlock
+                              itemId={matching.id}
+                              revealed={revealed}
+                              learnerLabel={formatMatchingPairs(matching, pairs) || '(empty)'}
+                              expectedLabel={entry.expectedValue}
+                              onReveal={onReveal}
+                              onRetry={onRetry}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -242,10 +469,61 @@ export default function RightRail({
                       <span className="card-count">{freeTexts.length} response areas</span>
                     </div>
                     <p className="card-hint">Write directly onto the printed lines on the page.</p>
+                    {freeTexts.slice(0, 3).map((ft, idx) => {
+                      const verdict = verdictByItem[ft.id];
+                      const revealed = correctionReveal[ft.id] === true;
+                      const entry = findEntry(answerKeyEntries, pageNumber, 'free-text', idx);
+                      const hasReference = entry?.typedPayload?.kind === 'reference';
+                      const referenceText = hasReference && entry?.typedPayload?.kind === 'reference'
+                        ? entry.typedPayload.modelText
+                        : undefined;
+                      return (
+                        <div key={ft.id} className="exercise-item-cell">
+                          <div className="exercise-item-row">
+                            <span className="item-id">Response {ft.id}</span>
+                            <VerdictPill
+                              verdict={verdict ?? null}
+                              resolution={null}
+                              revealed={revealed}
+                              interactionKind="free-text"
+                            />
+                          </div>
+                          {entry && (
+                            <RevealBlock
+                              itemId={ft.id}
+                              revealed={revealed}
+                              learnerLabel=""
+                              expectedLabel=""
+                              hasReference={hasReference}
+                              referenceText={referenceText}
+                              isFreeText
+                              onReveal={onReveal}
+                              onRetry={onRetry}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             )}
+            <CheckBar
+              totalGradable={
+                Object.values(verdictByItem).filter(
+                  (v) => v !== undefined && v !== CorrectionVerdict.NOT_AUTO_GRADABLE,
+                ).length
+              }
+              totalCorrect={
+                Object.values(verdictByItem).filter(
+                  (v) => v !== undefined && v === CorrectionVerdict.CORRECT,
+                ).length
+              }
+              uiState={correctionUiState}
+              hasAnswerKey={hasAnswerKey}
+              anyRevealed={anyRevealed}
+              onCheck={onCheck}
+            />
           </div>
         )}
 

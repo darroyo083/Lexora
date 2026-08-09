@@ -23,6 +23,12 @@ public class GlobalExceptionHandler {
         return ApiError.of("BOOK_NOT_FOUND", e.getMessage());
     }
 
+    @ExceptionHandler(AnswerKeyNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiError handleAnswerKeyNotFound(AnswerKeyNotFoundException e) {
+        return ApiError.of("ANSWER_KEY_NOT_FOUND", e.getMessage());
+    }
+
     @ExceptionHandler(PageNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handlePageNotFound(PageNotFoundException e) {

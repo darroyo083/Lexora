@@ -15,6 +15,7 @@ import {
 } from './floatingOrdering';
 import type { PageRotation } from './rotation';
 import OrderingControls from './OrderingControls';
+import type { CorrectionVerdict } from '../state/correction';
 
 interface BubbleProps {
   interactions: SentenceOrderingInteraction[];
@@ -25,6 +26,8 @@ interface BubbleProps {
   disabled: boolean;
   position: Point;
   getContext: () => DragContext | null;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
+  expectedSequencesByItem: Record<string, string[]>;
   onExpand: () => void;
   onCollapse: () => void;
   onClose: () => void;
@@ -62,6 +65,8 @@ function OrderingFloatingBubble({
   disabled,
   position,
   getContext,
+  verdictByItem,
+  expectedSequencesByItem,
   onExpand,
   onCollapse,
   onClose,
@@ -225,6 +230,8 @@ function OrderingFloatingBubble({
         promptIndex={promptIndex}
         ordered={ordered}
         disabled={disabled}
+        verdict={verdictByItem[active.id]}
+        expected={expectedSequencesByItem[active.id]}
         onPromptChange={onPromptChange}
         onOrderingChange={onOrderingChange}
       />
@@ -242,6 +249,8 @@ interface Props {
   disabled: boolean;
   expandedExerciseId: string | null;
   closedExerciseIds: string[];
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
+  expectedSequencesByItem: Record<string, string[]>;
   onExpand: (exerciseId: string) => void;
   onCollapse: () => void;
   onClose: (exerciseId: string) => void;
@@ -271,6 +280,8 @@ export default function OrderingFloatingLayer({
   disabled,
   expandedExerciseId,
   closedExerciseIds,
+  verdictByItem,
+  expectedSequencesByItem,
   onExpand,
   onCollapse,
   onClose,
@@ -341,6 +352,8 @@ export default function OrderingFloatingLayer({
           disabled={disabled}
           position={positions[exercise.exerciseId] ?? { x: 0, y: 0 }}
           getContext={getContext}
+          verdictByItem={verdictByItem}
+          expectedSequencesByItem={expectedSequencesByItem}
           onExpand={() => onExpand(exercise.exerciseId)}
           onCollapse={onCollapse}
           onClose={() => onClose(exercise.exerciseId)}

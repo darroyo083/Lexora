@@ -344,6 +344,79 @@ describe('FreeText NOT_AUTO_GRADABLE', () => {
   });
 });
 
+describe('AMBIGUOUS regression: unresolvable expected label', () => {
+  it('Choice with unresolvable expected label has no verdict, resolution AMBIGUOUS', () => {
+    const entry = makeEntry({ expectedValue: 'Z', interactionKind: 'choice' });
+    const result = compareChoice({
+      learnerValue: 'opt-a', entry,
+      choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
+    });
+    expect(result.verdict).toBeUndefined();
+    expect(result.resolution).toBe(AnswerResolutionStatus.AMBIGUOUS);
+  });
+
+  it('Choice AMBIGUOUS is never NOT_AUTO_GRADABLE (FreeText-only)', () => {
+    const entry = makeEntry({ expectedValue: 'Z', interactionKind: 'choice' });
+    const result = compareChoice({
+      learnerValue: 'opt-a', entry,
+      choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
+    });
+    expect(result.verdict).not.toBe(CorrectionVerdict.NOT_AUTO_GRADABLE);
+    expect(result.verdict).not.toBe(CorrectionVerdict.INCORRECT);
+    expect(result.verdict).not.toBe(CorrectionVerdict.CORRECT);
+  });
+
+  it('Choice with unresolvable label stays UNANSWERED when learner is empty', () => {
+    const entry = makeEntry({ expectedValue: 'Z', interactionKind: 'choice' });
+    const result = compareChoice({
+      learnerValue: undefined, entry,
+      choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
+    });
+    expect(result.verdict).toBe(CorrectionVerdict.UNANSWERED);
+    expect(result.resolution).toBe(AnswerResolutionStatus.RESOLVED);
+  });
+
+  it('ChoiceGrid with unresolvable expected labels stays neutral, AMBIGUOUS', () => {
+    const rows = [makeGridRow('row-1', 0), makeGridRow('row-2', 0.06)];
+    const entry = makeEntry({ expectedValue: 'Z,W', interactionKind: 'choice-grid' });
+    const result = compareGrid({
+      learnerValues: { 'row-1': 'opt-a', 'row-2': 'opt-b' }, rows, entry,
+      choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
+    });
+    expect(result.verdict).toBeUndefined();
+    expect(result.resolution).toBe(AnswerResolutionStatus.AMBIGUOUS);
+    expect(result.verdict).not.toBe(CorrectionVerdict.INCORRECT);
+  });
+
+  it('ChoiceGrid with one unresolvable answered row stays neutral, AMBIGUOUS', () => {
+    const rows = [makeGridRow('row-1', 0), makeGridRow('row-2', 0.06)];
+    const entry = makeEntry({ expectedValue: 'A,W', interactionKind: 'choice-grid' });
+    const result = compareGrid({
+      learnerValues: { 'row-1': 'opt-a', 'row-2': 'opt-b' }, rows, entry,
+      choiceGroups: { g1: CHOICE_GROUP }, optionGroupId: 'g1',
+    });
+    expect(result.verdict).toBeUndefined();
+    expect(result.resolution).toBe(AnswerResolutionStatus.AMBIGUOUS);
+  });
+
+  it('computeCorrectionMap surfaces AMBIGUOUS as undefined verdict', () => {
+    const entry = makeEntry({ expectedValue: 'Z', interactionKind: 'choice' });
+    const result = computeCorrectionMap({
+      blanks: [],
+      choices: [
+        { id: 'c1', choice: { kind: 'choice', optionGroupId: 'g1' }, learnerValue: 'opt-a', entry },
+      ],
+      choiceGroups: { g1: CHOICE_GROUP },
+      grids: [],
+      orderings: [],
+      matchings: [],
+      freeTexts: [],
+    });
+    expect(result.verdictByItem.c1).toBeUndefined();
+    expect(result.resolutionByItem.c1).toBe(AnswerResolutionStatus.AMBIGUOUS);
+  });
+});
+
 describe('UNMAPPED vs NOT_AUTO_GRADABLE distinction', () => {
   it('UNMAPPED FillBlank has undefined verdict, never NOT_AUTO_GRADABLE', () => {
     const result = compareBlank({ learnerValue: 'test', entry: undefined });

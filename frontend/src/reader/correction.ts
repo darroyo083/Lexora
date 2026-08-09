@@ -141,8 +141,11 @@ export function compareChoice(input: ChoiceInput): CorrectionResult {
 
   const expectedOptionId = resolveOptionLabel(entry.expectedValue, choiceGroups, optionGroupId);
   if (!expectedOptionId) {
+    // The answer key exists but its expected value cannot be resolved to a
+    // single option. NOT_AUTO_GRADABLE is FreeText-only; without a resolvable
+    // expected option we cannot grade, so stay neutral (fail closed).
     return {
-      verdict: CorrectionVerdict.NOT_AUTO_GRADABLE,
+      verdict: undefined,
       resolution: AnswerResolutionStatus.AMBIGUOUS,
     };
   }
@@ -171,6 +174,7 @@ export function compareGrid(input: ChoiceGridInput): CorrectionResult {
 
   let correctCount = 0;
   let answeredCount = 0;
+  let unresolvableExpectedCount = 0;
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -183,7 +187,10 @@ export function compareGrid(input: ChoiceGridInput): CorrectionResult {
     if (!expectedLabel) continue;
 
     const expectedOptionId = resolveOptionLabel(expectedLabel, choiceGroups, optionGroupId);
-    if (!expectedOptionId) continue;
+    if (!expectedOptionId) {
+      unresolvableExpectedCount++;
+      continue;
+    }
 
     if (learnerValue === expectedOptionId) {
       correctCount++;
@@ -192,6 +199,16 @@ export function compareGrid(input: ChoiceGridInput): CorrectionResult {
 
   if (answeredCount === 0) {
     return { verdict: CorrectionVerdict.UNANSWERED, resolution: AnswerResolutionStatus.RESOLVED };
+  }
+
+  if (unresolvableExpectedCount > 0) {
+    // An answered row's expected label cannot be resolved to a single option:
+    // we cannot grade that row, so any verdict would be misleading. Stay
+    // neutral (fail closed), mirroring the Choice AMBIGUOUS semantics.
+    return {
+      verdict: undefined,
+      resolution: AnswerResolutionStatus.AMBIGUOUS,
+    };
   }
 
   if (correctCount === rows.length) {
@@ -305,7 +322,7 @@ export function compareMatching(input: MatchingInput): CorrectionResult {
   return { verdict: CorrectionVerdict.INCORRECT, resolution: AnswerResolutionStatus.RESOLVED };
 }
 
-function parseMatchingPairsFromEntry(
+export function parseMatchingPairsFromEntry(
   entry: AnswerKeyEntry,
 ): Array<{ left: string; right: string }> {
   const pairs: Array<{ left: string; right: string }> = [];

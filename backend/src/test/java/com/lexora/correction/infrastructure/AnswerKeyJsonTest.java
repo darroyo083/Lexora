@@ -88,4 +88,63 @@ class AnswerKeyJsonTest {
 
         assertThat(json).contains("\"type\":\"Text\"");
     }
+
+    @Test
+    void unitFieldsRoundTripThroughRepositoryJsonContract() throws Exception {
+        var entry = new AnswerKeyEntry(228, "2", "FillBlank", 1, "a,b",
+            List.of(), false, false, "strict", "", 1.0, List.of(), null,
+            4, "1", List.of("a", "b"));
+
+        var json = JSON.writeValueAsString(List.of(entry));
+        List<AnswerKeyEntry> restored = JSON.readValue(json,
+            new TypeReference<List<AnswerKeyEntry>>() {});
+
+        assertThat(restored).hasSize(1);
+        var text = restored.get(0);
+        assertThat(text.unitNumber()).isEqualTo(4);
+        assertThat(text.subExerciseMarker()).isEqualTo("1");
+        assertThat(text.items()).containsExactly("a", "b");
+    }
+
+    @Test
+    void legacyEntryWithoutUnitFieldsDeserializesAsNulls() throws Exception {
+        var json = """
+            [{"pageNumber":1,"exerciseNumber":"12","interactionKind":"FillBlank",
+              "ordinal":1,"expectedValue":"der Hund","alternatives":[],
+              "caseSensitive":false,"punctuationRequired":false,
+              "normalizationMode":"strict","rawSolutionText":"1 1. der Hund",
+              "confidence":0.98,"mappingWarnings":[]}]
+            """;
+
+        List<AnswerKeyEntry> restored = JSON.readValue(json,
+            new TypeReference<List<AnswerKeyEntry>>() {});
+
+        assertThat(restored).hasSize(1);
+        assertThat(restored.get(0).unitNumber()).isNull();
+        assertThat(restored.get(0).subExerciseMarker()).isNull();
+        assertThat(restored.get(0).items()).isEmpty();
+    }
+
+    @Test
+    void aiServicePayloadWithUnitFieldsDeserializes() throws Exception {
+        var json = """
+            [{"pageNumber":228,"exerciseNumber":"2","interactionKind":"FillBlank",
+              "ordinal":1,"expectedValue":"a,b","alternatives":[],
+              "caseSensitive":false,"punctuationRequired":false,
+              "normalizationMode":"strict","rawSolutionText":"2 1. a; 2. b",
+              "confidence":0.98,"mappingWarnings":[],
+              "unitNumber":4,"subExerciseMarker":"1","items":["a","b"],
+              "typedPayload":{"type":"Text","value":"a,b","alternatives":[]}}]
+            """;
+
+        List<AnswerKeyEntry> restored = JSON.readValue(json,
+            new TypeReference<List<AnswerKeyEntry>>() {});
+
+        assertThat(restored).hasSize(1);
+        var entry = restored.get(0);
+        assertThat(entry.unitNumber()).isEqualTo(4);
+        assertThat(entry.subExerciseMarker()).isEqualTo("1");
+        assertThat(entry.items()).containsExactly("a", "b");
+        assertThat(entry.typedPayload()).isInstanceOf(TextExpectedAnswer.class);
+    }
 }

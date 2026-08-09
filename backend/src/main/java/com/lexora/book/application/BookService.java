@@ -2,7 +2,9 @@ package com.lexora.book.application;
 
 import com.lexora.book.domain.Book;
 import com.lexora.book.domain.BookPage;
+import com.lexora.book.domain.BookProfile;
 import com.lexora.book.domain.ProcessingStatus;
+import com.lexora.book.infrastructure.BookProfileRepository;
 import com.lexora.book.infrastructure.BookRepository;
 import com.lexora.documentanalysis.client.DocumentAnalysisClient;
 import org.slf4j.Logger;
@@ -18,6 +20,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,14 +32,31 @@ public class BookService {
     private static final Logger log = LoggerFactory.getLogger(BookService.class);
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
+    /**
+     * Deterministic book checksum -> BookProfile edition association. Only the
+     * known private workbook is mapped; unknown books stay profile-less and
+     * correct as UNMAPPED (fail-closed).
+     */
+    static final String GRAMMATIK_AKTIV_A1_B1_CHECKSUM =
+        "0d54de09b60a1e1879edfdb4eeaaab120bbf1d76686622140c9a6c2fef31abec";
+    static final String GRAMMATIK_AKTIV_A1_B1_EDITION_KEY =
+        "grammatik-aktiv-a1-b1-aktualisiert";
+
+    private static final Map<String, String> CHECKSUM_TO_EDITION_KEY = Map.of(
+        GRAMMATIK_AKTIV_A1_B1_CHECKSUM, GRAMMATIK_AKTIV_A1_B1_EDITION_KEY
+    );
+
     private final BookRepository repository;
+    private final BookProfileRepository bookProfileRepository;
     private final DocumentAnalysisClient analysisClient;
     private final Path storageBasePath;
 
     public BookService(BookRepository repository,
+                       BookProfileRepository bookProfileRepository,
                        DocumentAnalysisClient analysisClient,
                        @Value("${lexora.storage.path:storage}") String storagePath) {
         this.repository = repository;
+        this.bookProfileRepository = bookProfileRepository;
         this.analysisClient = analysisClient;
         this.storageBasePath = Path.of(storagePath).toAbsolutePath().normalize();
         try {
@@ -68,11 +88,15 @@ public class BookService {
         );
 
         log.info("book created id={} pages={}", book.id(), pageCount);
-        return repository.save(book);
+        return repository.save(attachProfile(book));
     }
 
     public Optional<Book> getBook(UUID id) {
-        return repository.findById(id);
+        var book = repository.findById(id).orElse(null);
+        if (book == null) {
+            return Optional.empty();
+        }
+        return Optional.of(attachProfileIfKnown(book));
     }
 
     public List<Book> listBooks() {
@@ -204,6 +228,39 @@ public class BookService {
         if (file.getSize() > 200 * 1024 * 1024) {
             throw new IllegalArgumentException("File too large (max 200 MB)");
         }
+    }
+
+    private Book attachProfile(Book book) {
+        var profileId = resolveProfileId(book.checksum());
+        return profileId.isPresent() ? book.withBookProfileId(profileId.get()) : book;
+    }
+
+    /**
+     * Lazy fallback for books uploaded before profiles existed: attach the
+     * profile when the stored checksum matches a known edition.
+     */
+    private Book attachProfileIfKnown(Book book) {
+        if (book.bookProfileId() != null) {
+            return book;
+        }
+        var profileId = resolveProfileId(book.checksum());
+        if (profileId.isEmpty()) {
+            return book;
+        }
+        repository.attachBookProfile(book.id(), profileId.get());
+        log.info("book profile attached lazily bookId={} profileId={}", book.id(), profileId.get());
+        return book.withBookProfileId(profileId.get());
+    }
+
+    private Optional<UUID> resolveProfileId(String checksum) {
+        if (checksum == null) {
+            return Optional.empty();
+        }
+        var editionKey = CHECKSUM_TO_EDITION_KEY.get(checksum.toLowerCase());
+        if (editionKey == null) {
+            return Optional.empty();
+        }
+        return bookProfileRepository.findByEditionKey(editionKey).map(BookProfile::id);
     }
 
     private static String extractTitle(String filename) {

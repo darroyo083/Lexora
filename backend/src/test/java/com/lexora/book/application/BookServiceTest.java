@@ -3,6 +3,7 @@ package com.lexora.book.application;
 import com.lexora.book.domain.Book;
 import com.lexora.book.domain.BookPage;
 import com.lexora.book.domain.ProcessingStatus;
+import com.lexora.book.infrastructure.BookProfileRepository;
 import com.lexora.book.infrastructure.BookRepository;
 import com.lexora.documentanalysis.client.DocumentAnalysisClient;
 import com.lexora.documentanalysis.contract.PageAnalysis;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.*;
 class BookServiceTest {
 
     private BookRepository repository;
+    private BookProfileRepository bookProfileRepository;
     private DocumentAnalysisClient analysisClient;
     private BookService service;
 
@@ -34,9 +36,11 @@ class BookServiceTest {
     @BeforeEach
     void setUp() {
         repository = mock(BookRepository.class);
+        bookProfileRepository = mock(BookProfileRepository.class);
         analysisClient = mock(DocumentAnalysisClient.class);
         service = new BookService(
             repository,
+            bookProfileRepository,
             analysisClient,
             storagePath.toString()
         );
@@ -58,6 +62,63 @@ class BookServiceTest {
         when(repository.findById(id)).thenReturn(Optional.empty());
 
         assertThat(service.getBook(id)).isEmpty();
+    }
+
+    @Test
+    void getBookLazilyAttachesProfileForKnownChecksum() {
+        var book = Book.create("Grammatik aktiv", "grammatik.pdf", "application/pdf",
+            30267288, BookService.GRAMMATIK_AKTIV_A1_B1_CHECKSUM, 256, "de", "key.pdf");
+        var profile = BookProfileFixtures.realGrammatikAktivProfile();
+        when(repository.findById(book.id())).thenReturn(Optional.of(book));
+        when(bookProfileRepository.findByEditionKey(BookService.GRAMMATIK_AKTIV_A1_B1_EDITION_KEY))
+            .thenReturn(Optional.of(profile));
+
+        var result = service.getBook(book.id());
+
+        assertThat(result).isPresent();
+        assertThat(result.get().bookProfileId()).isEqualTo(profile.id());
+        verify(repository).attachBookProfile(book.id(), profile.id());
+    }
+
+    @Test
+    void getBookDoesNotAttachProfileForUnknownChecksum() {
+        var book = Book.create("Test", "test.pdf", "application/pdf", 100, "abc", 10, "de", "key.pdf");
+        when(repository.findById(book.id())).thenReturn(Optional.of(book));
+
+        var result = service.getBook(book.id());
+
+        assertThat(result).isPresent();
+        assertThat(result.get().bookProfileId()).isNull();
+        verify(repository, never()).attachBookProfile(any(), any());
+        verifyNoInteractions(bookProfileRepository);
+    }
+
+    @Test
+    void getBookSkipsAttachWhenProfileAlreadyAttached() {
+        var profile = BookProfileFixtures.realGrammatikAktivProfile();
+        var book = Book.create("Test", "test.pdf", "application/pdf", 100, "abc", 10, "de", "key.pdf")
+            .withBookProfileId(profile.id());
+        when(repository.findById(book.id())).thenReturn(Optional.of(book));
+
+        var result = service.getBook(book.id());
+
+        assertThat(result.get().bookProfileId()).isEqualTo(profile.id());
+        verify(repository, never()).attachBookProfile(any(), any());
+        verifyNoInteractions(bookProfileRepository);
+    }
+
+    @Test
+    void getBookSkipsAttachWhenKnownChecksumHasNoProfileRow() {
+        var book = Book.create("Grammatik aktiv", "grammatik.pdf", "application/pdf",
+            30267288, BookService.GRAMMATIK_AKTIV_A1_B1_CHECKSUM, 256, "de", "key.pdf");
+        when(repository.findById(book.id())).thenReturn(Optional.of(book));
+        when(bookProfileRepository.findByEditionKey(BookService.GRAMMATIK_AKTIV_A1_B1_EDITION_KEY))
+            .thenReturn(Optional.empty());
+
+        var result = service.getBook(book.id());
+
+        assertThat(result.get().bookProfileId()).isNull();
+        verify(repository, never()).attachBookProfile(any(), any());
     }
 
     @Test

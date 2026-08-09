@@ -1,6 +1,7 @@
 package com.lexora.correction.application;
 
 import com.lexora.book.application.BookService;
+import com.lexora.book.infrastructure.BookProfileRepository;
 import com.lexora.correction.domain.AnswerKey;
 import com.lexora.correction.domain.ExtractionStatus;
 import com.lexora.documentanalysis.client.DocumentAnalysisClient;
@@ -26,15 +27,18 @@ public class AnswerKeyExtractionService {
     private final BookService bookService;
     private final DocumentAnalysisClient analysisClient;
     private final AnswerKeyService answerKeyService;
+    private final BookProfileRepository bookProfileRepository;
     private final int answerKeyPageRange;
 
     public AnswerKeyExtractionService(BookService bookService,
                                       DocumentAnalysisClient analysisClient,
                                       AnswerKeyService answerKeyService,
+                                      BookProfileRepository bookProfileRepository,
                                       @Value("${lexora.answer-key.page-range:30}") int answerKeyPageRange) {
         this.bookService = bookService;
         this.analysisClient = analysisClient;
         this.answerKeyService = answerKeyService;
+        this.bookProfileRepository = bookProfileRepository;
         this.answerKeyPageRange = answerKeyPageRange;
     }
 
@@ -42,7 +46,7 @@ public class AnswerKeyExtractionService {
         var book = bookService.getBook(bookId)
             .orElseThrow(() -> new BookNotFoundException(bookId));
 
-        var range = resolvePageRange(book.pageCount(), answerKeyPageRange);
+        var range = resolveExtractionRange(book);
         var pdfPath = bookService.getBookSource(bookId);
 
         List<Path> rasters;
@@ -95,6 +99,24 @@ public class AnswerKeyExtractionService {
         answerKeyService.markFailed(
             bookId, PUBLISHER, UNKNOWN_PARSER_VERSION, sourcePageRange, message);
         return new AnswerKeyExtractionException(message, cause);
+    }
+
+    /**
+     * Books with a BookProfile rasterize the profile's Lösungen range
+     * (authoritative); profile-less books keep the legacy "last N pages"
+     * heuristic as the fallback.
+     */
+    private PageRange resolveExtractionRange(com.lexora.book.domain.Book book) {
+        if (book.bookProfileId() != null) {
+            var profile = bookProfileRepository.findById(book.bookProfileId()).orElse(null);
+            if (profile != null) {
+                return new PageRange(
+                    profile.loesungenPdfRange().from(),
+                    profile.loesungenPdfRange().to()
+                );
+            }
+        }
+        return resolvePageRange(book.pageCount(), answerKeyPageRange);
     }
 
     static PageRange resolvePageRange(int pageCount, int pageRange) {

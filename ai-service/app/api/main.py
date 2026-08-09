@@ -1,3 +1,5 @@
+import re
+
 from fastapi import FastAPI, HTTPException
 
 from app.schemas.page_analysis import (
@@ -10,6 +12,21 @@ from app.answer_key.schema import ExtractAnswerKeyRequest, ExtractAnswerKeyRespo
 
 
 app = FastAPI(title="Lexora AI Service", version="0.2.0")
+
+RASTER_PAGE_NUMBER_RE = re.compile(r"-page(\d+)-300dpi\.png$")
+
+
+def _page_number_from_raster_path(raster_path: str) -> int:
+    match = RASTER_PAGE_NUMBER_RE.search(raster_path)
+    if match is None:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Cannot derive source page number from raster path "
+                f"(expected filename pattern '-page<number>-300dpi.png'): {raster_path}"
+            ),
+        )
+    return int(match.group(1))
 
 
 @app.get("/health")
@@ -71,10 +88,11 @@ def extract_answer_key(request: ExtractAnswerKeyRequest):
 
     all_entries: list = []
     for raster_path in request.rasterPaths:
+        page_number = _page_number_from_raster_path(raster_path)
         ocr_fn = _get_ocr()
         analysis = ocr_fn(
             book_id=request.bookId,
-            page_number=0,
+            page_number=page_number,
             image_path=raster_path,
         )
         raw_spans = [

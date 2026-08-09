@@ -13,6 +13,9 @@
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+  /* Text color for inputs overlaid on the light PDF canvas — fixed dark tone,
+     readable in both themes regardless of --text-primary. */
+  --text-overlay-input: #172033;
 }
 
 /* --------------------------------------------------------------------------
@@ -539,6 +542,7 @@ html, body, #root {
   height: 100vh;
   width: 100vw;
   background: var(--bg-app);
+  color: var(--text-primary);
 }
 
 .left-rail {
@@ -1325,7 +1329,7 @@ html, body, #root {
   border-bottom: 2px solid rgba(23, 59, 99, 0.4);
   border-radius: 1px;
   outline: 0;
-  color: #172033;
+  color: var(--text-overlay-input);
   background: transparent;
   font-family: inherit;
   font-weight: 600;
@@ -1429,7 +1433,7 @@ html, body, #root {
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.85);
-  color: var(--text-primary);
+  color: var(--text-overlay-input);
   font-family: inherit;
   font-size: 13px;
   resize: none;

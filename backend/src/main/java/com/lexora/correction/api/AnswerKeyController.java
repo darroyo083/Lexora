@@ -1,9 +1,12 @@
 package com.lexora.correction.api;
 
+import com.lexora.correction.application.AnswerKeyExtractionException;
+import com.lexora.correction.application.AnswerKeyExtractionService;
 import com.lexora.correction.application.AnswerKeyService;
 import com.lexora.correction.domain.AnswerKey;
 import com.lexora.correction.domain.ExtractionStatus;
 import com.lexora.shared.error.AnswerKeyNotFoundException;
+import com.lexora.shared.error.BookNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +20,12 @@ import java.util.UUID;
 public class AnswerKeyController {
 
     private final AnswerKeyService answerKeyService;
+    private final AnswerKeyExtractionService answerKeyExtractionService;
 
-    public AnswerKeyController(AnswerKeyService answerKeyService) {
+    public AnswerKeyController(AnswerKeyService answerKeyService,
+                               AnswerKeyExtractionService answerKeyExtractionService) {
         this.answerKeyService = answerKeyService;
+        this.answerKeyExtractionService = answerKeyExtractionService;
     }
 
     @GetMapping("/{bookId}/answer-key")
@@ -27,18 +33,7 @@ public class AnswerKeyController {
         var key = answerKeyService.findAnswerKey(bookId)
             .orElseThrow(() -> new AnswerKeyNotFoundException(bookId));
 
-        var body = new LinkedHashMap<String, Object>();
-        body.put("extractionStatus", key.extractionStatus().name());
-        body.put("extractionMethod", key.extractionMethod());
-        body.put("parserVersion", key.parserVersion());
-        body.put("sourcePageRange", key.sourcePageRange() != null ? key.sourcePageRange() : "");
-        if (key.extractedAt() != null) {
-            body.put("extractedAt", key.extractedAt().toString());
-        }
-        body.put("entryCount", key.entryCount());
-        body.put("entries", key.entries());
-        body.put("failureReason", key.failureReason() != null ? key.failureReason() : "");
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(keyBody(key));
     }
 
     @PostMapping("/{bookId}/answer-key/extract")
@@ -65,9 +60,31 @@ public class AnswerKeyController {
             }
         }
 
+        try {
+            var key = answerKeyExtractionService.extract(bookId, refresh);
+            return ResponseEntity.ok(keyBody(key));
+        } catch (BookNotFoundException e) {
+            throw e;
+        } catch (AnswerKeyExtractionException e) {
+            var body = new LinkedHashMap<String, Object>();
+            body.put("extractionStatus", "FAILED");
+            body.put("failureReason", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        }
+    }
+
+    private static Map<String, Object> keyBody(AnswerKey key) {
         var body = new LinkedHashMap<String, Object>();
-        body.put("extractionStatus", "PENDING");
-        body.put("message", "Answer key extraction initiated");
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(body);
+        body.put("extractionStatus", key.extractionStatus().name());
+        body.put("extractionMethod", key.extractionMethod());
+        body.put("parserVersion", key.parserVersion());
+        body.put("sourcePageRange", key.sourcePageRange() != null ? key.sourcePageRange() : "");
+        if (key.extractedAt() != null) {
+            body.put("extractedAt", key.extractedAt().toString());
+        }
+        body.put("entryCount", key.entryCount());
+        body.put("entries", key.entries());
+        body.put("failureReason", key.failureReason() != null ? key.failureReason() : "");
+        return body;
     }
 }

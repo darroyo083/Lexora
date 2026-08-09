@@ -29,6 +29,9 @@ class ReferenceExpectedAnswer(BaseModel):
 class AnswerKeyEntry(BaseModel):
     pageNumber: int = Field(ge=1)
     exerciseNumber: str | None = None
+    unitNumber: int | None = None
+    subExerciseMarker: str | None = None
+    items: list[str] | None = None
     interactionKind: Literal[
         "FillBlank", "Choice", "ChoiceGrid",
         "SentenceOrdering", "Matching", "FreeText",

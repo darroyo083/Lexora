@@ -64,6 +64,8 @@ public class DocumentAnalysisClient {
                                                      String publisher) {
         log.info("requesting answer key extraction bookId={} pages={}",
             bookId, rasterPaths.size());
+        // Answer-key extraction rasterizes and OCRs the whole Loesungen
+        // section in one request and can run for well over ten minutes.
         return post(
             "/internal/answer-key/extract",
             new ExtractAnswerKeyRequest(
@@ -71,11 +73,17 @@ public class DocumentAnalysisClient {
                 rasterPaths.stream().map(Path::toString).toList(),
                 publisher
             ),
-            ExtractAnswerKeyResponse.class
+            ExtractAnswerKeyResponse.class,
+            Duration.ofMinutes(45)
         );
     }
 
     private <T> T post(String path, Object body, Class<T> responseType) {
+        return post(path, body, responseType, Duration.ofMinutes(10));
+    }
+
+    private <T> T post(String path, Object body, Class<T> responseType,
+                       Duration timeout) {
         var payload = JSON.writeValueAsString(body);
 
         try {
@@ -83,7 +91,7 @@ public class DocumentAnalysisClient {
                 .uri(URI.create(baseUrl + path))
                 .version(HttpClient.Version.HTTP_1_1)
                 .header("Content-Type", "application/json")
-                .timeout(Duration.ofMinutes(10))
+                .timeout(timeout)
                 .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
                 .build();
 

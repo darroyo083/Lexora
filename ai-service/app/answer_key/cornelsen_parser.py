@@ -151,7 +151,8 @@ def _split_numbered_items(text: str) -> list[str] | None:
         start = m.end()
         end = markers[idx + 1].start() if idx + 1 < len(markers) else len(text)
         fragment = text[start:end]
-        fragment = fragment.strip().strip(" \t–—/-=·").strip()
+        fragment = re.sub(r"[�?]", "", fragment)
+        fragment = fragment.strip().strip(" \t–—/-=|·").strip()
         if not fragment:
             return None
         items.append(fragment)

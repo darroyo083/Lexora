@@ -148,4 +148,31 @@ class AnswerKeyServiceTest {
             service.extractAnswerKeyRefresh(bookId, "cornelsen", "1.0.0", "201-230", List.of()))
             .isInstanceOf(RuntimeException.class);
     }
+
+    @Test
+    void markFailedPersistsFailedStatusWithReason() {
+        var bookId = UUID.randomUUID();
+        var book = new Book(bookId, "Test", "test.pdf", "application/pdf", 100, "abc",
+            10, "de", "key", ProcessingStatus.UPLOADED, Instant.now(), Instant.now());
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+
+        var result = service.markFailed(bookId, "cornelsen", "unknown", "201-230", "OCR down");
+
+        assertThat(result.extractionStatus()).isEqualTo(ExtractionStatus.FAILED);
+        assertThat(result.failureReason()).isEqualTo("OCR down");
+        assertThat(result.sourcePageRange()).isEqualTo("201-230");
+        assertThat(result.extractedAt()).isNull();
+        verify(answerKeyRepository).save(any(AnswerKey.class));
+    }
+
+    @Test
+    void markFailedThrowsWhenBookNotFound() {
+        var bookId = UUID.randomUUID();
+        when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+            service.markFailed(bookId, "cornelsen", "unknown", "201-230", "OCR down"))
+            .isInstanceOf(BookNotFoundException.class);
+        verify(answerKeyRepository, never()).save(any());
+    }
 }

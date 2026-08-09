@@ -114,4 +114,30 @@ public class AnswerKeyService {
             throw new RuntimeException("Answer key extraction failed and no previous key exists", e);
         }
     }
+
+    public AnswerKey markFailed(UUID bookId, String extractionMethod, String parserVersion,
+                                String sourcePageRange, String failureReason) {
+        bookRepository.findById(bookId)
+            .orElseThrow(() -> new BookNotFoundException(bookId));
+
+        var now = Instant.now();
+        var existing = answerKeyRepository.findByBookId(bookId);
+        var key = new AnswerKey(
+            bookId,
+            extractionMethod,
+            parserVersion,
+            sourcePageRange,
+            ExtractionStatus.FAILED,
+            failureReason,
+            null,
+            existing.map(AnswerKey::entries).orElse(List.of()),
+            now,
+            now
+        );
+
+        answerKeyRepository.save(key);
+        log.info("answer key extraction marked failed bookId={} reason={}",
+            bookId, failureReason);
+        return key;
+    }
 }

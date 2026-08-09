@@ -19,6 +19,12 @@ EXERCISE_HEADER_RE = re.compile(
 SUB_EXERCISE_RE = re.compile(
     r'^(?P<marker>\d{1,2}[a-z]?)\s+(?P<items>\d.+)$'
 )
+# Sub-exercise marker without a space, e.g. "31. Heute ..." (marker 3) or
+# "11C-2D-3B-4A" (marker 1). The marker is the leading number; the items
+# start with a digit (item number or letter-answer).
+NO_SPACE_SUB_EXERCISE_RE = re.compile(
+    r'^(?P<marker>\d{1,2}[a-z]?)(?P<items>\d.+)$'
+)
 MATCHING_ANSWER_RE = re.compile(
     r'^(?P<num>\d+)(?P<letter>[A-F])\s*—\s*(?P<rest>.*)$'
 )
@@ -29,6 +35,10 @@ STANDALONE_NUM_RE = re.compile(r'^\d{1,3}$')
 JE_DESTO_RE = re.compile(
     r'^(?P<num>\d+)[.)]\s+(?P<items>.+)$'
 )
+# Numbered answer items inside a block, e.g. "1. startendes – 2. aufgehende".
+NUMBERED_ITEM_RE = re.compile(r'(?<!\d)(\d{1,2})\.\s*')
+FOOTER_BAND_Y = 0.9
+MAX_UNIT_NUMBER = 99
 
 InteractionKind = str
 
@@ -96,6 +106,74 @@ def _line_confidence(line: list[Span]) -> float:
 
 def _is_page_number(line: list[Span]) -> bool:
     return len(line) == 1 and PAGE_NUMBER_RE.match(line[0].text) is not None
+
+
+def _line_y(line: list[Span]) -> float:
+    return min(s.y for s in line)
+
+
+def _valid_header_title(title: str) -> bool:
+    """A section-header title must read like a topic label, not answer text.
+
+    Rejects leading digits, dash separators (em/en) and slash-separated
+    answer fragments (observed on answer blocks misread as headers).
+    """
+    if not title:
+        return False
+    if title[0].isdigit():
+        return False
+    if "—" in title or "–" in title or "/" in title:
+        return False
+    return True
+
+
+def _candidate_unit_number(text: str) -> int | None:
+    stripped = text.strip().rstrip(".")
+    if not stripped.isdigit():
+        return None
+    n = int(stripped)
+    if 1 <= n <= MAX_UNIT_NUMBER:
+        return n
+    return None
+
+
+def _split_numbered_items(text: str) -> list[str] | None:
+    """Deterministically split a block into numbered answer items.
+
+    Only accepted when the text contains >= 2 numbered items ("N. ") and every
+    fragment between them is non-empty after cleaning. Never guesses.
+    """
+    markers = list(NUMBERED_ITEM_RE.finditer(text))
+    if len(markers) < 2:
+        return None
+    items: list[str] = []
+    for idx, m in enumerate(markers):
+        start = m.end()
+        end = markers[idx + 1].start() if idx + 1 < len(markers) else len(text)
+        fragment = text[start:end]
+        fragment = fragment.strip().strip(" \t–—/-=·").strip()
+        if not fragment:
+            return None
+        items.append(fragment)
+    return items
+
+
+def _is_numbered_continuation(text: str, prev: AnswerKeyEntry | None) -> bool:
+    """True when a 'N. <text>' line continues the previous block's numbered
+    item sequence (N == previous item count + 1). Deterministic; never guesses.
+    """
+    if prev is None:
+        return False
+    je = JE_DESTO_RE.match(text)
+    if je is None:
+        return False
+    prev_items = _split_numbered_items(prev.rawSolutionText)
+    if prev_items is None:
+        return False
+    try:
+        return int(je.group("num")) == len(prev_items) + 1
+    except ValueError:
+        return False
 
 
 def _infer_interaction_kind(exercise_title: str) -> InteractionKind:
@@ -212,6 +290,8 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
         current_exercise_num: str | None = None
         current_exercise_title: str | None = None
         current_interaction_kind: InteractionKind = "FillBlank"
+        current_unit_number: int | None = None
+        last_productive_unit: int | None = None
         ordinal = 0
         in_answer_key = False
 
@@ -228,37 +308,56 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
 
             header_match = EXERCISE_HEADER_RE.match(text)
             if header_match:
-                current_exercise_num = header_match.group("num")
-                current_exercise_title = header_match.group("title")
-                current_interaction_kind = _infer_interaction_kind(
-                    current_exercise_title
-                )
-                ordinal = 0
-                logger.debug(
-                    "Exercise header: %s %s (kind=%s)",
-                    current_exercise_num,
-                    current_exercise_title,
-                    current_interaction_kind,
-                )
-                i += 1
-                continue
+                num = _candidate_unit_number(header_match.group("num"))
+                title = header_match.group("title")
+                y = _line_y(line)
+                if (
+                    num is not None
+                    and y <= FOOTER_BAND_Y
+                    and _valid_header_title(title)
+                    and (last_productive_unit is None or num > last_productive_unit)
+                ):
+                    current_exercise_num = str(num)
+                    current_exercise_title = title
+                    current_unit_number = num
+                    current_interaction_kind = _infer_interaction_kind(title)
+                    ordinal = 0
+                    logger.debug(
+                        "Section header: %s %s (kind=%s)",
+                        current_exercise_num, current_exercise_title,
+                        current_interaction_kind,
+                    )
+                    i += 1
+                    continue
 
+            # Validated standalone-number header: number line followed by a
+            # title line. A bare number NEVER becomes identity unless it
+            # satisfies every rule below (footer band, range, title shape,
+            # strictly ascending section order).
             if STANDALONE_NUM_RE.match(text) and i + 1 < len(lines):
-                next_text = _line_text(lines[i + 1])
-                if (not SUB_EXERCISE_RE.match(next_text)
-                        and not STANDALONE_NUM_RE.match(next_text)
-                        and not _is_page_number(lines[i + 1])
-                        and not next_text.startswith(".")):
-                    current_exercise_num = text.strip()
+                num = _candidate_unit_number(text)
+                y = _line_y(line)
+                next_line = lines[i + 1]
+                next_text = _line_text(next_line)
+                next_y = _line_y(next_line)
+                if (
+                    num is not None
+                    and y <= FOOTER_BAND_Y
+                    and abs(y - next_y) <= 0.006
+                    and _valid_header_title(next_text)
+                    and not SUB_EXERCISE_RE.match(next_text)
+                    and (last_productive_unit is None or num > last_productive_unit)
+                ):
+                    current_exercise_num = str(num)
                     current_exercise_title = next_text
+                    current_unit_number = num
                     current_interaction_kind = _infer_interaction_kind(
                         current_exercise_title
                     )
                     ordinal = 0
                     logger.debug(
-                        "Multi-line exercise header: %s %s (kind=%s)",
-                        current_exercise_num,
-                        current_exercise_title,
+                        "Section header: %s %s (kind=%s)",
+                        current_exercise_num, current_exercise_title,
                         current_interaction_kind,
                     )
                     i += 2
@@ -269,16 +368,33 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
                 continue
 
             sub_match = SUB_EXERCISE_RE.match(text)
+            no_space_match = NO_SPACE_SUB_EXERCISE_RE.match(text)
             je_match = JE_DESTO_RE.match(text)
+            y = _line_y(line)
 
-            if sub_match or je_match:
+            # A 'N. <text>' line continuing the previous block's numbered item
+            # sequence is a continuation, not a new block.
+            if je_match and _is_numbered_continuation(text, entries[-1] if entries else None):
+                prev = entries[-1]
+                prev.expectedValue += " " + text
+                prev.rawSolutionText += " | " + text
+                if _is_low_confidence_line(line):
+                    prev.mappingWarnings.append("continuation_low_confidence")
+                i += 1
+                continue
+
+            if (sub_match or no_space_match or je_match) and y <= FOOTER_BAND_Y:
                 ordinal += 1
-                match_obj = sub_match or je_match
-                marker = match_obj.group("marker") if sub_match else match_obj.group("num")
-                items_text = (
-                    match_obj.group("items") if sub_match
-                    else match_obj.group("items")
-                )
+                if sub_match:
+                    match_obj = sub_match
+                    marker = match_obj.group("marker")
+                elif no_space_match:
+                    match_obj = no_space_match
+                    marker = match_obj.group("marker")
+                else:
+                    match_obj = je_match
+                    marker = match_obj.group("num")
+                items_text = match_obj.group("items")
 
                 warnings: list[str] = []
                 alternatives: list[str] = []
@@ -319,6 +435,9 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
                 entries.append(AnswerKeyEntry(
                     pageNumber=page_number,
                     exerciseNumber=current_exercise_num,
+                    unitNumber=current_unit_number,
+                    subExerciseMarker=marker,
+                    items=None,
                     interactionKind=current_interaction_kind,
                     ordinal=ordinal,
                     expectedValue=primary,
@@ -328,6 +447,7 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
                     mappingWarnings=warnings,
                     typedPayload=typed_payload,
                 ))
+                last_productive_unit = current_unit_number
                 i += 1
                 continue
 
@@ -341,6 +461,13 @@ class CornelsenAnswerKeyParser(AnswerKeyParser):
                 continue
 
             i += 1
+
+        # Deterministic item split on the final block text (continuations
+        # included). Blocks without clean numbered items keep items=None.
+        for entry in entries:
+            items = _split_numbered_items(entry.rawSolutionText)
+            if items is not None:
+                entry.items = items
 
         return entries
 

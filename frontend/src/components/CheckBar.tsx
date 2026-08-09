@@ -5,6 +5,7 @@ interface CheckBarProps {
   totalCorrect: number;
   uiState: string;
   hasAnswerKey: boolean;
+  anyRevealed: boolean;
   onCheck: () => void;
 }
 
@@ -13,10 +14,12 @@ export default function CheckBar({
   totalCorrect,
   uiState,
   hasAnswerKey,
+  anyRevealed,
   onCheck,
 }: CheckBarProps) {
   const hasChecked = uiState === 'CHECKED' || uiState === 'REVEALED';
   const totalGradableChecked = totalGradable > 0;
+  const checkDisabled = !hasAnswerKey || anyRevealed;
 
   return (
     <div className="check-bar">
@@ -27,15 +30,17 @@ export default function CheckBar({
       )}
       {!hasChecked && (
         <span className="check-bar-hint">
-          {hasAnswerKey ? 'Exercises ready to check' : 'Answer key not available'}
+          {hasAnswerKey
+            ? (anyRevealed ? 'Retry revealed items to check again' : 'Exercises ready to check')
+            : 'Answer key not available'}
         </span>
       )}
       <button
         type="button"
         className="check-bar-btn"
         onClick={onCheck}
-        disabled={!hasAnswerKey}
-        aria-label="Check answers (Ctrl+Enter)"
+        disabled={checkDisabled}
+        aria-label={checkDisabled ? 'Check answers unavailable while an answer is revealed' : 'Check answers (Ctrl+Enter)'}
       >
         <Check size={15} />
         <span>Check answers</span>

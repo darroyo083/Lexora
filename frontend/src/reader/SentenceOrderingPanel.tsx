@@ -2,6 +2,7 @@ import type { SentenceOrderingInteraction } from './types';
 import { groupSentenceOrderings } from './overlay';
 import { parseOrderedAnswer } from './ordering';
 import OrderingControls from './OrderingControls';
+import type { CorrectionVerdict } from '../state/correction';
 
 interface Props {
   sentenceOrderings: SentenceOrderingInteraction[];
@@ -9,6 +10,8 @@ interface Props {
   activePromptId: string | null;
   disabled: boolean;
   collapsed: boolean;
+  verdictByItem: Record<string, CorrectionVerdict | undefined>;
+  expectedSequencesByItem: Record<string, string[]>;
   onPromptChange: (interactionId: string) => void;
   onOrderingChange: (interactionId: string, ordered: string[]) => void;
   onCollapseChange: (collapsed: boolean) => void;
@@ -26,6 +29,8 @@ export default function SentenceOrderingPanel({
   activePromptId,
   disabled,
   collapsed,
+  verdictByItem,
+  expectedSequencesByItem,
   onPromptChange,
   onOrderingChange,
   onCollapseChange,
@@ -100,6 +105,8 @@ export default function SentenceOrderingPanel({
         promptIndex={promptIndex}
         ordered={ordered}
         disabled={disabled}
+        verdict={verdictByItem[active.id]}
+        expected={expectedSequencesByItem[active.id]}
         onPromptChange={onPromptChange}
         onOrderingChange={onOrderingChange}
       />

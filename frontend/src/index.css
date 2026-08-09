@@ -2839,6 +2839,53 @@ html, body, #root {
   /* verdict ring is the correction-ring div, not the input border */
 }
 
+/* RightRail: per-item cell wraps the item row + its RevealBlock */
+.exercise-item-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exercise-item-cell .reveal-block {
+  margin-top: 0;
+}
+
+.ordering-feedback {
+  margin-top: 10px;
+}
+
+/* Choice expected-option chip (revealed): hollow ring in key color */
+.choice-value.expected {
+  background: transparent !important;
+  border: 1.5px solid var(--correction-ok) !important;
+  color: var(--correction-ok) !important;
+  box-shadow: none;
+}
+
+/* Ordering fragment badges with grading: correct/incorrect state */
+.ordering-fragment-badge.correct {
+  background: var(--correction-ok-soft);
+  color: var(--correction-ok);
+  border: 1px solid var(--correction-ok);
+}
+
+.ordering-fragment-badge.incorrect {
+  background: var(--correction-err-soft);
+  color: var(--correction-err);
+  border: 1px solid var(--correction-err);
+}
+
+/* Ordering chips with grading: correct/incorrect position */
+.ordering-chip-correct {
+  border-color: var(--correction-ok) !important;
+  background: var(--correction-ok-soft) !important;
+}
+
+.ordering-chip-incorrect {
+  border-color: var(--correction-err) !important;
+  background: var(--correction-err-soft) !important;
+}
+
 /* ==========================================================================
    RESTRAINED MOTION LAYER
    --------------------------------------------------------------------------
@@ -2934,7 +2981,10 @@ html, body, #root {
   .matching-line-err,
   .matching-line-expected,
   .ordering-rollup-dot,
-  .ordering-badge {
+  .ordering-badge,
+  .ordering-fragment-badge,
+  .ordering-chip-correct,
+  .ordering-chip-incorrect {
     animation: none !important;
     transition: none !important;
   }

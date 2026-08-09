@@ -95,13 +95,15 @@ export default function RevealBlock({
           {revealed ? <EyeOff size={14} /> : <Eye size={14} />}
           <span>{revealed ? 'Revealed' : 'Show answer'}</span>
         </button>
-        <button
-          type="button"
-          className="try-again-btn"
-          onClick={() => onRetry(itemId)}
-        >
-          Try again
-        </button>
+        {revealed && (
+          <button
+            type="button"
+            className="try-again-btn"
+            onClick={() => onRetry(itemId)}
+          >
+            Try again
+          </button>
+        )}
       </div>
     </div>
   );

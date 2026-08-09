@@ -10,7 +10,8 @@ import OrderingFloatingLayer from './OrderingFloatingLayer';
 import MatchingOverlay from './MatchingOverlay';
 import FreeTextOverlay from './FreeTextOverlay';
 import CorrectionGlyphs from './CorrectionGlyphs';
-import type { CorrectionVerdict, AnswerResolutionStatus } from '../state/correction';
+import { CorrectionVerdict } from '../state/correction';
+import type { AnswerResolutionStatus } from '../state/correction';
 import type { MatchingSelection } from './matching';
 import {
   isProcessingStage,
@@ -124,6 +125,9 @@ interface Props {
   verdictByItem: Record<string, CorrectionVerdict | undefined>;
   resolutionByItem: Record<string, AnswerResolutionStatus>;
   reveal: Record<string, boolean>;
+  expectedChoiceLabels: Record<string, string>;
+  expectedSequencesByItem: Record<string, string[]>;
+  expectedPairsByItem: Record<string, Array<{ left: string; right: string }>>;
 }
 
 export default function PageViewer({
@@ -165,8 +169,11 @@ export default function PageViewer({
   onMatchingUnpair,
   onMatchingReset,
   verdictByItem,
-  reveal: _reveal,
+  reveal,
   resolutionByItem: _resolutionByItem,
+  expectedChoiceLabels,
+  expectedSequencesByItem,
+  expectedPairsByItem,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pageStackRef = useRef<HTMLDivElement>(null);
@@ -388,6 +395,14 @@ export default function PageViewer({
             const selectedOptionId = answers[choice.id];
             const selectedLabel = group
               ?.options.find((option) => option.id === selectedOptionId)?.label;
+            const verdict = verdictByItem[choice.id];
+            const graded = verdict === CorrectionVerdict.CORRECT
+              || verdict === CorrectionVerdict.INCORRECT;
+            const revealed = reveal[choice.id] === true;
+            const expectedLabel = expectedChoiceLabels[choice.id];
+            const showExpected = revealed
+              && expectedLabel != null
+              && expectedLabel !== selectedLabel;
             return (
               <Fragment key={choice.id}>
                 <button
@@ -407,11 +422,26 @@ export default function PageViewer({
                 />
                 {selectedLabel != null && (
                   <span
-                    className="choice-value"
+                    className={[
+                      'choice-value',
+                      graded ? (verdict === CorrectionVerdict.CORRECT ? 'correct' : 'incorrect') : '',
+                    ].filter(Boolean).join(' ')}
                     aria-hidden="true"
                     style={choiceValueStyle(choice, viewportHeight, rotation)}
                   >
                     {selectedLabel}
+                  </span>
+                )}
+                {showExpected && (
+                  <span
+                    className="choice-value expected"
+                    aria-hidden="true"
+                    style={{
+                      ...choiceValueStyle(choice, viewportHeight, rotation),
+                      transform: 'translateY(120%)',
+                    }}
+                  >
+                    {expectedLabel}
                   </span>
                 )}
               </Fragment>
@@ -519,6 +549,8 @@ export default function PageViewer({
               rotation={rotation}
               disabled={processing}
               activePromptId={activeOrderingPromptId}
+              verdictByItem={verdictByItem}
+              expectedSequencesByItem={expectedSequencesByItem}
               onFragmentClick={onOrderingFragmentClick}
             />
           )}
@@ -529,6 +561,9 @@ export default function PageViewer({
               rotation={rotation}
               disabled={processing}
               selection={matchingSelection}
+              verdictByItem={verdictByItem}
+              expectedPairsByItem={expectedPairsByItem}
+              revealedByItem={reveal}
               onItemClick={onMatchingItemClick}
               onUnpair={onMatchingUnpair}
               onReset={onMatchingReset}
@@ -702,6 +737,8 @@ export default function PageViewer({
           disabled={processing}
           expandedExerciseId={orderingFloat.expandedExerciseId}
           closedExerciseIds={orderingFloat.closedExerciseIds}
+          verdictByItem={verdictByItem}
+          expectedSequencesByItem={expectedSequencesByItem}
           onExpand={orderingFloat.onExpand}
           onCollapse={orderingFloat.onCollapse}
           onClose={orderingFloat.onClose}

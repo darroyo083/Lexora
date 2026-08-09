@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useReducer } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, useReducer } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { FileText } from 'lucide-react';
@@ -53,7 +53,7 @@ import {
   writeRevealBit,
 } from './state/correction';
 import { fetchAnswerKey, type AnswerKey } from './api/correction';
-import { computeCorrectionMap } from './reader/correction';
+import { computeCorrectionMap, parseMatchingPairsFromEntry } from './reader/correction';
 import {
   migrateDesignVariantPreference,
   readDevModePreference,
@@ -805,6 +805,48 @@ export default function App() {
 
   correctionCheckRef.current = handleCorrectionCheck;
 
+  const orderingExpectedByItem = useMemo(() => {
+    const expected: Record<string, string[]> = {};
+    if (!answerKey) return expected;
+    const entries = answerKey.entries.filter(
+      (e) => e.pageNumber === selectedPage && e.interactionKind === 'sentence-ordering',
+    );
+    entries.sort((a, b) => a.ordinal - b.ordinal);
+    interaction.sentenceOrderings.forEach((ordering, index) => {
+      const entry = entries[index];
+      if (entry) expected[ordering.id] = parseOrderedAnswer(entry.expectedValue);
+    });
+    return expected;
+  }, [answerKey, interaction.sentenceOrderings, selectedPage]);
+
+  const expectedChoiceLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    if (!answerKey) return labels;
+    const entries = answerKey.entries.filter(
+      (e) => e.pageNumber === selectedPage && e.interactionKind === 'choice',
+    );
+    entries.sort((a, b) => a.ordinal - b.ordinal);
+    interaction.choices.forEach((choice, index) => {
+      const entry = entries[index];
+      if (entry) labels[choice.id] = entry.expectedValue;
+    });
+    return labels;
+  }, [answerKey, interaction.choices, selectedPage]);
+
+  const expectedPairsByItem = useMemo(() => {
+    const pairs: Record<string, Array<{ left: string; right: string }>> = {};
+    if (!answerKey) return pairs;
+    const entries = answerKey.entries.filter(
+      (e) => e.pageNumber === selectedPage && e.interactionKind === 'matching',
+    );
+    entries.sort((a, b) => a.ordinal - b.ordinal);
+    interaction.matchings.forEach((matching, index) => {
+      const entry = entries[index];
+      if (entry) pairs[matching.id] = parseMatchingPairsFromEntry(entry);
+    });
+    return pairs;
+  }, [answerKey, interaction.matchings, selectedPage]);
+
   const handleCorrectionRetry = useCallback((itemId: string) => {
     setCorrectionVerdicts((prev) => {
       const next = { ...prev };
@@ -826,6 +868,7 @@ export default function App() {
       delete next[itemId];
       return next;
     });
+    setCorrectionUiState('RETRYING');
     const bookId = bookIdRef.current;
     if (bookId) {
       writeRevealBit(bookId, selectedPage, itemId, false);
@@ -942,6 +985,9 @@ export default function App() {
                 verdictByItem={correctionVerdicts}
                 resolutionByItem={correctionResolutions}
                 reveal={correctionReveal}
+                expectedChoiceLabels={expectedChoiceLabels}
+                expectedSequencesByItem={orderingExpectedByItem}
+                expectedPairsByItem={expectedPairsByItem}
               />
             ) : (
               <div className="empty-state">
@@ -978,6 +1024,9 @@ export default function App() {
             matchings={interaction.matchings}
             freeTexts={interaction.freeTexts}
             answers={interaction.answers}
+            choiceGroups={interaction.choiceGroups}
+            expectedSequencesByItem={orderingExpectedByItem}
+            pageNumber={selectedPage}
             selectedSpan={interaction.selectedSpan}
             selectedBlank={interaction.selectedBlank}
             selectedChoice={interaction.selectedChoice}

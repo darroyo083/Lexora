@@ -20,12 +20,37 @@ public record AnswerKeyEntry(
     String rawSolutionText,
     double confidence,
     List<String> mappingWarnings,
-    TypedPayload typedPayload
+    TypedPayload typedPayload,
+    Integer unitNumber,
+    String subExerciseMarker,
+    List<String> items
 ) {
     public AnswerKeyEntry {
         alternatives = alternatives == null ? List.of() : List.copyOf(alternatives);
         mappingWarnings = mappingWarnings == null ? List.of() : List.copyOf(mappingWarnings);
         normalizationMode = normalizationMode == null ? "strict" : normalizationMode;
         rawSolutionText = rawSolutionText == null ? "" : rawSolutionText;
+        items = items == null ? List.of() : List.copyOf(items);
+    }
+
+    public AnswerKeyEntry(
+        int pageNumber,
+        String exerciseNumber,
+        String interactionKind,
+        int ordinal,
+        String expectedValue,
+        List<String> alternatives,
+        boolean caseSensitive,
+        boolean punctuationRequired,
+        String normalizationMode,
+        String rawSolutionText,
+        double confidence,
+        List<String> mappingWarnings,
+        TypedPayload typedPayload
+    ) {
+        this(pageNumber, exerciseNumber, interactionKind, ordinal, expectedValue,
+            alternatives, caseSensitive, punctuationRequired, normalizationMode,
+            rawSolutionText, confidence, mappingWarnings, typedPayload,
+            null, null, null);
     }
 }

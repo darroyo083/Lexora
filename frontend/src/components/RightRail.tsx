@@ -7,7 +7,7 @@ import VerdictPill from './VerdictPill';
 import CheckBar from './CheckBar';
 import RevealBlock from './RevealBlock';
 import { CorrectionVerdict, AnswerResolutionStatus } from '../state/correction';
-import type { AnswerKeyEntry } from '../api/correction';
+import type { AnswerKeyEntry, CorrectionSlot } from '../api/correction';
 import { parseMatchingAnswer } from '../reader/matching';
 import { parseOrderedAnswer } from '../reader/ordering';
 
@@ -23,7 +23,6 @@ interface Props {
   answers: Record<string, string>;
   choiceGroups: Record<string, ChoiceGroup>;
   expectedSequencesByItem: Record<string, string[]>;
-  pageNumber: number;
   selectedSpan: TextSpan | null;
   selectedBlank: ExerciseBlank | null;
   selectedChoice: ChoiceTarget | null;
@@ -58,23 +57,21 @@ interface Props {
   correctionReveal: Record<string, boolean>;
   correctionUiState: string;
   hasAnswerKey: boolean;
-  answerKeyEntries: AnswerKeyEntry[];
+  correctionSlots: CorrectionSlot[];
   onCheck: () => void;
   onRetry: (itemId: string) => void;
   onReveal: (itemId: string) => void;
 }
 
-function findEntry(
-  entries: AnswerKeyEntry[],
-  pageNumber: number,
+function slotEntry(
+  slots: CorrectionSlot[],
   interactionKind: string,
   index: number,
 ): AnswerKeyEntry | undefined {
-  const matching = entries.filter(
-    (e) => e.pageNumber === pageNumber && e.interactionKind === interactionKind,
+  const slot = slots.find(
+    (s) => s.interactionKind === interactionKind && s.ordinal === index,
   );
-  matching.sort((a, b) => a.ordinal - b.ordinal);
-  return matching[index];
+  return slot?.resolution === 'RESOLVED' ? (slot.entry ?? undefined) : undefined;
 }
 
 function optionLabel(optionId: string, choiceGroups: Record<string, ChoiceGroup>): string {
@@ -94,7 +91,7 @@ function formatMatchingPairs(
   const rightLabel = (id: string) =>
     interaction.rightItems.find((item) => item.id === id)?.label ?? id;
   return Object.entries(pairs)
-    .map(([leftId, rightId]) => `${leftLabel(leftId)} → ${rightLabel(rightId)}`)
+    .map(([leftId, rightId]) => `${leftLabel(leftId)} ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ ${rightLabel(rightId)}`)
     .join(', ');
 }
 
@@ -116,7 +113,6 @@ export default function RightRail({
   answers,
   choiceGroups,
   expectedSequencesByItem,
-  pageNumber,
   selectedSpan,
   selectedBlank,
   selectedChoice,
@@ -150,7 +146,7 @@ export default function RightRail({
   correctionReveal,
   correctionUiState,
   hasAnswerKey,
-  answerKeyEntries,
+  correctionSlots,
   onCheck,
   onRetry,
   onReveal,
@@ -240,7 +236,7 @@ export default function RightRail({
 
                     {activeOrdering && (() => {
                       const orderingIndex = sentenceOrderings.findIndex((i) => i.id === activeOrdering.id);
-                      const entry = findEntry(answerKeyEntries, pageNumber, 'sentence-ordering', orderingIndex);
+                      const entry = slotEntry(correctionSlots, 'sentence-ordering', orderingIndex);
                       const verdict = verdictByItem[activeOrdering.id];
                       const resolution = resolutionByItem[activeOrdering.id];
                       const revealed = correctionReveal[activeOrdering.id] === true;
@@ -287,7 +283,7 @@ export default function RightRail({
                         const verdict = verdictByItem[blank.id];
                         const resolution = resolutionByItem[blank.id];
                         const revealed = correctionReveal[blank.id] === true;
-                        const entry = findEntry(answerKeyEntries, pageNumber, 'fill-in-line', idx);
+                        const entry = slotEntry(correctionSlots, 'fill-in-line', idx);
                         return (
                           <li key={blank.id} className="exercise-item-cell">
                             <div className="exercise-item-row">
@@ -342,7 +338,7 @@ export default function RightRail({
                         const verdict = verdictByItem[choice.id];
                         const resolution = resolutionByItem[choice.id];
                         const revealed = correctionReveal[choice.id] === true;
-                        const entry = findEntry(answerKeyEntries, pageNumber, 'choice', idx);
+                        const entry = slotEntry(correctionSlots, 'choice', idx);
                         const selectedLabel = answers[choice.id]
                           ? optionLabel(answers[choice.id], choiceGroups)
                           : '';
@@ -384,7 +380,7 @@ export default function RightRail({
                         const verdict = verdictByItem[grid.id];
                         const resolution = resolutionByItem[grid.id];
                         const revealed = correctionReveal[grid.id] === true;
-                        const entry = findEntry(answerKeyEntries, pageNumber, 'choice-grid', idx);
+                        const entry = slotEntry(correctionSlots, 'choice-grid', idx);
                         const learnerLabels = grid.rows
                           .map((row) => answers[row.id] ? optionLabel(answers[row.id], choiceGroups) : null)
                           .filter((label): label is string => Boolean(label))
@@ -431,7 +427,7 @@ export default function RightRail({
                       const resolution = resolutionByItem[matching.id];
                       const revealed = correctionReveal[matching.id] === true;
                       const details = correctionDetails[matching.id];
-                      const entry = findEntry(answerKeyEntries, pageNumber, 'matching', idx);
+                      const entry = slotEntry(correctionSlots, 'matching', idx);
                       const pairs = parseMatchingAnswer(answers[matching.id]);
                       return (
                         <div key={matching.id} className="exercise-item-cell">
@@ -472,7 +468,7 @@ export default function RightRail({
                     {freeTexts.slice(0, 3).map((ft, idx) => {
                       const verdict = verdictByItem[ft.id];
                       const revealed = correctionReveal[ft.id] === true;
-                      const entry = findEntry(answerKeyEntries, pageNumber, 'free-text', idx);
+                      const entry = slotEntry(correctionSlots, 'free-text', idx);
                       const hasReference = entry?.typedPayload?.kind === 'reference';
                       const referenceText = hasReference && entry?.typedPayload?.kind === 'reference'
                         ? entry.typedPayload.modelText

@@ -33,6 +33,9 @@ export type CorrectionInteractionKind =
 export interface AnswerKeyEntry {
   pageNumber: number;
   exerciseNumber?: number | null;
+  unitNumber?: number | null;
+  subExerciseMarker?: string | null;
+  items?: string[] | null;
   interactionKind: CorrectionInteractionKind;
   ordinal: number;
   expectedValue: string;
@@ -44,6 +47,24 @@ export interface AnswerKeyEntry {
   confidence: number;
   mappingWarnings: string[];
   typedPayload?: TypedPayload | null;
+}
+
+export type SlotResolution = 'RESOLVED' | 'AMBIGUOUS' | 'UNMAPPED';
+export type PageCorrectionStatus = 'RESOLVED' | 'AMBIGUOUS' | 'UNMAPPED';
+
+export interface CorrectionSlot {
+  interactionKind: CorrectionInteractionKind;
+  ordinal: number;
+  resolution: SlotResolution;
+  entry: AnswerKeyEntry | null;
+}
+
+export interface PageCorrectionResolution {
+  bookId: string;
+  pageNumber: number;
+  unitNumber: number | null;
+  status: PageCorrectionStatus;
+  slots: CorrectionSlot[];
 }
 
 export interface AnswerKey {
@@ -83,5 +104,18 @@ export async function extractAnswerKey(
     signal,
   });
   if (!res.ok) throw new Error(`Answer key extraction failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchPageCorrection(
+  bookId: string,
+  pageNumber: number,
+  signal?: AbortSignal,
+): Promise<PageCorrectionResolution> {
+  const res = await fetch(
+    `/api/books/${bookId}/pages/${pageNumber}/correction`,
+    { signal },
+  );
+  if (!res.ok) throw new Error(`Correction resolution failed: ${res.status}`);
   return res.json();
 }

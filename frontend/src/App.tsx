@@ -52,7 +52,12 @@ import {
   readRevealBitsForPage,
   writeRevealBit,
 } from './state/correction';
-import { fetchAnswerKey, type AnswerKey } from './api/correction';
+import {
+  fetchAnswerKey,
+  fetchPageCorrection,
+  type AnswerKey,
+  type CorrectionSlot,
+} from './api/correction';
 import { computeCorrectionMap, parseMatchingPairsFromEntry } from './reader/correction';
 import {
   migrateDesignVariantPreference,
@@ -145,6 +150,7 @@ export default function App() {
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => readThemeModePreference());
   const [answerKey, setAnswerKey] = useState<AnswerKey | null>(null);
+  const [correctionSlots, setCorrectionSlots] = useState<CorrectionSlot[]>([]);
   const [correctionVerdicts, setCorrectionVerdicts] = useState<Record<string, CorrectionVerdict | undefined>>({});
   const [correctionResolutions, setCorrectionResolutions] = useState<Record<string, AnswerResolutionStatus>>({});
   const [correctionDetails, setCorrectionDetails] = useState<Record<string, { correctCount: number; totalCount: number }>>({});
@@ -409,6 +415,24 @@ export default function App() {
 
     return () => controller.abort();
   }, [book, selectedPage, status, showPage, clearPageInteraction]);
+
+  useEffect(() => {
+    if (!book || status === 'restoring') return;
+    if (!answerKey) {
+      setCorrectionSlots([]);
+      return;
+    }
+    const controller = new AbortController();
+    fetchPageCorrection(book.id, selectedPage, controller.signal)
+      .then((resolution) => setCorrectionSlots(resolution.slots))
+      .catch((error) => {
+        if (error.name !== 'AbortError') {
+          console.warn('Correction resolution failed:', error);
+          setCorrectionSlots([]);
+        }
+      });
+    return () => controller.abort();
+  }, [book, selectedPage, status, answerKey]);
 
   const getActivePageNumber = useCallback(() => activePage.current, []);
 
@@ -743,15 +767,13 @@ export default function App() {
 
   const handleCorrectionCheck = useCallback(() => {
     if (!answerKey) return;
-    const entries = answerKey.entries;
-    const pageNum = selectedPage;
+    const slots = correctionSlots;
 
     function findEntry(kind: string, index: number) {
-      const matching = entries.filter(
-        (e) => e.pageNumber === pageNum && e.interactionKind === kind,
+      const slot = slots.find(
+        (s) => s.interactionKind === kind && s.ordinal === index,
       );
-      matching.sort((a, b) => a.ordinal - b.ordinal);
-      return matching[index];
+      return slot?.resolution === 'RESOLVED' ? (slot.entry ?? undefined) : undefined;
     }
 
     const result = computeCorrectionMap({
@@ -801,51 +823,45 @@ export default function App() {
     setCorrectionResolutions(result.resolutionByItem);
     setCorrectionDetails(result.resultDetailsByItem);
     setCorrectionUiState('CHECKED');
-  }, [answerKey, interaction, selectedPage]);
+  }, [answerKey, correctionSlots, interaction]);
 
   correctionCheckRef.current = handleCorrectionCheck;
 
   const orderingExpectedByItem = useMemo(() => {
     const expected: Record<string, string[]> = {};
-    if (!answerKey) return expected;
-    const entries = answerKey.entries.filter(
-      (e) => e.pageNumber === selectedPage && e.interactionKind === 'sentence-ordering',
-    );
-    entries.sort((a, b) => a.ordinal - b.ordinal);
     interaction.sentenceOrderings.forEach((ordering, index) => {
-      const entry = entries[index];
+      const slot = correctionSlots.find(
+        (s) => s.interactionKind === 'sentence-ordering' && s.ordinal === index,
+      );
+      const entry = slot?.resolution === 'RESOLVED' ? slot.entry : undefined;
       if (entry) expected[ordering.id] = parseOrderedAnswer(entry.expectedValue);
     });
     return expected;
-  }, [answerKey, interaction.sentenceOrderings, selectedPage]);
+  }, [correctionSlots, interaction.sentenceOrderings]);
 
   const expectedChoiceLabels = useMemo(() => {
     const labels: Record<string, string> = {};
-    if (!answerKey) return labels;
-    const entries = answerKey.entries.filter(
-      (e) => e.pageNumber === selectedPage && e.interactionKind === 'choice',
-    );
-    entries.sort((a, b) => a.ordinal - b.ordinal);
     interaction.choices.forEach((choice, index) => {
-      const entry = entries[index];
+      const slot = correctionSlots.find(
+        (s) => s.interactionKind === 'choice' && s.ordinal === index,
+      );
+      const entry = slot?.resolution === 'RESOLVED' ? slot.entry : undefined;
       if (entry) labels[choice.id] = entry.expectedValue;
     });
     return labels;
-  }, [answerKey, interaction.choices, selectedPage]);
+  }, [correctionSlots, interaction.choices]);
 
   const expectedPairsByItem = useMemo(() => {
     const pairs: Record<string, Array<{ left: string; right: string }>> = {};
-    if (!answerKey) return pairs;
-    const entries = answerKey.entries.filter(
-      (e) => e.pageNumber === selectedPage && e.interactionKind === 'matching',
-    );
-    entries.sort((a, b) => a.ordinal - b.ordinal);
     interaction.matchings.forEach((matching, index) => {
-      const entry = entries[index];
+      const slot = correctionSlots.find(
+        (s) => s.interactionKind === 'matching' && s.ordinal === index,
+      );
+      const entry = slot?.resolution === 'RESOLVED' ? slot.entry : undefined;
       if (entry) pairs[matching.id] = parseMatchingPairsFromEntry(entry);
     });
     return pairs;
-  }, [answerKey, interaction.matchings, selectedPage]);
+  }, [correctionSlots, interaction.matchings]);
 
   const handleCorrectionRetry = useCallback((itemId: string) => {
     setCorrectionVerdicts((prev) => {
@@ -1026,7 +1042,6 @@ export default function App() {
             answers={interaction.answers}
             choiceGroups={interaction.choiceGroups}
             expectedSequencesByItem={orderingExpectedByItem}
-            pageNumber={selectedPage}
             selectedSpan={interaction.selectedSpan}
             selectedBlank={interaction.selectedBlank}
             selectedChoice={interaction.selectedChoice}
@@ -1060,7 +1075,7 @@ export default function App() {
             correctionReveal={correctionReveal}
             correctionUiState={correctionUiState}
             hasAnswerKey={answerKey !== null}
-            answerKeyEntries={answerKey?.entries ?? []}
+            correctionSlots={correctionSlots}
             onCheck={handleCorrectionCheck}
             onRetry={handleCorrectionRetry}
             onReveal={handleCorrectionReveal}

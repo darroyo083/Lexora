@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import RightRail from '../RightRail';
 import { CorrectionVerdict, AnswerResolutionStatus } from '../../state/correction';
-import type { AnswerKeyEntry } from '../../api/correction';
+import type { AnswerKeyEntry, CorrectionSlot } from '../../api/correction';
 import type { ExerciseBlank, FreeTextInteraction } from '../../reader/types';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -47,6 +47,14 @@ function entry(overrides: Partial<AnswerKeyEntry> = {}): AnswerKeyEntry {
     mappingWarnings: [],
     ...overrides,
   };
+}
+
+function slot(
+  interactionKind: CorrectionSlot['interactionKind'],
+  ordinal: number,
+  entry: AnswerKeyEntry,
+): CorrectionSlot {
+  return { interactionKind, ordinal, resolution: 'RESOLVED', entry };
 }
 
 function renderRail(overrides: Record<string, unknown> = {}) {
@@ -96,7 +104,7 @@ function renderRail(overrides: Record<string, unknown> = {}) {
     correctionReveal: {},
     correctionUiState: 'IDLE',
     hasAnswerKey: true,
-    answerKeyEntries: [],
+    correctionSlots: [],
     onCheck: vi.fn(),
     onRetry: vi.fn(),
     onReveal: vi.fn(),
@@ -106,14 +114,14 @@ function renderRail(overrides: Record<string, unknown> = {}) {
 
 describe('RightRail reveal wiring', () => {
   it('renders a RevealBlock per blank when an answer key entry exists', () => {
-    renderRail({ answerKeyEntries: [entry()] });
+    renderRail({ correctionSlots: [slot('fill-in-line', 0, entry())] });
     expect(screen.getByRole('button', { name: /Show answer/ })).toBeTruthy();
     expect(screen.getByText('bin')).toBeTruthy();
   });
 
   it('invoking reveal calls onReveal with the item id and does not touch the learner value', () => {
     const onReveal = vi.fn();
-    renderRail({ answerKeyEntries: [entry()], onReveal });
+    renderRail({ correctionSlots: [slot('fill-in-line', 0, entry())], onReveal });
     fireEvent.click(screen.getByRole('button', { name: /Show answer/ }));
     expect(onReveal).toHaveBeenCalledWith('blank-1');
     expect(screen.getByText('bin')).toBeTruthy();
@@ -121,7 +129,7 @@ describe('RightRail reveal wiring', () => {
 
   it('shows the answer key and accepted alternatives once revealed', () => {
     renderRail({
-      answerKeyEntries: [entry()],
+      correctionSlots: [slot('fill-in-line', 0, entry())],
       correctionReveal: { 'blank-1': true },
     });
     expect(screen.getByText('Answer key:')).toBeTruthy();
@@ -140,7 +148,7 @@ describe('RightRail reveal wiring', () => {
 
   it('shows a neutral AMBIGUOUS row without verdict or reveal', () => {
     renderRail({
-      answerKeyEntries: [entry({ interactionKind: 'choice' as const, expectedValue: 'Z' })],
+      correctionSlots: [slot('choice', 0, entry({ interactionKind: 'choice' as const, expectedValue: 'Z' }))],
       blanks: [],
       choices: [{
         id: 'choice-1',
@@ -167,11 +175,11 @@ describe('RightRail reveal wiring', () => {
       blanks: [],
       freeTexts: [FREE_TEXT],
       answers: {},
-      answerKeyEntries: [entry({
+      correctionSlots: [slot('free-text', 0, entry({
         interactionKind: 'free-text' as const,
         expectedValue: '',
         typedPayload: { kind: 'reference' as const, modelText: 'Der Hund spielt.', sourceHint: 'p. 3' },
-      })],
+      }))],
       verdictByItem: { 'ft-1': CorrectionVerdict.NOT_AUTO_GRADABLE },
     });
     expect(screen.getByRole('button', { name: /Reference answer/ })).toBeTruthy();
@@ -192,11 +200,56 @@ describe('RightRail reveal wiring', () => {
         rightItems: [],
       }],
       answers: {},
-      answerKeyEntries: [entry({ interactionKind: 'matching' as const, expectedValue: 'A-1,B-2' })],
+      correctionSlots: [slot('matching', 0, entry({ interactionKind: 'matching' as const, expectedValue: 'A-1,B-2' }))],
       verdictByItem: { 'match-1': CorrectionVerdict.PARTIALLY_CORRECT },
       resolutionByItem: { 'match-1': AnswerResolutionStatus.RESOLVED },
       correctionDetails: { 'match-1': { correctCount: 1, totalCount: 2 } },
     });
     expect(screen.getByText('1 of 2 correct')).toBeTruthy();
+  });
+});
+
+describe('mapping contract (unit-based resolution)', () => {
+  it('reveals a slot entry even when the entry pageNumber is a Loesungen page, not the exercise page', () => {
+    renderRail({
+      correctionSlots: [slot('fill-in-line', 0, entry({ pageNumber: 228, unitNumber: 85, subExerciseMarker: '1' }))],
+    });
+    expect(screen.getByRole('button', { name: /Show answer/ })).toBeTruthy();
+    expect(screen.getByText('bin')).toBeTruthy();
+  });
+
+  it('does not reveal for an AMBIGUOUS slot (no authoritative verdict possible)', () => {
+    renderRail({
+      correctionSlots: [{
+        interactionKind: 'fill-in-line',
+        ordinal: 0,
+        resolution: 'AMBIGUOUS',
+        entry: null,
+      }],
+    });
+    expect(screen.queryByRole('button', { name: /Show answer/ })).toBeNull();
+  });
+
+  it('does not reveal for an UNMAPPED slot', () => {
+    renderRail({
+      correctionSlots: [{
+        interactionKind: 'fill-in-line',
+        ordinal: 0,
+        resolution: 'UNMAPPED',
+        entry: null,
+      }],
+      verdictByItem: { 'blank-1': undefined },
+      resolutionByItem: { 'blank-1': AnswerResolutionStatus.UNMAPPED },
+    });
+    expect(screen.queryByRole('button', { name: /Show answer/ })).toBeNull();
+    expect(screen.getByText('No answer key available')).toBeTruthy();
+  });
+
+  it('reveals the resolved item of a multi-item block via the slot entry', () => {
+    renderRail({
+      correctionSlots: [slot('fill-in-line', 0, entry({ pageNumber: 230, unitNumber: 85, expectedValue: 'brennende' }))],
+      correctionReveal: { 'blank-1': true },
+    });
+    expect(screen.getByText('brennende')).toBeTruthy();
   });
 });

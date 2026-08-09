@@ -15,8 +15,27 @@ public record Book(
     String storageKey,
     ProcessingStatus status,
     Instant createdAt,
-    Instant updatedAt
+    Instant updatedAt,
+    UUID bookProfileId
 ) {
+    public Book(
+        UUID id,
+        String title,
+        String originalFilename,
+        String mimeType,
+        long fileSize,
+        String checksum,
+        int pageCount,
+        String sourceLanguage,
+        String storageKey,
+        ProcessingStatus status,
+        Instant createdAt,
+        Instant updatedAt
+    ) {
+        this(id, title, originalFilename, mimeType, fileSize, checksum, pageCount,
+            sourceLanguage, storageKey, status, createdAt, updatedAt, null);
+    }
+
     public static Book create(
         String title,
         String originalFilename,
@@ -42,5 +61,10 @@ public record Book(
             now,
             now
         );
+    }
+
+    public Book withBookProfileId(UUID profileId) {
+        return new Book(id, title, originalFilename, mimeType, fileSize, checksum,
+            pageCount, sourceLanguage, storageKey, status, createdAt, updatedAt, profileId);
     }
 }

@@ -33,7 +33,8 @@ class JdbcBookRepository implements BookRepository {
         rs.getString("storage_key"),
         ProcessingStatus.valueOf(rs.getString("status")),
         rs.getTimestamp("created_at").toInstant(),
-        rs.getTimestamp("updated_at").toInstant()
+        rs.getTimestamp("updated_at").toInstant(),
+        rs.getObject("book_profile_id", UUID.class)
     );
 
     private static final RowMapper<BookPage> PAGE_MAPPER = (rs, rowNum) -> new BookPage(
@@ -55,15 +56,24 @@ class JdbcBookRepository implements BookRepository {
             """
             INSERT INTO books (id, title, original_filename, mime_type,
                 file_size, checksum, page_count, source_language,
-                storage_key, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                storage_key, status, created_at, updated_at, book_profile_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             book.id(), book.title(), book.originalFilename(), book.mimeType(),
             book.fileSize(), book.checksum(), book.pageCount(), book.sourceLanguage(),
             book.storageKey(), book.status().name(),
-            Timestamp.from(book.createdAt()), Timestamp.from(book.updatedAt())
+            Timestamp.from(book.createdAt()), Timestamp.from(book.updatedAt()),
+            book.bookProfileId()
         );
         return book;
+    }
+
+    @Override
+    public void attachBookProfile(UUID bookId, UUID profileId) {
+        jdbc.update(
+            "UPDATE books SET book_profile_id = ?, updated_at = now() WHERE id = ?",
+            profileId, bookId
+        );
     }
 
     @Override

@@ -11,6 +11,7 @@ public interface BookRepository {
     Book save(Book book);
     Optional<Book> findById(UUID id);
     List<Book> findAll();
+    void attachBookProfile(UUID bookId, UUID profileId);
 
     BookPage savePage(BookPage page);
     Optional<BookPage> startPageProcessing(UUID bookId, int pageNumber, boolean refreshAnalysis);

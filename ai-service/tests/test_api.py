@@ -154,30 +154,30 @@ class TestAnalyzeInteractions:
 
 
 class TestExtractAnswerKey:
-    def _loesungen_analysis(self) -> PageAnalysis:
+    def _loesungen_analysis(self, page_number: int = 1) -> PageAnalysis:
         return _answer_key_analysis([
             TextSpan(
-                id="span-1-0-0",
+                id=f"span-{page_number}-0-0",
                 text="L\u00f6sungen",
                 confidence=0.99,
                 confidenceScope="line",
-                parentLineId="L0",
+                parentLineId=f"line-{page_number}-0",
                 bbox=BBox(x=0.1, y=0.02, width=0.2, height=0.02),
             ),
             TextSpan(
-                id="span-1-1-0",
+                id=f"span-{page_number}-1-0",
                 text="12 Artikel",
                 confidence=0.99,
                 confidenceScope="line",
-                parentLineId="L1",
+                parentLineId=f"line-{page_number}-1",
                 bbox=BBox(x=0.1, y=0.05, width=0.2, height=0.02),
             ),
             TextSpan(
-                id="span-1-2-0",
+                id=f"span-{page_number}-2-0",
                 text="1 1. der Hund",
                 confidence=0.99,
                 confidenceScope="line",
-                parentLineId="L2",
+                parentLineId=f"line-{page_number}-2",
                 bbox=BBox(x=0.1, y=0.08, width=0.3, height=0.02),
             ),
         ])
@@ -258,3 +258,133 @@ class TestExtractAnswerKey:
         )
 
         assert response.status_code == 422
+
+    @patch("app.api.main._get_ocr")
+    def test_passes_real_page_number_per_raster(self, mock_get_ocr):
+        mock_get_ocr.return_value.return_value = self._loesungen_analysis()
+
+        response = client.post(
+            "/internal/answer-key/extract",
+            json={
+                "bookId": "book-1",
+                "rasterPaths": [
+                    "/data/key-page201-300dpi.png",
+                    "/data/key-page202-300dpi.png",
+                    "/data/key-page203-300dpi.png",
+                ],
+                "publisher": "cornelsen",
+            },
+        )
+
+        assert response.status_code == 200
+        ocr = mock_get_ocr.return_value
+        assert ocr.call_count == 3
+        for expected_page, call in zip([201, 202, 203], ocr.call_args_list):
+            assert call.kwargs["page_number"] == expected_page
+            assert (
+                call.kwargs["image_path"]
+                == f"/data/key-page{expected_page}-300dpi.png"
+            )
+
+    @patch("app.api.main._get_ocr")
+    def test_page_one_supported_and_never_zero(self, mock_get_ocr):
+        mock_get_ocr.return_value.return_value = self._loesungen_analysis()
+
+        response = client.post(
+            "/internal/answer-key/extract",
+            json={
+                "bookId": "book-1",
+                "rasterPaths": [
+                    "/data/key-page1-300dpi.png",
+                    "/data/key-page2-300dpi.png",
+                    "/data/key-page3-300dpi.png",
+                ],
+                "publisher": "cornelsen",
+            },
+        )
+
+        assert response.status_code == 200
+        ocr = mock_get_ocr.return_value
+        pages = [call.kwargs["page_number"] for call in ocr.call_args_list]
+        assert pages == [1, 2, 3]
+        assert all(p >= 1 for p in pages)
+
+    @patch("app.api.main._get_ocr")
+    def test_ignores_unrelated_digits_in_filename(self, mock_get_ocr):
+        mock_get_ocr.return_value.return_value = self._loesungen_analysis()
+
+        response = client.post(
+            "/internal/answer-key/extract",
+            json={
+                "bookId": "book-1",
+                "rasterPaths": [
+                    "/data/Grammatik-Aktiv-A1-B1-Ausgabe-page227-300dpi.png",
+                ],
+                "publisher": "cornelsen",
+            },
+        )
+
+        assert response.status_code == 200
+        ocr = mock_get_ocr.return_value
+        assert ocr.call_args_list[0].kwargs["page_number"] == 227
+
+    @patch("app.api.main._get_ocr")
+    def test_integration_style_constructs_real_page_analysis(self, mock_get_ocr):
+        def _wrapped_ocr(book_id, page_number, image_path):
+            return self._loesungen_analysis(page_number=page_number)
+
+        mock_get_ocr.return_value.side_effect = _wrapped_ocr
+
+        response = client.post(
+            "/internal/answer-key/extract",
+            json={
+                "bookId": "book-1",
+                "rasterPaths": [
+                    "/data/key-page201-300dpi.png",
+                    "/data/key-page202-300dpi.png",
+                ],
+                "publisher": "cornelsen",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert [e["pageNumber"] for e in data["entries"]] == [201, 202]
+
+    @patch("app.api.main._get_ocr")
+    def test_entries_carry_source_page_number(self, mock_get_ocr):
+        mock_get_ocr.return_value.return_value = self._loesungen_analysis(
+            page_number=201
+        )
+
+        response = client.post(
+            "/internal/answer-key/extract",
+            json={
+                "bookId": "book-1",
+                "rasterPaths": ["/data/key-page201-300dpi.png"],
+                "publisher": "cornelsen",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["entryCount"] == 1
+        assert data["entries"][0]["pageNumber"] == 201
+        assert data["sourcePageRange"] == "201"
+
+    @patch("app.api.main._get_ocr")
+    def test_fail_closed_when_page_number_unparseable(self, mock_get_ocr):
+        response = client.post(
+            "/internal/answer-key/extract",
+            json={
+                "bookId": "book-1",
+                "rasterPaths": ["/data/unknown-raster.png"],
+                "publisher": "cornelsen",
+            },
+        )
+
+        assert response.status_code == 500
+        detail = response.json()["detail"]
+        assert "/data/unknown-raster.png" in detail
+        assert "page" in detail.lower()
+        mock_get_ocr.return_value.assert_not_called()

@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class TextExpectedAnswer(BaseModel):
+    type: Literal["Text"] = "Text"
     value: str
     alternatives: list[str] = Field(default_factory=list)
 
@@ -15,10 +16,12 @@ class MatchingPair(BaseModel):
 
 
 class MatchingExpectedAnswer(BaseModel):
+    type: Literal["Matching"] = "Matching"
     pairs: list[MatchingPair] = Field(default_factory=list)
 
 
 class ReferenceExpectedAnswer(BaseModel):
+    type: Literal["Reference"] = "Reference"
     modelText: str
     sourceHint: str = ""
 

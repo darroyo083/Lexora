@@ -10,6 +10,7 @@ from app.schemas.page_analysis import (
     ProcessorMetadata,
 )
 from app.document.normalization import normalize_bbox
+from app.document.encoding import repair_utf8
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ def create_page_analysis(
             ):
                 if not word or not word.strip():
                     continue
+                word = repair_utf8(word)
                 left, top, right, bottom = wbox
                 nx, ny, nw, nh = normalize_bbox(
                     left, top, right, bottom,
@@ -80,7 +82,7 @@ def create_page_analysis(
                 )
                 raw_spans.append({
                     "id": f"span-{page_number}-{i}",
-                    "text": line_text,
+                    "text": repair_utf8(line_text),
                     "confidence": line_conf,
                     "confidenceScope": "line",
                     "parentLineId": line_id,

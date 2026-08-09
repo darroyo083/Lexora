@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -85,6 +86,75 @@ class BookServiceTest {
         assertThat(result.processingStatus()).isEqualTo(ProcessingStatus.READY);
         verifyNoInteractions(analysisClient);
         verify(repository, never()).savePage(any());
+    }
+
+    @Test
+    void rasterizePagesRendersRangeAndCaches() throws Exception {
+        var pdfPath = storagePath.resolve("pdf/book.pdf");
+        Files.createDirectories(pdfPath.getParent());
+        try (var document = new org.apache.pdfbox.pdmodel.PDDocument()) {
+            for (int i = 0; i < 3; i++) {
+                document.addPage(new org.apache.pdfbox.pdmodel.PDPage());
+            }
+            document.save(pdfPath.toFile());
+        }
+
+        var pages = service.rasterizePages(pdfPath, 2, 3);
+
+        assertThat(pages).hasSize(2);
+        assertThat(pages.get(0).getFileName().toString()).isEqualTo("book-page2-300dpi.png");
+        assertThat(pages.get(1).getFileName().toString()).isEqualTo("book-page3-300dpi.png");
+        assertThat(pages).allMatch(Files::exists);
+
+        var cached = service.rasterizePages(pdfPath, 2, 3);
+        assertThat(cached).isEqualTo(pages);
+        try (var files = Files.list(storagePath.resolve("pdf"))) {
+            assertThat(files.filter(p -> p.getFileName().toString().endsWith(".png")).count())
+                .isEqualTo(2);
+        }
+    }
+
+    @Test
+    void rasterizePagesRendersFullRangeWhenRequested() throws Exception {
+        var pdfPath = storagePath.resolve("pdf/book.pdf");
+        Files.createDirectories(pdfPath.getParent());
+        try (var document = new org.apache.pdfbox.pdmodel.PDDocument()) {
+            document.addPage(new org.apache.pdfbox.pdmodel.PDPage());
+            document.save(pdfPath.toFile());
+        }
+
+        var pages = service.rasterizePages(pdfPath, 1, 1);
+
+        assertThat(pages).hasSize(1);
+        assertThat(pages.get(0).getFileName().toString()).isEqualTo("book-page1-300dpi.png");
+    }
+
+    @Test
+    void rasterizePagesRejectsInvalidRange() throws Exception {
+        var pdfPath = storagePath.resolve("pdf/book.pdf");
+        Files.createDirectories(pdfPath.getParent());
+        try (var document = new org.apache.pdfbox.pdmodel.PDDocument()) {
+            document.addPage(new org.apache.pdfbox.pdmodel.PDPage());
+            document.save(pdfPath.toFile());
+        }
+
+        assertThatThrownBy(() -> service.rasterizePages(pdfPath, 0, 2))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.rasterizePages(pdfPath, 3, 2))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void rasterizePagesRejectsRangeBeyondDocument() throws Exception {
+        var pdfPath = storagePath.resolve("pdf/book.pdf");
+        Files.createDirectories(pdfPath.getParent());
+        try (var document = new org.apache.pdfbox.pdmodel.PDDocument()) {
+            document.addPage(new org.apache.pdfbox.pdmodel.PDPage());
+            document.save(pdfPath.toFile());
+        }
+
+        assertThatThrownBy(() -> service.rasterizePages(pdfPath, 1, 5))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

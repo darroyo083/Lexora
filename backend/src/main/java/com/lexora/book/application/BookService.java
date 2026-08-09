@@ -133,23 +133,59 @@ public class BookService {
         }
     }
 
+    public List<Path> rasterizePages(Path pdfPath, int fromPage, int toPage) throws IOException {
+        if (fromPage < 1 || toPage < fromPage) {
+            throw new IllegalArgumentException("Invalid page range: " + fromPage + "-" + toPage);
+        }
+
+        var output = new java.util.ArrayList<Path>(toPage - fromPage + 1);
+        try (var document = org.apache.pdfbox.Loader.loadPDF(pdfPath.toFile())) {
+            if (toPage > document.getNumberOfPages()) {
+                throw new IllegalArgumentException("Page out of range: " + toPage);
+            }
+            var renderer = new org.apache.pdfbox.rendering.PDFRenderer(document);
+            for (int pageNumber = fromPage; pageNumber <= toPage; pageNumber++) {
+                output.add(rasterizePage(renderer, pdfPath, pageNumber));
+            }
+        }
+        return List.copyOf(output);
+    }
+
     private Path rasterizePage(Path pdfPath, int pageNumber) throws IOException {
-        var outputPath = storageBasePath.resolve("pdf").resolve(
+        var outputPath = rasterOutputPath(pdfPath, pageNumber);
+        if (Files.exists(outputPath)) {
+            return outputPath;
+        }
+        try (var document = org.apache.pdfbox.Loader.loadPDF(pdfPath.toFile())) {
+            return renderPage(
+                new org.apache.pdfbox.rendering.PDFRenderer(document),
+                pdfPath, pageNumber, outputPath
+            );
+        }
+    }
+
+    private Path rasterizePage(org.apache.pdfbox.rendering.PDFRenderer renderer,
+                               Path pdfPath, int pageNumber) throws IOException {
+        var outputPath = rasterOutputPath(pdfPath, pageNumber);
+        if (Files.exists(outputPath)) {
+            return outputPath;
+        }
+        return renderPage(renderer, pdfPath, pageNumber, outputPath);
+    }
+
+    private static Path rasterOutputPath(Path pdfPath, int pageNumber) {
+        return Path.of(
+            pdfPath.getParent().toString(),
             pdfPath.getFileName().toString().replace(
                 ".pdf", "-page" + pageNumber + "-300dpi.png"
             )
         );
-        if (Files.exists(outputPath)) {
-            return outputPath;
-        }
+    }
 
-        try (var document = org.apache.pdfbox.Loader.loadPDF(pdfPath.toFile())) {
-            var renderer = new org.apache.pdfbox.rendering.PDFRenderer(document);
-            var bufferedImage = renderer.renderImageWithDPI(pageNumber - 1, 300);
-
-            javax.imageio.ImageIO.write(bufferedImage, "PNG", outputPath.toFile());
-        }
-
+    private static Path renderPage(org.apache.pdfbox.rendering.PDFRenderer renderer,
+                                   Path pdfPath, int pageNumber, Path outputPath) throws IOException {
+        var bufferedImage = renderer.renderImageWithDPI(pageNumber - 1, 300);
+        javax.imageio.ImageIO.write(bufferedImage, "PNG", outputPath.toFile());
         return outputPath;
     }
 

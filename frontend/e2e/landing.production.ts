@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 test('landing explains the product, loads real evidence, and provides tactile keyboard-safe actions', async ({ page }) => {
   await page.goto('/');
@@ -49,6 +50,35 @@ test('landing stays complete without hover at a touch viewport', async ({ page }
   expect(await page.evaluate(() => (
     document.documentElement.scrollWidth <= window.innerWidth
   ))).toBe(true);
+});
+
+test('keeps essential presentation complete across release viewports', async ({ page }) => {
+  for (const viewport of [
+    { width: 1920, height: 1080 },
+    { width: 1440, height: 900 },
+    { width: 1280, height: 720 },
+    { width: 430, height: 932 },
+    { width: 390, height: 844 },
+    { width: 375, height: 812 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: 'Try the curated demo' })).toBeVisible();
+    await page.locator('#video').scrollIntoViewIfNeeded();
+    await expect(page.getByLabel('Lexora product demo video, 66 seconds')).toBeVisible();
+    await page.locator('footer').scrollIntoViewIfNeeded();
+    await expect(page.getByRole('link', { name: 'GitHub', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+      .toBe(true);
+  }
+});
+
+test('has no automatically detectable WCAG A or AA violations', async ({ page }) => {
+  await page.goto('/');
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa'])
+    .analyze();
+  expect(results.violations).toEqual([]);
 });
 
 test('removes decorative landing transitions when reduced motion is requested', async ({ page }) => {

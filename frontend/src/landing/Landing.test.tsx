@@ -19,6 +19,11 @@ describe('portfolio landing', () => {
       .toBe('https://github.com/darroyo083/Lexora');
     expect(screen.getByAltText(/answer lerne marked correct/i).getAttribute('src'))
       .toBe('/release/lexora-interactive.webp');
+    const video = screen.getByLabelText('Lexora product demo video, 66 seconds');
+    expect(video.getAttribute('poster')).toBe('/release/lexora-demo-poster.png');
+    expect(video.getAttribute('preload')).toBe('metadata');
+    expect(screen.getByRole('link', { name: /Download MP4/i }).getAttribute('href'))
+      .toBe('/release/lexora-demo.mp4');
   });
 
   it('keeps interaction and architecture detail available to click and focus', () => {

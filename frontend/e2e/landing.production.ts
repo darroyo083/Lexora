@@ -20,7 +20,7 @@ test('landing explains the product, loads real evidence, and provides tactile ke
   await primary.hover();
   await expect(primary).toHaveCSS('transform', /matrix\(1, 0, 0, 1, 0, -3\)/);
 
-  for (let index = 0; index < 7; index += 1) await page.keyboard.press('Tab');
+  for (let index = 0; index < 8; index += 1) await page.keyboard.press('Tab');
   await expect(primary).toBeFocused();
   await expect(primary).toHaveCSS('outline-style', 'solid');
 
@@ -28,6 +28,13 @@ test('landing explains the product, loads real evidence, and provides tactile ke
   await expect(page.getByText(/Open responses stay neutral/i)).toBeVisible();
   await page.getByRole('button', { name: /04 React reader/i }).click();
   await expect(page.getByText(/One product surface provides guided practice/i)).toBeVisible();
+
+  const video = page.getByLabel('Lexora product demo video, 66 seconds');
+  await expect(video).toHaveAttribute('preload', 'metadata');
+  await video.hover();
+  await expect(page.locator('.video-preview')).toHaveCSS('transform', /matrix\(1, 0, 0, 1, 0, -4\)/);
+  await video.focus();
+  await expect(page.locator('.video-preview')).toHaveCSS('border-top-color', 'rgb(152, 196, 156)');
 });
 
 test('landing stays complete without hover at a touch viewport', async ({ page }) => {

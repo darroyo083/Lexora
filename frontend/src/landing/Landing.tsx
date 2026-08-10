@@ -53,6 +53,7 @@ export default function Landing() {
           <a href="#modes">Modes</a>
           <a href="#interactions">Interactions</a>
           <a href="#architecture">Engineering</a>
+          <a href="#video">Video</a>
         </nav>
         <a className="landing-nav-cta" href="/demo">
           Open demo <ArrowUpRight size={14} aria-hidden="true" />
@@ -86,7 +87,7 @@ export default function Landing() {
             onPointerLeave={resetEvidencePointer} tabIndex={0}
             aria-label="Real Lexora Interactive lesson showing a correct fill-in-the-blank response">
             <div className="evidence-rail">
-              <span>REAL UI / PUBLIC-SAFE FIXTURE</span><span>INTERACTIVE · CORRECT</span>
+              <span>REAL UI / PUBLIC-SAFE FIXTURE</span><span>INTERACTIVE / CORRECT</span>
             </div>
             <div className="evidence-window">
               <img src="/release/lexora-interactive.webp" width="1440" height="900"
@@ -223,9 +224,33 @@ export default function Landing() {
           </div>
         </section>
 
+        <section className="landing-video" id="video" aria-labelledby="video-title">
+          <div className="section-heading split">
+            <div><p className="landing-kicker"><span>06</span> Product film</p>
+              <h2 id="video-title">The complete trust story.<br />In 66 seconds.</h2></div>
+            <p>A silent-safe walkthrough of the real curated demo: transformation, four native
+              interaction families, grounded correction, Classic Mode, and responsive behavior.</p>
+          </div>
+          <div className="video-preview">
+            <div className="video-rail">
+              <span>REMOTION / 1920 × 1080</span><span>REAL UI EVIDENCE / NO PRIVATE MATERIAL</span>
+            </div>
+            <video controls preload="metadata" playsInline
+              poster="/release/lexora-demo-poster.png"
+              aria-label="Lexora product demo video, 66 seconds"
+              width="1920" height="1080">
+              <source src="/release/lexora-demo.mp4" type="video/mp4" />
+              Your browser does not support embedded video. The same real product states are
+              available throughout this page and in the curated demo.
+            </video>
+            <div className="video-caption"><span>Caption-led / understandable without sound</span>
+              <a href="/release/lexora-demo.mp4" download>Download MP4 <ArrowRight size={14} aria-hidden="true" /></a></div>
+          </div>
+        </section>
+
         <section className="landing-safety" aria-labelledby="safety-title">
           <div className="safety-icon"><ShieldCheck size={32} aria-hidden="true" /></div>
-          <div><p className="landing-kicker"><span>06</span> Grounded by design</p>
+          <div><p className="landing-kicker"><span>07</span> Grounded by design</p>
             <h2 id="safety-title">Useful without pretending certainty.</h2></div>
           <p>Lexora preserves provenance, uses authoritative correction only when a mapping exists,
             and publishes no private workbook pages, OCR dumps, or answer-key material.</p>
@@ -233,7 +258,7 @@ export default function Landing() {
 
         <section className="landing-final" aria-labelledby="final-title">
           <BookOpen size={38} aria-hidden="true" />
-          <p className="landing-kicker"><span>07</span> See the system work</p>
+          <p className="landing-kicker"><span>08</span> See the system work</p>
           <h2 id="final-title">From source page to deliberate practice.</h2>
           <p>Explore all six interaction families in a bounded, public-safe workbook.</p>
           <div className="hero-actions">

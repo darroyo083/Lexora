@@ -5,9 +5,11 @@ import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const output = resolve(here, '../public/release');
+const videoOutput = resolve(here, '../../video/public/evidence');
 const baseUrl = process.env.LEXORA_CAPTURE_BASE_URL ?? 'http://127.0.0.1:18088';
 
 await mkdir(output, { recursive: true });
+await mkdir(videoOutput, { recursive: true });
 
 const browser = await chromium.launch();
 try {
@@ -28,6 +30,11 @@ try {
   }
 
   await page.getByRole('heading', { name: 'A deliberate daily practice' }).waitFor();
+  await page.screenshot({
+    path: resolve(videoOutput, 'interactive-start.webp'),
+    type: 'webp',
+    quality: 92,
+  });
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('textbox', { name: 'Your answer' }).fill('lerne');
   await page.getByRole('button', { name: 'Check answer' }).click();
@@ -37,6 +44,53 @@ try {
     type: 'webp',
     quality: 90,
   });
+  await page.screenshot({
+    path: resolve(videoOutput, 'interactive-correct.webp'),
+    type: 'webp',
+    quality: 92,
+  });
+
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: 'Guten Morgen' }).locator('..').click();
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByText('Correct', { exact: true }).waitFor();
+  await page.screenshot({
+    path: resolve(videoOutput, 'choice-correct.webp'),
+    type: 'webp',
+    quality: 92,
+  });
+
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: 'der', exact: true }).locator('..').click();
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.screenshot({
+    path: resolve(videoOutput, 'choice-grid.webp'),
+    type: 'webp',
+    quality: 92,
+  });
+
+  await page.getByRole('button', { name: 'Continue' }).click();
+  for (const token of ['Ich', 'lerne', 'jeden', 'Tag']) {
+    await page.getByRole('button', { name: token, exact: true }).click();
+  }
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.screenshot({
+    path: resolve(videoOutput, 'sentence-ordering.webp'),
+    type: 'webp',
+    quality: 92,
+  });
+
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: /1\. lernen/ }).click();
+  await page.getByRole('button', { name: /A\. study/ }).click();
+  await page.getByRole('button', { name: /2\. Buch/ }).click();
+  await page.getByRole('button', { name: /B\. book/ }).click();
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.screenshot({
+    path: resolve(videoOutput, 'matching.webp'),
+    type: 'webp',
+    quality: 92,
+  });
 
   await page.getByRole('button', { name: 'Classic' }).first().click();
   await page.locator('canvas').first().waitFor({ state: 'visible' });
@@ -44,6 +98,11 @@ try {
     path: resolve(output, 'lexora-classic.webp'),
     type: 'webp',
     quality: 88,
+  });
+  await page.screenshot({
+    path: resolve(videoOutput, 'classic.webp'),
+    type: 'webp',
+    quality: 92,
   });
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
@@ -70,6 +129,11 @@ try {
     path: resolve(output, 'lexora-mobile.webp'),
     type: 'webp',
     quality: 88,
+  });
+  await mobilePage.screenshot({
+    path: resolve(videoOutput, 'mobile.webp'),
+    type: 'webp',
+    quality: 92,
   });
   await mobile.close();
 

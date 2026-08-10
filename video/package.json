@@ -1,0 +1,22 @@
+{
+  "name": "lexora-demo-video",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts LexoraDemo ../frontend/public/release/lexora-demo.mp4 --codec=h264 --crf=20 --concurrency=2 --disallow-parallel-encoding",
+    "poster": "remotion still src/index.ts LexoraPoster ../frontend/public/release/lexora-demo-poster.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.507",
+    "@remotion/media-utils": "4.0.507",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "remotion": "4.0.507"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3"
+  }
+}

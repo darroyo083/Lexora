@@ -67,9 +67,10 @@ async function goToPage(page: Page, pageNumber: number) {
   await expect(page.locator('.interactive-lesson')).toBeVisible();
 }
 
-test('uses real page authority for incorrect, reveal, retry, and Classic fallback', async ({ page }) => {
+test('uses real page authority for correct, incorrect, reveal, retry, and Classic fallback', async ({ page, request }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(new URL(request.url()).pathname));
+  const expected = await resolvedFillAnswer(request);
   await openBook(page, resolvedPage);
 
   await expect(page.getByRole('button', { name: 'Check answers' })).toBeEnabled();
@@ -84,6 +85,9 @@ test('uses real page authority for incorrect, reveal, retry, and Classic fallbac
   await expect(incorrect.locator('.lesson-expected')).toContainText('Answer:');
   await incorrect.getByRole('button', { name: 'Try again' }).click();
   await expect(incorrect).toHaveCount(0);
+  await resolvedFill.locator('input').first().fill(expected);
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await expect(page.locator('.lesson-feedback[data-verdict="correct"]').first()).toContainText('Correct');
 
   expect(requests).toContain(`/api/books/${bookId}/pages/${resolvedPage}`);
   expect(requests).not.toContain(`/api/books/${bookId}/pages`);
@@ -134,17 +138,27 @@ test('keeps Classic navigation, overlays, interactions, and correction authorita
   await expect(page.locator('.interactive-lesson')).toHaveCount(0);
   await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
   const overlayInput = page.locator('.page-overlay .blank-input').first();
+  await overlayInput.fill('__definitely_incorrect__');
+  await page.getByRole('button', { name: /Check answers/ }).click();
+  await expect(page.getByLabel('Incorrect').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Show answer' }).first().click();
+  await expect(page.getByText('Answer key:', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Try again' }).first().click();
   await overlayInput.fill(expected);
   await expect(overlayInput).toHaveValue(expected);
   await page.getByRole('button', { name: /Check answers/ }).click();
   await expect(page.getByText('Correct', { exact: true }).first()).toBeVisible();
 
   const pageInput = page.locator('input.page-input');
+  const canvas = page.locator('canvas').first();
+  const originalRender = await canvas.evaluate((element) => element.toDataURL());
   await pageInput.fill(String(resolvedPage + 1));
   await expect(pageInput).toHaveValue(String(resolvedPage + 1));
-  await expect(page.locator('canvas')).toBeVisible();
+  await expect.poll(() => canvas.evaluate((element) => element.toDataURL())).not.toBe(originalRender);
+  const nextRender = await canvas.evaluate((element) => element.toDataURL());
   await pageInput.fill(String(resolvedPage));
   await expect(pageInput).toHaveValue(String(resolvedPage));
+  await expect.poll(() => canvas.evaluate((element) => element.toDataURL())).not.toBe(nextRender);
   await expect(page.locator('.page-overlay .blank-input').first()).toBeVisible();
 
   await page.getByRole('button', { name: 'Interactive' }).click();

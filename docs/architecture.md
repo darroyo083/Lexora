@@ -1,6 +1,6 @@
 # Lexora Architecture
 
-Lexora is a four-service Docker Compose system with one persisted source pipeline and two reader projections. Interactive Mode converts an analyzed page into a native lesson. Classic Mode preserves the PDF and geometry-aligned overlays. They share answers and correction; neither duplicates OCR or invents source content.
+Lexora is a four-service Docker Compose system with one persisted source pipeline and two reader projections. Interactive Mode converts an analyzed page into a native lesson. Classic Mode preserves the PDF and geometry-aligned overlays. They share answers and correction; neither duplicates analysis nor invents source content. Production analysis is external Vision only; the local OCR provider is a separate development compatibility path.
 
 ## Runtime Topology
 
@@ -10,9 +10,9 @@ flowchart LR
     Backend -->|JDBC| Postgres[(PostgreSQL 18)]
     Backend -->|shared storage| Storage[(lexora_storage)]
     Backend -->|HTTP/1.1 internal API| AI[FastAPI]
-    AI -->|read raster| Storage
-    AI --> Paddle[PaddleOCR]
-    AI --> OpenCV[OpenCV]
+    AI -->|read bounded raster| Storage
+    AI --> Vision[External Vision provider<br/>production]
+    AI -. development only .-> Local[PaddleOCR + OpenCV]
 ```
 
 Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring Boot and FastAPI share the `lexora_storage` volume so the internal analysis request can pass an absolute raster path without copying image bytes over HTTP.
@@ -53,6 +53,10 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 
 ### FastAPI AI Service
 
+The AI service selects one `AnalysisProvider` at startup. Production Compose selects the concrete OpenAI Responses Vision provider and fails startup when its credential is unavailable. That provider validates file size/type, sends one bounded page image, requests strict structured output, validates the complete `PageAnalysis`, and redacts upstream response bodies from application errors. Its production image contains no local OCR dependencies or fallback.
+
+The optional `local-ocr` development provider:
+
 - Opens the PDFBox raster and records its source dimensions.
 - Runs PaddleOCR 3.7 with the German language configuration.
 - Converts detected line or word boxes to normalized `[0,1]` coordinates.
@@ -62,7 +66,7 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 - Detects sentence-ordering, matching, and free-text interactions in addition to blanks, choices, and choice grids.
 - Returns OCR spans, all supported interaction structures, normalized geometry, and concise processor metadata.
 
-PaddleOCR document orientation classification, document unwarping, and text-line orientation are intentionally disabled. Those transforms can change pixel geometry even when output dimensions remain unchanged, which would detach OCR boxes from the original PDF page.
+PaddleOCR document orientation classification, document unwarping, and text-line orientation are intentionally disabled in local development. Those transforms can change pixel geometry even when output dimensions remain unchanged, which would detach OCR boxes from the original PDF page.
 
 ### PostgreSQL
 
@@ -147,4 +151,4 @@ Interactive Mode is the default native reading experience for analyzed pages. Cl
 
 ## Current Boundaries
 
-Interactive Mode covers the interaction types already present in `PageAnalysis`; it does not convert every possible publisher layout. Answer-key gaps stay `UNMAPPED` or `AMBIGUOUS`. Translation, vocabulary storage, VLM analysis, RAG, authentication, generated explanations, and background multi-page processing remain outside the MVP.
+Interactive Mode covers the interaction types already present in `PageAnalysis`; it does not convert every possible publisher layout. Answer-key gaps stay `UNMAPPED` or `AMBIGUOUS`. Translation, vocabulary storage, RAG, authentication, generated explanations, and background multi-page processing remain outside the MVP.

@@ -146,6 +146,14 @@ jobs:
         run: |
           base="${{ github.event.pull_request.base.sha }}"
           fail=0
+          is_public_release_binary() {
+            case "$1" in
+              frontend/public/release/lexora-classic.webp|frontend/public/release/lexora-interactive.webp|frontend/public/release/lexora-landing.webp|frontend/public/release/lexora-mobile.webp|frontend/public/release/lexora-social.png|frontend/public/release/lexora-demo-poster.png|frontend/public/release/lexora-demo.mp4|video/public/evidence/choice-correct.webp|video/public/evidence/choice-grid.webp|video/public/evidence/classic.webp|video/public/evidence/interactive-correct.webp|video/public/evidence/interactive-start.webp|video/public/evidence/matching.webp|video/public/evidence/mobile.webp|video/public/evidence/sentence-ordering.webp)
+                return 0
+                ;;
+            esac
+            return 1
+          }
           while IFS= read -r f; do
             case "$f" in
               storage/*|*/storage/*|*.pdf|*.zip|*.exe|*.dll|*.so|*.dylib|*.pem|*.key|*.jar|*.war)
@@ -163,5 +171,10 @@ jobs:
                 ;;
             esac
           done < <(git diff --name-only "$base"...HEAD)
-          git diff --numstat "$base"...HEAD | awk '$1 == "-" { print "::error::Binary file in PR: " $3; fail = 1 } END { exit fail }'
+          while IFS=$'\t' read -r additions deletions file; do
+            if [[ "$additions" == "-" ]] && ! is_public_release_binary "$file"; then
+              echo "::error::Unapproved binary file in PR: $file"
+              fail=1
+            fi
+          done < <(git diff --numstat "$base"...HEAD)
           exit $fail

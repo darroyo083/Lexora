@@ -82,6 +82,7 @@ test('has no automatically detectable WCAG A or AA violations', async ({ page })
 });
 
 test('removes decorative landing transitions when reduced motion is requested', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   expect(await page.evaluate(() => (
@@ -92,4 +93,22 @@ test('removes decorative landing transitions when reduced motion is requested', 
   expect(await evidence.evaluate((element) => (
     Number.parseFloat(getComputedStyle(element).transitionDuration)
   ))).toBeLessThanOrEqual(0.001);
+
+  const reducedMotionTargets = [
+    ['.landing-wordmark', '.landing-mark'],
+    ['.landing-nav-cta', '.landing-nav-cta'],
+    ['.landing-button', '.landing-button'],
+    ['.transform-rail li', '.transform-rail li > svg'],
+    ['.mode-copy > a', '.mode-copy > a svg'],
+    ['.mode-image', '.mode-image img'],
+    ['.interaction-list button', '.interaction-list button svg'],
+    ['.engineering-proof article', '.engineering-proof article'],
+    ['.video-preview', '.video-preview'],
+    ['.video-caption a', '.video-caption a svg'],
+  ] as const;
+
+  for (const [triggerSelector, targetSelector] of reducedMotionTargets) {
+    await page.locator(triggerSelector).first().hover();
+    await expect(page.locator(targetSelector).first()).toHaveCSS('transform', 'none');
+  }
 });

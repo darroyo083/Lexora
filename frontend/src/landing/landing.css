@@ -500,10 +500,25 @@ html[data-surface="landing"] #root {
   html[data-surface="landing"] .hero-evidence:focus-visible,
   html[data-surface="landing"] .hero-evidence:hover img,
   html[data-surface="landing"] .hero-evidence:focus-visible img,
-  html[data-surface="landing"] .landing-cta:hover,
-  html[data-surface="landing"] .landing-cta:focus-visible,
+  html[data-surface="landing"] .landing-wordmark:hover .landing-mark,
+  html[data-surface="landing"] .landing-wordmark:focus-visible .landing-mark,
+  html[data-surface="landing"] .landing-nav-cta:hover,
+  html[data-surface="landing"] .landing-nav-cta:focus-visible,
+  html[data-surface="landing"] .landing-button:hover,
+  html[data-surface="landing"] .landing-button:focus-visible,
+  html[data-surface="landing"] .landing-button:hover svg,
+  html[data-surface="landing"] .landing-button:focus-visible svg,
+  html[data-surface="landing"] .transform-rail li:hover > svg,
+  html[data-surface="landing"] .mode-copy > a:hover svg,
+  html[data-surface="landing"] .mode-copy > a:focus-visible svg,
+  html[data-surface="landing"] .mode-image:hover img,
+  html[data-surface="landing"] .interaction-list button:hover svg,
+  html[data-surface="landing"] .interaction-list button:focus-visible svg,
+  html[data-surface="landing"] .engineering-proof article:hover,
   html[data-surface="landing"] .video-preview:hover,
-  html[data-surface="landing"] .video-preview:focus-within {
+  html[data-surface="landing"] .video-preview:focus-within,
+  html[data-surface="landing"] .video-caption a:hover svg,
+  html[data-surface="landing"] .video-caption a:focus-visible svg {
     transform: none !important;
   }
 }

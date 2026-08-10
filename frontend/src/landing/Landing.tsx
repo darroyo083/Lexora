@@ -46,7 +46,7 @@ export default function Landing() {
     <div className="landing-shell">
       <a className="landing-skip" href="#landing-main">Skip to content</a>
       <header className="landing-nav">
-        <a className="landing-wordmark" href="#top" aria-label="Lexora home">
+        <a className="landing-wordmark" href="#top">
           <span className="landing-mark" aria-hidden="true">L</span><span>Lexora</span>
         </a>
         <nav aria-label="Landing navigation">

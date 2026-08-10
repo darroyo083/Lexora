@@ -56,3 +56,5 @@ docker-compose.override.yml
 
 # Browser tooling
 .playwright-mcp/
+frontend/playwright-report/
+frontend/test-results/

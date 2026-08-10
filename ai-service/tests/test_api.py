@@ -418,6 +418,6 @@ class TestExtractAnswerKey:
 
         assert response.status_code == 500
         detail = response.json()["detail"]
-        assert "/data/unknown-raster.png" in detail
         assert "page" in detail.lower()
+        assert "unknown-raster" not in detail
         mock_get_ocr.return_value.assert_not_called()

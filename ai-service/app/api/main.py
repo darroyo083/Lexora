@@ -31,8 +31,8 @@ def _page_number_from_raster_path(raster_path: str) -> int:
         raise HTTPException(
             status_code=500,
             detail=(
-                "Cannot derive source page number from raster path "
-                f"(expected filename pattern '-page<number>-<dpi>dpi.png'): {raster_path}"
+                "Cannot derive source page number from raster filename "
+                "(expected '-page<number>-<dpi>dpi.png')"
             ),
         )
     return int(match.group(1))

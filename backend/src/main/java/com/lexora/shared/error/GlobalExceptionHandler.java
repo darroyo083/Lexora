@@ -38,7 +38,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleBadRequest(IllegalArgumentException e) {
-        return ApiError.of("BAD_REQUEST", e.getMessage());
+        log.info("rejecting invalid request: {}", e.getMessage());
+        return ApiError.of("BAD_REQUEST", "The request is invalid");
     }
 
     @ExceptionHandler({HttpMessageNotWritableException.class, ClientAbortException.class})

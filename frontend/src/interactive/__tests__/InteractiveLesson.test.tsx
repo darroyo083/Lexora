@@ -7,7 +7,10 @@ import InteractiveLesson from '../InteractiveLesson';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 const projection: LessonProjection = {
   status: 'AVAILABLE',
@@ -72,23 +75,28 @@ function props(overrides: Record<string, unknown> = {}) {
 }
 
 describe('InteractiveLesson', () => {
-  it('writes native inputs and correction actions through shared callbacks', () => {
+  it('writes the active step through shared answer and correction callbacks', () => {
+    const callbacks = props();
+    render(<InteractiveLesson {...callbacks} />);
+
+    expect(screen.getByRole('heading', { name: 'Satzklammer', level: 1 })).toBeTruthy();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Your answer' }), { target: { value: 'ist' } });
+    expect(callbacks.onAnswerChange).toHaveBeenCalledWith('blank-1', 'ist');
+    fireEvent.click(screen.getByRole('button', { name: 'Check answer' }));
+    expect(callbacks.onCheck).toHaveBeenCalledWith(['blank-1']);
+  });
+
+  it('keeps retry and reveal actions scoped to the current item', () => {
     const callbacks = props({
       verdictByItem: { 'blank-1': CorrectionVerdict.INCORRECT },
       resolutionByItem: { 'blank-1': AnswerResolutionStatus.RESOLVED },
     });
     render(<InteractiveLesson {...callbacks} />);
 
-    expect(screen.getByRole('heading', { name: 'Satzklammer', level: 1 })).toBeTruthy();
-    fireEvent.change(screen.getByRole('textbox', { name: 'Ich ___ heute hier.' }), { target: { value: 'ist' } });
-    expect(callbacks.onAnswerChange).toHaveBeenCalledWith('blank-1', 'ist');
-
     fireEvent.click(screen.getByRole('button', { name: 'Reveal' }));
     expect(callbacks.onReveal).toHaveBeenCalledWith('blank-1');
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(callbacks.onRetry).toHaveBeenCalledWith('blank-1');
-    fireEvent.click(screen.getByRole('button', { name: 'Check answers' }));
-    expect(callbacks.onCheck).toHaveBeenCalledOnce();
   });
 
   it('explains fail-closed correction instead of showing a verdict', () => {
@@ -96,7 +104,7 @@ describe('InteractiveLesson', () => {
       resolutionByItem: { 'blank-1': AnswerResolutionStatus.AMBIGUOUS },
       expectedByItem: {},
     })} />);
-    expect(screen.getByText(/answer key is ambiguous/i)).toBeTruthy();
+    expect(screen.getByText(/source answer is ambiguous/i)).toBeTruthy();
     expect(screen.queryByText('Correct')).toBeNull();
   });
 
@@ -106,21 +114,22 @@ describe('InteractiveLesson', () => {
       pageStage: null,
     });
     render(<InteractiveLesson {...callbacks} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Process this page' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open Classic mode' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Prepare lesson' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open Classic' }));
     expect(callbacks.onProcessPage).toHaveBeenCalledOnce();
     expect(callbacks.onUseClassic).toHaveBeenCalledOnce();
   });
 
-  it('shows a failed analysis reason and exposes retry', () => {
+  it('keeps technical analysis failures private and exposes a learner-facing retry', () => {
     const callbacks = props({
       projection: { status: 'UNAVAILABLE', reason: 'ANALYSIS_UNAVAILABLE' },
       pageStage: 'FAILED',
       failureReason: 'OCR service timed out.',
     });
     render(<InteractiveLesson {...callbacks} />);
-    expect(screen.getByText('OCR service timed out.')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Retry analysis' }));
+    expect(screen.queryByText('OCR service timed out.')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'We could not prepare this lesson' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(callbacks.onProcessPage).toHaveBeenCalledOnce();
   });
 
@@ -130,14 +139,14 @@ describe('InteractiveLesson', () => {
       pageLoadError: 'This page could not be loaded.',
     });
     const { unmount } = render(<InteractiveLesson {...pageCallbacks} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Retry loading' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry page' }));
     expect(pageCallbacks.onRetryPageLoad).toHaveBeenCalledOnce();
     unmount();
 
     const correctionCallbacks = props({ correctionLoadError: 'Correction data could not be loaded.' });
     render(<InteractiveLesson {...correctionCallbacks} />);
-    expect(screen.queryByRole('button', { name: 'Check answers' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Retry correction data' }));
+    expect(screen.queryByRole('button', { name: 'Check answer' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Correction unavailable. Retry' }));
     expect(correctionCallbacks.onRetryCorrectionLoad).toHaveBeenCalledOnce();
   });
 });

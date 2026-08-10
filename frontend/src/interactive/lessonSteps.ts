@@ -3,6 +3,8 @@ import type {
   Lesson,
   LessonBlock,
 } from './lesson';
+import { parseMatchingAnswer } from '../reader/matching';
+import { parseOrderedAnswer } from '../reader/ordering';
 
 type ActivityBlock = Exclude<LessonBlock, ContextLessonBlock>;
 
@@ -215,5 +217,13 @@ export function stepAnswerComplete(
   step: ActivityLessonStep,
   answers: Record<string, string>,
 ): boolean {
+  if (step.block.kind === 'sentence-ordering') {
+    const interaction = step.block.interactions[step.itemIndex];
+    return parseOrderedAnswer(answers[interaction.id]).length === interaction.items.length;
+  }
+  if (step.block.kind === 'matching') {
+    const pairs = parseMatchingAnswer(answers[step.block.interaction.id]);
+    return Object.keys(pairs).length === step.block.interaction.leftItems.length;
+  }
   return step.requiredAnswerIds.every((itemId) => Boolean(answers[itemId]?.trim()));
 }

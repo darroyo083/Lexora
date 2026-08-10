@@ -395,10 +395,10 @@ describe('request recovery and correction isolation', () => {
     }));
 
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Retry loading' }));
-    expect(await screen.findByRole('textbox', { name: 'Answer 1' })).toBeTruthy();
-    expect(await screen.findByRole('button', { name: 'Retry correction data' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Check answers' })).toBeNull();
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry page' }));
+    expect(await screen.findByRole('textbox', { name: 'Your answer' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Correction unavailable. Retry' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Check answer' })).toBeNull();
   });
 
   it('clears old correction authority before navigating to a new page', async () => {
@@ -418,16 +418,17 @@ describe('request recovery and correction isolation', () => {
     }));
 
     render(<App />);
-    expect((await screen.findByRole('button', { name: 'Check answers' }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Your answer' }), { target: { value: 'answer' } });
+    expect((await screen.findByRole('button', { name: 'Check answer' }) as HTMLButtonElement).disabled).toBe(false);
     const nextPage = screen.getByRole('button', { name: 'Next Page' });
     fireEvent.mouseDown(nextPage);
     fireEvent.mouseUp(nextPage);
     await waitFor(() => expect(pageInput().value).toBe('2'));
-    expect(await screen.findByRole('textbox', { name: 'Answer 1' })).toBeTruthy();
-    expect((screen.getByRole('button', { name: 'Check answers' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Your answer' }), { target: { value: 'answer' } });
+    expect(screen.queryByRole('button', { name: 'Check answer' })).toBeNull();
 
     await act(async () => pageTwoCorrection.resolve(jsonResponse(correction(2))));
-    await waitFor(() => expect((screen.getByRole('button', { name: 'Check answers' }) as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Check answer' }) as HTMLButtonElement).disabled).toBe(false));
   });
 
   it('preserves an AMBIGUOUS backend slot through the App correction flow', async () => {
@@ -444,8 +445,9 @@ describe('request recovery and correction isolation', () => {
     }));
 
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Check answers' }));
-    expect(await screen.findByText(/answer key is ambiguous/i)).toBeTruthy();
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Your answer' }), { target: { value: 'answer' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Check answer' }));
+    expect(await screen.findByText(/source answer is ambiguous/i)).toBeTruthy();
     expect(screen.queryByText('Correct')).toBeNull();
   });
 });

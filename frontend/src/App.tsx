@@ -834,7 +834,7 @@ export default function App() {
     writePageRotation(bookId, activePage.current, next);
   }, [rotation]);
 
-  const handleCorrectionCheck = useCallback(() => {
+  const handleCorrectionCheck = useCallback((itemIds?: string[]) => {
     if (!correctionReady) return;
     const slots = correctionSlots;
 
@@ -893,13 +893,29 @@ export default function App() {
       })),
     });
 
-    setCorrectionVerdicts(result.verdictByItem);
-    setCorrectionResolutions(result.resolutionByItem);
-    setCorrectionDetails(result.resultDetailsByItem);
+    if (itemIds && itemIds.length > 0) {
+      const selected = new Set(itemIds);
+      setCorrectionVerdicts((current) => ({
+        ...current,
+        ...Object.fromEntries(Object.entries(result.verdictByItem).filter(([id]) => selected.has(id))),
+      }));
+      setCorrectionResolutions((current) => ({
+        ...current,
+        ...Object.fromEntries(Object.entries(result.resolutionByItem).filter(([id]) => selected.has(id))),
+      }));
+      setCorrectionDetails((current) => ({
+        ...current,
+        ...Object.fromEntries(Object.entries(result.resultDetailsByItem).filter(([id]) => selected.has(id))),
+      }));
+    } else {
+      setCorrectionVerdicts(result.verdictByItem);
+      setCorrectionResolutions(result.resolutionByItem);
+      setCorrectionDetails(result.resultDetailsByItem);
+    }
     setCorrectionUiState('CHECKED');
   }, [correctionReady, correctionSlots, interaction]);
 
-  correctionCheckRef.current = handleCorrectionCheck;
+  correctionCheckRef.current = () => handleCorrectionCheck();
 
   const orderingExpectedByItem = useMemo(() => {
     const expected: Record<string, string[]> = {};
@@ -1048,7 +1064,7 @@ export default function App() {
   }), [book?.id, page, pageUnitNumber, pageUnitTitle, selectedPage]);
 
   return (
-    <div className="app" data-design="stitch" data-theme={theme} data-dev-mode={devMode}>
+    <div className="app" data-design="stitch" data-theme={theme} data-dev-mode={devMode} data-reader-mode={readerMode}>
       <LeftRail devMode={devMode} onToggleDevMode={handleToggleDevMode} />
 
       <div className="app-main-workspace">

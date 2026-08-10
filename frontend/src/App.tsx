@@ -1019,6 +1019,7 @@ export default function App() {
                 pageNumber={selectedPage}
                 pageCount={book.pageCount}
                 pageStage={pageStage}
+                failureReason={page?.failureReason ?? null}
                 answers={interaction.answers}
                 matchingSelection={matchingSelection}
                 verdictByItem={correctionVerdicts}

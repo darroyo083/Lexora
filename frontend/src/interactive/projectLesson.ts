@@ -62,6 +62,53 @@ function spanText(spanIds: string[], spansById: Map<string, TextSpan>): string |
   return text || null;
 }
 
+function commonPrompt(prompts: Array<string | null>): string | null {
+  const meaningful = unique(prompts.filter((prompt): prompt is string => Boolean(prompt)));
+  return meaningful.length === 1 ? meaningful[0] : null;
+}
+
+function localSpanText(
+  spanIds: string[],
+  interactionBbox: BBox,
+  spansById: Map<string, TextSpan>,
+): string | null {
+  const candidates = unique(spanIds)
+    .map((id) => spansById.get(id))
+    .filter((span): span is TextSpan => Boolean(span))
+    .filter(meaningfulSpan);
+  if (candidates.length === 0) return null;
+
+  const interactionTop = interactionBbox.y - 0.012;
+  const interactionBottom = bottom(interactionBbox) + 0.012;
+  const sameLine = candidates.filter((span) => (
+    bottom(span.bbox) >= interactionTop && span.bbox.y <= interactionBottom
+  ));
+  if (sameLine.length > 0) {
+    const centerX = interactionBbox.x + interactionBbox.width / 2;
+    const centerY = interactionBbox.y + interactionBbox.height / 2;
+    const closest = [...sameLine].sort((a, b) => {
+      const horizontalDistance = (span: TextSpan) => (
+        centerX < span.bbox.x
+          ? span.bbox.x - centerX
+          : centerX > span.bbox.x + span.bbox.width
+            ? centerX - span.bbox.x - span.bbox.width
+            : 0
+      );
+      return horizontalDistance(a) - horizontalDistance(b)
+        || Math.abs(a.bbox.y + a.bbox.height / 2 - centerY)
+          - Math.abs(b.bbox.y + b.bbox.height / 2 - centerY)
+        || a.bbox.width - b.bbox.width;
+    })[0];
+    return spanText([closest.id], spansById);
+  }
+
+  const center = interactionBbox.y + interactionBbox.height / 2;
+  const ranked = candidates
+    .map((span) => ({ span, distance: Math.abs(span.bbox.y + span.bbox.height / 2 - center) }))
+    .sort((a, b) => a.distance - b.distance);
+  return spanText([ranked[0].span.id], spansById);
+}
+
 function evidence(
   spanIds: string[],
   interactionIds: string[],
@@ -126,6 +173,12 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
 
   for (const blanks of clusterByVerticalGap(analysis.exerciseBlanks, (blank) => blank.interactionBbox)) {
     const spanIds = blanks.flatMap((blank) => blank.nearbyTextSpanIds);
+    const itemPrompts = Object.fromEntries(
+      blanks.map((blank) => [
+        blank.id,
+        localSpanText(blank.nearbyTextSpanIds, blank.interactionBbox, spansById),
+      ]),
+    );
     const sourceY = Math.min(...blanks.map((blank) => blank.interactionBbox.y));
     blocks.push({
       sourceY,
@@ -133,8 +186,9 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
         id: `page-${analysis.pageNumber}-fill-${blanks[0].id}`,
         kind: 'fill-blank',
         sourceY,
-        prompt: spanText(spanIds, spansById),
+        prompt: commonPrompt(Object.values(itemPrompts)),
         blanks,
+        itemPrompts,
         evidence: evidence(
           spanIds,
           blanks.map((blank) => blank.id),
@@ -152,6 +206,12 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
   );
   for (const [groupId, targets] of targetsByGroup) {
     const spanIds = targets.flatMap((target) => target.nearbyTextSpanIds);
+    const itemPrompts = Object.fromEntries(
+      targets.map((target) => [
+        target.id,
+        localSpanText(target.nearbyTextSpanIds, target.interactionBbox, spansById),
+      ]),
+    );
     const sourceY = Math.min(...targets.map((target) => target.interactionBbox.y));
     blocks.push({
       sourceY,
@@ -159,9 +219,10 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
         id: `page-${analysis.pageNumber}-choice-${targets[0].id}`,
         kind: 'choice',
         sourceY,
-        prompt: spanText(spanIds, spansById),
+        prompt: commonPrompt(Object.values(itemPrompts)),
         targets,
         group: groupId.startsWith('unmapped:') ? null : (groupsById.get(groupId) ?? null),
+        itemPrompts,
         evidence: evidence(
           spanIds,
           targets.map((target) => target.id),
@@ -175,15 +236,22 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
 
   for (const grid of analysis.choiceGrids) {
     const spanIds = grid.rows.flatMap((row) => row.nearbyTextSpanIds);
+    const rowPrompts = Object.fromEntries(
+      grid.rows.map((row) => [
+        row.id,
+        localSpanText(row.nearbyTextSpanIds, row.rowBbox, spansById),
+      ]),
+    );
     blocks.push({
       sourceY: grid.gridBbox.y,
       block: {
         id: `page-${analysis.pageNumber}-grid-${grid.id}`,
         kind: 'choice-grid',
         sourceY: grid.gridBbox.y,
-        prompt: spanText(spanIds, spansById),
+        prompt: commonPrompt(Object.values(rowPrompts)),
         grid,
         group: groupsById.get(grid.optionGroupId) ?? null,
+        rowPrompts,
         evidence: evidence(
           spanIds,
           [grid.id, ...grid.rows.map((row) => row.id)],
@@ -208,7 +276,7 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
         id: `page-${analysis.pageNumber}-ordering-${exerciseId}`,
         kind: 'sentence-ordering',
         sourceY,
-        prompt: spanText(spanIds, spansById),
+        prompt: interactions.length === 1 ? spanText(spanIds, spansById) : null,
         exerciseId,
         interactions: [...interactions].sort((a, b) => a.promptIndex - b.promptIndex),
         evidence: evidence(
@@ -234,7 +302,7 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
         id: `page-${analysis.pageNumber}-matching-${interaction.id}`,
         kind: 'matching',
         sourceY: interaction.bbox.y,
-        prompt: spanText(spanIds, spansById),
+        prompt: null,
         interaction,
         evidence: evidence(
           spanIds,

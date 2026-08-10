@@ -12,6 +12,8 @@ import {
 import type { MatchingSelection } from '../reader/matching';
 import { parseMatchingAnswer } from '../reader/matching';
 import { parseOrderedAnswer } from '../reader/ordering';
+import { isProcessingStage } from '../reader/processing';
+import type { PageProcessingStatus } from '../api/client';
 import type { AnswerResolutionStatus, CorrectionVerdict } from '../state/correction';
 import type { LessonBlock, LessonProjection } from './lesson';
 
@@ -19,7 +21,8 @@ interface Props {
   projection: LessonProjection;
   pageNumber: number;
   pageCount: number;
-  pageStage: string | null;
+  pageStage: PageProcessingStatus | null;
+  failureReason: string | null;
   answers: Record<string, string>;
   matchingSelection: MatchingSelection | null;
   verdictByItem: Record<string, CorrectionVerdict | undefined>;
@@ -159,9 +162,12 @@ function LessonBlockView({ block, index, props }: {
       {block.kind === 'fill-blank' && (
         <div className="lesson-field-stack">
           {block.blanks.map((blank, blankIndex) => (
-            <label className="lesson-field" key={blank.id}>
-              <span>Answer {blankIndex + 1}</span>
+            <div className="lesson-field" key={blank.id}>
+              <label htmlFor={`${blank.id}-answer`}>{block.itemPrompts[blank.id] && block.itemPrompts[blank.id] !== block.prompt
+                ? block.itemPrompts[blank.id]
+                : `Answer ${blankIndex + 1}`}</label>
               <input
+                id={`${blank.id}-answer`}
                 value={props.answers[blank.id] ?? ''}
                 onChange={(event) => props.onAnswerChange(blank.id, event.target.value)}
                 aria-describedby={`${blank.id}-source`}
@@ -169,7 +175,7 @@ function LessonBlockView({ block, index, props }: {
               />
               <small id={`${blank.id}-source`}>From source line {blankIndex + 1}</small>
               {feedback(blank.id)}
-            </label>
+            </div>
           ))}
         </div>
       )}
@@ -178,7 +184,9 @@ function LessonBlockView({ block, index, props }: {
         <div className="lesson-field-stack">
           {block.targets.map((target, targetIndex) => (
             <fieldset className="lesson-choice-set" key={target.id}>
-              <legend>Choice {targetIndex + 1}</legend>
+              <legend>{block.itemPrompts[target.id] && block.itemPrompts[target.id] !== block.prompt
+                ? block.itemPrompts[target.id]
+                : `Choice ${targetIndex + 1}`}</legend>
               {block.group ? (
                 <div className="lesson-option-row">
                   {block.group.options.map((option) => (
@@ -209,7 +217,7 @@ function LessonBlockView({ block, index, props }: {
               <tbody>
                 {block.grid.rows.map((row, rowIndex) => (
                   <tr key={row.id}>
-                    <th scope="row">Statement {rowIndex + 1}</th>
+                    <th scope="row">{block.rowPrompts[row.id] || `Statement ${rowIndex + 1}`}</th>
                     {block.group?.options.map((option) => (
                       <td key={option.id}>
                         <label className="lesson-grid-option">
@@ -219,7 +227,7 @@ function LessonBlockView({ block, index, props }: {
                             checked={props.answers[row.id] === option.id}
                             onChange={() => props.onGridSelect(row.id, option.id)}
                           />
-                          <span className="sr-only">Statement {rowIndex + 1}: {option.label}</span>
+                          <span className="sr-only">{block.rowPrompts[row.id] || `Statement ${rowIndex + 1}`}: {option.label}</span>
                         </label>
                       </td>
                     ))}
@@ -323,16 +331,17 @@ function LessonBlockView({ block, index, props }: {
       })()}
 
       {block.kind === 'free-text' && (
-        <label className="lesson-field lesson-free-text">
-          <span>Your response</span>
+        <div className="lesson-field lesson-free-text">
+          <label htmlFor={`${block.interaction.id}-answer`}>Your response</label>
           <textarea
+            id={`${block.interaction.id}-answer`}
             rows={Math.max(4, Math.min(8, block.interaction.responseLines.length + 2))}
             value={props.answers[block.interaction.id] ?? ''}
             onChange={(event) => props.onAnswerChange(block.interaction.id, event.target.value)}
           />
           <small>Open response. Lexora preserves your work but does not auto-grade it.</small>
           {feedback(block.interaction.id)}
-        </label>
+        </div>
       )}
     </section>
   );
@@ -354,18 +363,21 @@ function PageNavigation({ pageNumber, pageCount, onSelectPage }: Pick<Props, 'pa
 
 export default function InteractiveLesson(props: Props) {
   if (props.projection.status === 'UNAVAILABLE') {
-    const waiting = props.pageStage === 'PROCESSING' || props.pageStage === 'QUEUED';
+    const waiting = isProcessingStage(props.pageStage);
+    const failed = props.pageStage === 'FAILED';
     return (
       <div className="interactive-lesson interactive-unavailable">
         <div className="lesson-state-mark"><BookOpen size={28} aria-hidden="true" /></div>
         <p className="lesson-eyebrow">Interactive mode</p>
-        <h1>{waiting ? 'Building this lesson' : 'This page is not interactive yet'}</h1>
+        <h1>{waiting ? 'Building this lesson' : failed ? 'This lesson could not be built' : 'This page is not interactive yet'}</h1>
         <p>{waiting
           ? 'Lexora is reading the source page. You can keep using Classic mode while processing finishes.'
-          : 'Interactive mode only appears when the source analysis is complete and trustworthy.'}</p>
+          : failed
+            ? props.failureReason || 'Page analysis failed. Retry when the analysis service is available.'
+            : 'Interactive mode only appears when the source analysis is complete and trustworthy.'}</p>
         <div className="lesson-state-actions">
           <button type="button" className="lesson-primary-action" onClick={props.onUseClassic}>Open Classic mode</button>
-          {!waiting && <button type="button" onClick={props.onProcessPage}>Process this page</button>}
+          {!waiting && <button type="button" onClick={props.onProcessPage}>{failed ? 'Retry analysis' : 'Process this page'}</button>}
         </div>
         <PageNavigation {...props} />
       </div>

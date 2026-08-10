@@ -90,6 +90,7 @@ describe('projectLesson', () => {
     expect(blocks[2]).toMatchObject({
       kind: 'fill-blank',
       prompt: 'Wenn ich Zeit hätte?',
+      itemPrompts: { 'blank-1': 'Wenn ich Zeit hätte?', 'blank-2': 'Wenn ich Zeit hätte?' },
       evidence: { interactionIds: ['blank-1', 'blank-2'], detectionMethods: ['horizontal-line-v1', 'short-suffix-line-v1'] },
     });
     expect(blocks[3]).toMatchObject({ kind: 'choice', group: { id: 'choice-group' } });

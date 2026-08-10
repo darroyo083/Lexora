@@ -47,18 +47,21 @@ export interface ContextLessonBlock extends LessonBlockBase {
 export interface FillBlankLessonBlock extends LessonBlockBase {
   kind: 'fill-blank';
   blanks: ExerciseBlank[];
+  itemPrompts: Record<string, string | null>;
 }
 
 export interface ChoiceLessonBlock extends LessonBlockBase {
   kind: 'choice';
   targets: ChoiceTarget[];
   group: ChoiceGroup | null;
+  itemPrompts: Record<string, string | null>;
 }
 
 export interface ChoiceGridLessonBlock extends LessonBlockBase {
   kind: 'choice-grid';
   grid: ChoiceGrid;
   group: ChoiceGroup | null;
+  rowPrompts: Record<string, string | null>;
 }
 
 export interface OrderingLessonBlock extends LessonBlockBase {

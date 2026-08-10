@@ -26,6 +26,7 @@ const projection: LessonProjection = {
         sourceY: 0.2,
         prompt: 'Ergänzen Sie den Satz.',
         blanks: [{ id: 'blank-1', kind: 'fill-in-line', lineBbox: { x: 0.1, y: 0.2, width: 0.3, height: 0.01 }, interactionBbox: { x: 0.1, y: 0.19, width: 0.3, height: 0.03 }, detectionMethod: 'horizontal-line-v1', candidateScore: 0.9, nearbyTextSpanIds: [] }],
+        itemPrompts: { 'blank-1': 'Ich ___ heute hier.' },
         evidence: { spanIds: [], interactionIds: ['blank-1'], bboxes: [], confidence: 0.9, detectionMethods: ['horizontal-line-v1'] },
       }],
     }],
@@ -39,7 +40,8 @@ function props(overrides: Record<string, unknown> = {}) {
     projection,
     pageNumber: 12,
     pageCount: 50,
-    pageStage: 'READY',
+    pageStage: 'READY' as const,
+    failureReason: null,
     answers: { 'blank-1': 'bin' },
     matchingSelection: null,
     verdictByItem: {},
@@ -74,7 +76,7 @@ describe('InteractiveLesson', () => {
     render(<InteractiveLesson {...callbacks} />);
 
     expect(screen.getByRole('heading', { name: 'Satzklammer', level: 1 })).toBeTruthy();
-    fireEvent.change(screen.getByRole('textbox', { name: /Answer 1/i }), { target: { value: 'ist' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Ich ___ heute hier.' }), { target: { value: 'ist' } });
     expect(callbacks.onAnswerChange).toHaveBeenCalledWith('blank-1', 'ist');
 
     fireEvent.click(screen.getByRole('button', { name: 'Reveal' }));
@@ -97,12 +99,24 @@ describe('InteractiveLesson', () => {
   it('offers processing and Classic fallback for unavailable pages', () => {
     const callbacks = props({
       projection: { status: 'UNAVAILABLE', reason: 'ANALYSIS_UNAVAILABLE' },
-      pageStage: 'UNPROCESSED',
+      pageStage: null,
     });
     render(<InteractiveLesson {...callbacks} />);
     fireEvent.click(screen.getByRole('button', { name: 'Process this page' }));
     fireEvent.click(screen.getByRole('button', { name: 'Open Classic mode' }));
     expect(callbacks.onProcessPage).toHaveBeenCalledOnce();
     expect(callbacks.onUseClassic).toHaveBeenCalledOnce();
+  });
+
+  it('shows a failed analysis reason and exposes retry', () => {
+    const callbacks = props({
+      projection: { status: 'UNAVAILABLE', reason: 'ANALYSIS_UNAVAILABLE' },
+      pageStage: 'FAILED',
+      failureReason: 'OCR service timed out.',
+    });
+    render(<InteractiveLesson {...callbacks} />);
+    expect(screen.getByText('OCR service timed out.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry analysis' }));
+    expect(callbacks.onProcessPage).toHaveBeenCalledOnce();
   });
 });

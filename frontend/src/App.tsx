@@ -103,7 +103,9 @@ const SHOW_MATCHING_DETECTION_KEY = 'lexora.showMatchingDetection';
 const SHOW_FREE_TEXT_DETECTION_KEY = 'lexora.showFreeTextDetection';
 
 export default function App() {
-  const [devMode, setDevMode] = useState<boolean>(readDevModePreference);
+  const [devMode, setDevMode] = useState<boolean>(() => (
+    import.meta.env.DEV && readDevModePreference()
+  ));
 
   const [status, setStatus] = useState<Status>(() => (
     localStorage.getItem(CURRENT_BOOK_KEY) ? 'restoring' : 'idle'
@@ -206,6 +208,7 @@ export default function App() {
   }, []);
 
   const handleToggleDevMode = useCallback(() => {
+    if (!import.meta.env.DEV) return;
     setDevMode((curr) => {
       const next = !curr;
       writeDevModePreference(next);
@@ -361,7 +364,7 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Toggle Dev Mode via Ctrl+Shift+D or Cmd+Shift+D
-      if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'D' || event.key === 'd')) {
+      if (import.meta.env.DEV && (event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'D' || event.key === 'd')) {
         event.preventDefault();
         handleToggleDevMode();
         return;

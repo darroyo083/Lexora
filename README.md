@@ -120,7 +120,7 @@ $env:LEXORA_HTTP_PORT = '8088' # optional; defaults to 8088
 docker compose -f compose.production.yml up -d --build --wait
 ```
 
-Open <http://localhost:8088>. Nginx serves the SPA, forwards `/api/*` to Spring Boot, allows workbook uploads up to 100 MB, and retains a five-minute processing timeout. Persistent data lives in the production Compose project's named PostgreSQL, model-cache, and workbook-storage volumes.
+Open <http://localhost:8088>. The default binding is loopback-only so local workbooks are not exposed to the network. Nginx serves the SPA, forwards `/api/*` to Spring Boot, allows workbook uploads up to 100 MB, and retains a five-minute processing timeout. Persistent data lives in the production Compose project's named PostgreSQL, model-cache, and workbook-storage volumes. A deliberate network deployment must set `LEXORA_BIND_ADDRESS` and place authentication/TLS controls at its trusted reverse proxy; do not expose a private workbook through an unauthenticated public endpoint.
 
 Inspect or stop this topology without affecting the development stack:
 
@@ -152,6 +152,7 @@ $env:LEXORA_E2E_GRID_PAGE = '<choice-grid-page>'
 $env:LEXORA_E2E_ORDERING_PAGE = '<ordering-page>'
 $env:LEXORA_E2E_MATCHING_PAGE = '<matching-page>'
 $env:LEXORA_E2E_FREE_TEXT_PAGE = '<free-text-page>'
+$env:LEXORA_E2E_UNSUPPORTED_PAGE = '<page-without-supported-analysis>'
 npm run test:e2e:full-stack
 ```
 

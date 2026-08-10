@@ -299,7 +299,7 @@ export default function ReaderToolbar({
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
 
-        <button
+        {import.meta.env.DEV && <button
           type="button"
           className={`dev-toggle-btn ${devMode ? 'active' : ''}`}
           title={`Developer Mode (${devMode ? 'ON' : 'OFF'}) — Ctrl+Shift+D`}
@@ -312,7 +312,7 @@ export default function ReaderToolbar({
             <path d="m14.5 4-5 16" />
           </svg>
           <span className="dev-toggle-badge">{devMode ? 'DEV ON' : 'DEV'}</span>
-        </button>
+        </button>}
       </div>
     </>
   );

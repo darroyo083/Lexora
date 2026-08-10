@@ -176,7 +176,7 @@ export default function RightRail({
           {totalExercises > 0 && <span className="tab-count">{totalExercises}</span>}
         </button>
 
-        {devMode && (
+        {import.meta.env.DEV && devMode && (
           <button
             type="button"
             role="tab"
@@ -523,7 +523,7 @@ export default function RightRail({
           </div>
         )}
 
-        {devMode && activeTab === 'dev' && (
+        {import.meta.env.DEV && devMode && activeTab === 'dev' && (
           <div className="dev-view">
             <div className="dev-section">
               <h4>Detection Overlays</h4>

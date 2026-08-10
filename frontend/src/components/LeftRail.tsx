@@ -32,7 +32,7 @@ export default function LeftRail({ devMode, onToggleDevMode }: Props) {
         </nav>
       </div>
 
-      <div className="rail-bottom">
+      {import.meta.env.DEV && <div className="rail-bottom">
         <button
           type="button"
           className={`rail-item dev-mode-toggle ${devMode ? 'active' : ''}`}
@@ -47,7 +47,7 @@ export default function LeftRail({ devMode, onToggleDevMode }: Props) {
           </svg>
           <span className="rail-item-label">Dev</span>
         </button>
-      </div>
+      </div>}
     </aside>
   );
 }

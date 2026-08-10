@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
 const requiredEnvironment = [
   'LEXORA_E2E_BOOK_ID',
@@ -8,6 +8,7 @@ const requiredEnvironment = [
   'LEXORA_E2E_ORDERING_PAGE',
   'LEXORA_E2E_MATCHING_PAGE',
   'LEXORA_E2E_FREE_TEXT_PAGE',
+  'LEXORA_E2E_UNSUPPORTED_PAGE',
 ] as const;
 
 function environment(name: typeof requiredEnvironment[number]): string {
@@ -25,6 +26,28 @@ const representativePages = {
   'free-text': Number(environment('LEXORA_E2E_FREE_TEXT_PAGE')),
 } as const;
 const resolvedPage = Number(environment('LEXORA_E2E_RESOLVED_PAGE'));
+const unsupportedPage = Number(environment('LEXORA_E2E_UNSUPPORTED_PAGE'));
+
+interface CorrectionResponse {
+  slots: Array<{
+    interactionKind: string;
+    resolution: string;
+    entry: { expectedValue: string } | null;
+  }>;
+}
+
+async function resolvedFillAnswer(request: APIRequestContext): Promise<string> {
+  const response = await request.get(`/api/books/${bookId}/pages/${resolvedPage}/correction`);
+  expect(response.ok()).toBe(true);
+  const correction = await response.json() as CorrectionResponse;
+  const slot = correction.slots.find((candidate) => (
+    candidate.interactionKind === 'fill-in-line'
+    && candidate.resolution === 'RESOLVED'
+    && candidate.entry?.expectedValue
+  ));
+  if (!slot?.entry) throw new Error('The configured resolved page needs an authoritative FillBlank slot.');
+  return slot.entry.expectedValue;
+}
 
 async function openBook(page: Page, pageNumber: number) {
   await page.addInitScript(({ persistedBookId, persistedPage }) => {
@@ -77,6 +100,61 @@ test('renders every representative native interaction family from real persisted
 
   for (const [kind, pageNumber] of Object.entries(representativePages)) {
     await goToPage(page, pageNumber);
-    await expect(page.locator(`.lesson-exercise[data-kind="${kind}"]`).first()).toBeVisible();
+    const exercise = page.locator(`.lesson-exercise[data-kind="${kind}"]`).first();
+    await expect(exercise).toBeVisible();
+    if (kind === 'choice' || kind === 'choice-grid') {
+      const option = exercise.getByRole('radio').first();
+      await option.locator('..').click();
+      await expect(option).toBeChecked();
+    } else if (kind === 'sentence-ordering') {
+      const token = exercise.locator('.lesson-token').first();
+      await token.click();
+      await expect(token).toHaveAttribute('aria-pressed', 'true');
+    } else if (kind === 'matching') {
+      const columns = exercise.locator('.lesson-matching-columns > div');
+      const left = columns.nth(0).locator('.lesson-match-item').first();
+      const right = columns.nth(1).locator('.lesson-match-item').first();
+      await left.click();
+      await right.click();
+      await expect(exercise.locator('.lesson-pairs')).toBeVisible();
+    } else if (kind === 'free-text') {
+      const response = exercise.getByRole('textbox');
+      await response.fill('Full-stack learner response');
+      await expect(response).toHaveValue('Full-stack learner response');
+    }
   }
+});
+
+test('keeps Classic navigation, overlays, interactions, and correction authoritative', async ({ page, request }) => {
+  const expected = await resolvedFillAnswer(request);
+  await openBook(page, resolvedPage);
+  await expect(page.locator('.lesson-context').first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Classic' }).click();
+  await expect(page.locator('.interactive-lesson')).toHaveCount(0);
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
+  const overlayInput = page.locator('.page-overlay .blank-input').first();
+  await overlayInput.fill(expected);
+  await expect(overlayInput).toHaveValue(expected);
+  await page.getByRole('button', { name: /Check answers/ }).click();
+  await expect(page.getByText('Correct', { exact: true }).first()).toBeVisible();
+
+  const pageInput = page.locator('input.page-input');
+  await pageInput.fill(String(resolvedPage + 1));
+  await expect(pageInput).toHaveValue(String(resolvedPage + 1));
+  await expect(page.locator('canvas')).toBeVisible();
+  await pageInput.fill(String(resolvedPage));
+  await expect(pageInput).toHaveValue(String(resolvedPage));
+  await expect(page.locator('.page-overlay .blank-input').first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Interactive' }).click();
+  await expect(page.locator('.interactive-lesson')).toBeVisible();
+});
+
+test('navigates to unsupported content and returns through the real Classic fallback', async ({ page }) => {
+  await openBook(page, resolvedPage);
+  await goToPage(page, unsupportedPage);
+  await expect(page.getByRole('heading', { name: 'This page is not interactive yet' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Classic mode' }).click();
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
 });

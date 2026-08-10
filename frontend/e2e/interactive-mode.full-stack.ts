@@ -60,7 +60,7 @@ async function openBook(page: Page, pageNumber: number) {
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('This page is not interactive yet');
 }
 
-async function goToPage(page: Page, pageNumber: number) {
+async function goToPage(page: Page, pageNumber: number, expectAvailable = true) {
   await page.evaluate(() => localStorage.removeItem('lexora.lessonProgress.v1'));
   const pageInput = page.locator('input.page-input');
   if (await pageInput.inputValue() === String(pageNumber)) {
@@ -72,6 +72,7 @@ async function goToPage(page: Page, pageNumber: number) {
   await expect(pageInput).toHaveValue(String(pageNumber));
   await expect.poll(() => page.evaluate(() => localStorage.getItem('lexora.currentPage'))).toBe(String(pageNumber));
   await expect(page.locator('.interactive-lesson')).toBeVisible();
+  if (expectAvailable) await expect(page.locator('.lesson-player')).toBeVisible();
 }
 
 async function completeCurrentStep(page: Page) {
@@ -217,7 +218,7 @@ test('keeps Classic navigation, overlays, interactions, and correction authorita
 
 test('navigates to unsupported content and returns through the real Classic fallback', async ({ page }) => {
   await openBook(page, resolvedPage);
-  await goToPage(page, unsupportedPage);
+  await goToPage(page, unsupportedPage, false);
   await expect(page.getByRole('heading', { name: 'Turn this page into a guided lesson' })).toBeVisible();
   await page.getByRole('button', { name: 'Open Classic' }).click();
   await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });

@@ -43,6 +43,46 @@ function fakePdfFile(): File {
   return new File(['fake pdf bytes'], 'buch.pdf', { type: 'application/pdf' });
 }
 
+function readyPage(pageNumber: number, blankId = `blank-${pageNumber}`) {
+  return {
+    id: `page-${pageNumber}`,
+    bookId: 'book-a',
+    pageNumber,
+    processingStatus: 'READY',
+    failureReason: null,
+    analysis: JSON.stringify({
+      schemaVersion: '0.2.0', pageNumber, width: 1200, height: 1600, language: 'de',
+      textSpans: [{ id: `prompt-${pageNumber}`, text: `Lesson page ${pageNumber} has enough source context for this exercise.`, confidence: 0.99, confidenceScope: 'line', bbox: { x: 0.1, y: 0.2, width: 0.6, height: 0.03 } }],
+      exerciseBlanks: [{ id: blankId, kind: 'fill-in-line', lineBbox: { x: 0.3, y: 0.3, width: 0.2, height: 0.002 }, interactionBbox: { x: 0.3, y: 0.28, width: 0.2, height: 0.03 }, detectionMethod: 'horizontal-line-v1', candidateScore: 0.95, nearbyTextSpanIds: [`prompt-${pageNumber}`] }],
+      blankDetection: null, choiceGroups: [], choiceTargets: [], choiceDetection: null,
+      choiceGrids: [], choiceGridDetection: null, sentenceOrderings: [], sentenceOrderingDetection: null,
+      matchingInteractions: [], matchingDetection: null, freeTextInteractions: [], freeTextDetection: null,
+      processor: { engine: 'test', processedAt: '2026-08-10T00:00:00Z' },
+    }),
+  };
+}
+
+function answerKey() {
+  return {
+    id: 'key-a', bookId: 'book-a', extractionMethod: 'test', parserVersion: '1', sourcePageRange: '1-2',
+    extractionStatus: 'READY', failureReason: null, extractedAt: '2026-08-10T00:00:00Z', entryCount: 2, entries: [],
+  };
+}
+
+function correction(pageNumber: number, resolution: 'RESOLVED' | 'AMBIGUOUS' | 'UNMAPPED' = 'RESOLVED') {
+  return {
+    bookId: 'book-a', pageNumber, unitNumber: pageNumber, unitTitle: `Unit ${pageNumber}`, status: resolution,
+    slots: [{
+      interactionKind: 'fill-in-line', ordinal: 0, resolution,
+      entry: resolution === 'RESOLVED' ? {
+        pageNumber, interactionKind: 'fill-in-line', ordinal: 0, expectedValue: `answer-${pageNumber}`,
+        alternatives: [], caseSensitive: false, punctuationRequired: false, normalizationMode: 'strict',
+        rawSolutionText: `answer-${pageNumber}`, confidence: 1, mappingWarnings: [],
+      } : null,
+    }],
+  };
+}
+
 function pageInput(): HTMLInputElement {
   return document.querySelector('input.page-input') as HTMLInputElement;
 }
@@ -186,7 +226,7 @@ describe('navigation state identity', () => {
       const url = String(input);
       const method = init?.method ?? 'GET';
       if (method === 'POST' && url === '/api/books') return uploadReq.promise;
-      if (url === '/api/books/book-a/pages') return pagesReq.promise;
+      if (url === '/api/books/book-a/pages/1') return pagesReq.promise;
       return Promise.reject(new Error(`Unexpected fetch: ${method} ${url}`));
     }));
     return uploadReq;
@@ -275,7 +315,7 @@ describe('navigation state identity', () => {
       const url = String(input);
       const method = init?.method ?? 'GET';
       if (method === 'POST' && url === '/api/books') return uploadReq.promise;
-      if (url === '/api/books/book-a/pages') return pagesReq.promise;
+      if (url === '/api/books/book-a/pages/1') return pagesReq.promise;
       return Promise.reject(new Error(`Unexpected fetch: ${method} ${url}`));
     }));
     render(<App />);
@@ -312,18 +352,100 @@ describe('navigation state identity', () => {
       processor: {},
     });
     await act(async () => {
-      pagesReq.resolve(jsonResponse([{
+      pagesReq.resolve(jsonResponse({
         id: 'page-1',
         bookId: 'book-a',
         pageNumber: 1,
         processingStatus: 'FAILED',
         analysis: retainedAnalysis,
         failureReason: 'OCR unavailable',
-      }]));
+      }));
     });
 
     await waitFor(() => expect(document.querySelector('.blank-input')).toBeTruthy());
     expect(screen.getByText(/Failed\. Retry is available/i)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+  });
+});
+
+describe('request recovery and correction isolation', () => {
+  it('recovers from an upload network failure instead of remaining busy', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))));
+    render(<App />);
+    fireEvent.change(uploadInput(), { target: { files: [fakePdfFile()] } });
+    expect((await screen.findByRole('alert')).textContent).toMatch(/could not be uploaded/i);
+    expect(screen.queryByText('Uploading...')).toBeNull();
+  });
+
+  it('shows retryable page and correction request errors', async () => {
+    localStorage.setItem('lexora.currentBookId', 'book-a');
+    localStorage.setItem('lexora.currentPage', '1');
+    localStorage.setItem('lexora.readerMode.v1', 'interactive');
+    let pageAttempts = 0;
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/books/book-a') return Promise.resolve(jsonResponse({ id: 'book-a', pageCount: 2 }));
+      if (url === '/api/books/book-a/pages/1') {
+        pageAttempts += 1;
+        return pageAttempts === 1 ? Promise.reject(new Error('offline')) : Promise.resolve(jsonResponse(readyPage(1)));
+      }
+      if (url === '/api/books/book-a/answer-key') return Promise.resolve(jsonResponse(answerKey()));
+      if (url === '/api/books/book-a/pages/1/correction') return Promise.reject(new Error('offline'));
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    }));
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry loading' }));
+    expect(await screen.findByRole('textbox', { name: 'Answer 1' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Retry correction data' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Check answers' })).toBeNull();
+  });
+
+  it('clears old correction authority before navigating to a new page', async () => {
+    localStorage.setItem('lexora.currentBookId', 'book-a');
+    localStorage.setItem('lexora.currentPage', '1');
+    localStorage.setItem('lexora.readerMode.v1', 'interactive');
+    const pageTwoCorrection = deferred<Response>();
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/books/book-a') return Promise.resolve(jsonResponse({ id: 'book-a', pageCount: 2 }));
+      if (url === '/api/books/book-a/pages/1') return Promise.resolve(jsonResponse(readyPage(1)));
+      if (url === '/api/books/book-a/pages/2') return Promise.resolve(jsonResponse(readyPage(2)));
+      if (url === '/api/books/book-a/answer-key') return Promise.resolve(jsonResponse(answerKey()));
+      if (url === '/api/books/book-a/pages/1/correction') return Promise.resolve(jsonResponse(correction(1)));
+      if (url === '/api/books/book-a/pages/2/correction') return pageTwoCorrection.promise;
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    }));
+
+    render(<App />);
+    expect((await screen.findByRole('button', { name: 'Check answers' }) as HTMLButtonElement).disabled).toBe(false);
+    const nextPage = screen.getByRole('button', { name: 'Next Page' });
+    fireEvent.mouseDown(nextPage);
+    fireEvent.mouseUp(nextPage);
+    await waitFor(() => expect(pageInput().value).toBe('2'));
+    expect(await screen.findByRole('textbox', { name: 'Answer 1' })).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Check answers' }) as HTMLButtonElement).disabled).toBe(true);
+
+    await act(async () => pageTwoCorrection.resolve(jsonResponse(correction(2))));
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Check answers' }) as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it('preserves an AMBIGUOUS backend slot through the App correction flow', async () => {
+    localStorage.setItem('lexora.currentBookId', 'book-a');
+    localStorage.setItem('lexora.currentPage', '1');
+    localStorage.setItem('lexora.readerMode.v1', 'interactive');
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/books/book-a') return Promise.resolve(jsonResponse({ id: 'book-a', pageCount: 1 }));
+      if (url === '/api/books/book-a/pages/1') return Promise.resolve(jsonResponse(readyPage(1)));
+      if (url === '/api/books/book-a/answer-key') return Promise.resolve(jsonResponse(answerKey()));
+      if (url === '/api/books/book-a/pages/1/correction') return Promise.resolve(jsonResponse(correction(1, 'AMBIGUOUS')));
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    }));
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Check answers' }));
+    expect(await screen.findByText(/answer key is ambiguous/i)).toBeTruthy();
+    expect(screen.queryByText('Correct')).toBeNull();
   });
 });

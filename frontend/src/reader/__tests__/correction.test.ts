@@ -345,6 +345,27 @@ describe('FreeText NOT_AUTO_GRADABLE', () => {
 });
 
 describe('AMBIGUOUS regression: unresolvable expected label', () => {
+  it('preserves an AMBIGUOUS backend slot without an answer entry', () => {
+    const result = computeCorrectionMap({
+      blanks: [{
+        id: 'b1',
+        blank: { kind: 'fill-in-line' },
+        learnerValue: 'guess',
+        entry: undefined,
+        sourceResolution: AnswerResolutionStatus.AMBIGUOUS,
+      }],
+      choices: [],
+      choiceGroups: {},
+      grids: [],
+      orderings: [],
+      matchings: [],
+      freeTexts: [],
+    });
+
+    expect(result.verdictByItem.b1).toBeUndefined();
+    expect(result.resolutionByItem.b1).toBe(AnswerResolutionStatus.AMBIGUOUS);
+  });
+
   it('Choice with unresolvable expected label has no verdict, resolution AMBIGUOUS', () => {
     const entry = makeEntry({ expectedValue: 'Z', interactionKind: 'choice' });
     const result = compareChoice({

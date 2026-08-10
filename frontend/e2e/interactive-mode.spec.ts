@@ -77,7 +77,10 @@ async function mockWorkbook(page: Page, mode: 'classic' | 'interactive') {
     if (url.pathname === `/api/books/${BOOK_ID}/source`) {
       return route.fulfill({ status: 200, contentType: 'application/pdf', body: tinyPdf() });
     }
-    if (url.pathname === `/api/books/${BOOK_ID}/pages`) return json(route, [pageOne]);
+    if (url.pathname === `/api/books/${BOOK_ID}/pages/1`) return json(route, pageOne);
+    if (url.pathname === `/api/books/${BOOK_ID}/pages/2`) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+    }
     if (url.pathname === `/api/books/${BOOK_ID}/answer-key`) {
       return json(route, { id: 'key-1', bookId: BOOK_ID, extractionMethod: 'fixture', parserVersion: '1', sourcePageRange: '2', extractionStatus: 'READY', failureReason: null, extractedAt: 'now', entryCount: 1, entries: [] });
     }

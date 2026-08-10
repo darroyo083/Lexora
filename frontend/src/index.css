@@ -2965,7 +2965,7 @@ html, body, #root {
 }
 
 .reader-mode-switch button {
-  min-height: 28px;
+  min-height: 40px;
   padding: 0 10px;
   border: 0;
   border-radius: var(--radius-sm);
@@ -3265,7 +3265,7 @@ html, body, #root {
 .lesson-choice-grid td { height: 48px; padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); text-align: center; }
 .lesson-choice-grid th:first-child { text-align: left; }
 .lesson-choice-grid thead th { color: var(--text-tertiary); font: 11px/1 var(--font-mono); text-transform: uppercase; }
-.lesson-grid-option { position: relative; display: inline-grid; width: 32px; height: 32px; place-items: center; cursor: pointer; }
+.lesson-grid-option { position: relative; display: inline-grid; width: 40px; height: 40px; place-items: center; cursor: pointer; }
 .lesson-grid-option::after { content: ''; width: 16px; height: 16px; border: 1px solid var(--border-strong); border-radius: 50%; }
 .lesson-grid-option:has(input:checked)::after { border: 5px solid var(--accent-primary); }
 .lesson-grid-option:has(input:focus-visible) { outline: 2px solid var(--border-focus); outline-offset: 2px; }
@@ -3298,7 +3298,7 @@ html, body, #root {
 .lesson-match-item { width: 100%; justify-content: flex-start; text-align: left; cursor: pointer; }
 .lesson-match-item[data-paired="true"] { border-color: var(--accent-primary); }
 .lesson-pairs { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
-.lesson-pairs button { min-height: 34px; padding: 0 10px; border: 1px solid var(--border-subtle); background: transparent; color: var(--text-secondary); cursor: pointer; }
+.lesson-pairs button { min-height: 40px; padding: 0 10px; border: 1px solid var(--border-subtle); background: transparent; color: var(--text-secondary); cursor: pointer; }
 .lesson-pairs button span { margin: 0 5px; color: var(--accent-primary); }
 .lesson-pairs .lesson-reset-link { border-color: transparent; color: var(--text-tertiary); text-decoration: underline; }
 
@@ -3323,7 +3323,7 @@ html, body, #root {
 .lesson-feedback[data-verdict="partially_correct"] { border-color: var(--correction-err); background: var(--correction-err-soft); }
 .lesson-expected { display: block; margin-top: 4px; color: var(--text-primary); }
 .lesson-feedback-actions { display: flex; gap: 6px; flex: none; }
-.lesson-feedback-actions button { display: inline-flex; min-height: 32px; align-items: center; gap: 5px; padding: 0 8px; border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-primary); font-size: 11px; cursor: pointer; }
+.lesson-feedback-actions button { display: inline-flex; min-height: 40px; align-items: center; gap: 5px; padding: 0 10px; border: 1px solid var(--border-subtle); background: var(--bg-surface); color: var(--text-primary); font-size: 11px; cursor: pointer; }
 
 .lesson-completion-bar {
   display: flex;
@@ -3355,6 +3355,54 @@ html, body, #root {
 .lesson-state-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
 .lesson-state-actions button { padding: 0 16px; }
 .interactive-unavailable .lesson-page-nav { width: 100%; margin-top: 48px; }
+
+.reader-request-alert,
+.reader-page-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--correction-err);
+  background: var(--correction-err-soft);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.reader-request-alert button,
+.reader-page-warning button,
+.reader-source-error button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.reader-page-warning {
+  position: absolute;
+  z-index: 8;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  border: 1px solid var(--correction-err);
+}
+
+.reader-source-error {
+  display: flex;
+  min-height: 420px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.reader-source-error h1 { margin: 0; color: var(--text-primary); font-size: 24px; }
+.reader-source-error p { max-width: 52ch; margin: 0; }
 
 @media (max-width: 1180px) {
   .app[data-design="stitch"] .reader-toolbar { height: auto; min-height: 48px; padding: 7px 12px; }

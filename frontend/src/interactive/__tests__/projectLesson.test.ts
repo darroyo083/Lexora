@@ -119,6 +119,30 @@ describe('projectLesson', () => {
     expect(result.status === 'AVAILABLE' ? result.lesson.title : null).toBe('Konjunktiv II');
   });
 
+  it('fails closed for sparse text-only analysis that may contain missed exercises', () => {
+    const source = analysis({
+      textSpans: [
+        { id: 'prompt', text: 'ErgÃ¤nzen Sie.', confidence: 0.97, confidenceScope: 'line', bbox: box(0.1, 0.2) },
+      ],
+      exerciseBlanks: [], choiceTargets: [], choiceGrids: [], sentenceOrderings: [], matchingInteractions: [], freeTextInteractions: [],
+    });
+    expect(projectLesson({ bookId: 'book-1', pageNumber: 12, analysis: source })).toEqual({
+      status: 'UNAVAILABLE',
+      reason: 'NO_MEANINGFUL_CONTENT',
+    });
+  });
+
+  it('keeps substantial source-backed theory available without exercises', () => {
+    const source = analysis({
+      textSpans: [
+        { id: 'theory-1', text: 'Der Konjunktiv II beschreibt irreale Bedingungen, hÃ¶fliche Bitten und WÃ¼nsche in der deutschen Sprache.', confidence: 0.97, confidenceScope: 'line', bbox: box(0.1, 0.2, 0.8) },
+        { id: 'theory-2', text: 'Die Formen werden hÃ¤ufig mit wÃ¼rde und dem Infinitiv gebildet; einige Verben besitzen eigene Formen.', confidence: 0.96, confidenceScope: 'line', bbox: box(0.1, 0.25, 0.8) },
+      ],
+      exerciseBlanks: [], choiceTargets: [], choiceGrids: [], sentenceOrderings: [], matchingInteractions: [], freeTextInteractions: [],
+    });
+    expect(projectLesson({ bookId: 'book-1', pageNumber: 12, analysis: source }).status).toBe('AVAILABLE');
+  });
+
   it.each([
     ['missing analysis', null, 12, 'ANALYSIS_UNAVAILABLE'],
     ['wrong source page', analysis(), 99, 'SOURCE_MISMATCH'],

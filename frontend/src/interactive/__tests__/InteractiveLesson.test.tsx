@@ -42,6 +42,8 @@ function props(overrides: Record<string, unknown> = {}) {
     pageCount: 50,
     pageStage: 'READY' as const,
     failureReason: null,
+    pageLoadError: null,
+    correctionLoadError: null,
     answers: { 'blank-1': 'bin' },
     matchingSelection: null,
     verdictByItem: {},
@@ -52,6 +54,8 @@ function props(overrides: Record<string, unknown> = {}) {
     canCheck: true,
     onSelectPage: vi.fn(),
     onProcessPage: vi.fn(),
+    onRetryPageLoad: vi.fn(),
+    onRetryCorrectionLoad: vi.fn(),
     onUseClassic: vi.fn(),
     onAnswerChange: vi.fn(),
     onChoiceSelect: vi.fn(),
@@ -118,5 +122,22 @@ describe('InteractiveLesson', () => {
     expect(screen.getByText('OCR service timed out.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Retry analysis' }));
     expect(callbacks.onProcessPage).toHaveBeenCalledOnce();
+  });
+
+  it('shows retryable page and correction request failures', () => {
+    const pageCallbacks = props({
+      projection: { status: 'UNAVAILABLE', reason: 'ANALYSIS_UNAVAILABLE' },
+      pageLoadError: 'This page could not be loaded.',
+    });
+    const { unmount } = render(<InteractiveLesson {...pageCallbacks} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Retry loading' }));
+    expect(pageCallbacks.onRetryPageLoad).toHaveBeenCalledOnce();
+    unmount();
+
+    const correctionCallbacks = props({ correctionLoadError: 'Correction data could not be loaded.' });
+    render(<InteractiveLesson {...correctionCallbacks} />);
+    expect(screen.queryByRole('button', { name: 'Check answers' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry correction data' }));
+    expect(correctionCallbacks.onRetryCorrectionLoad).toHaveBeenCalledOnce();
   });
 });

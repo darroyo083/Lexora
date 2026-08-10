@@ -29,6 +29,7 @@ interface PositionedBlock {
 const MIN_SOURCE_CONFIDENCE = 0.55;
 const CONTEXT_GAP = 0.036;
 const INTERACTION_GAP = 0.055;
+const MIN_STANDALONE_CONTEXT_CHARS = 120;
 
 function top(bbox: BBox): number {
   return bbox.y;
@@ -436,6 +437,18 @@ function interactionCount(blocks: LessonBlock[]): number {
   }, 0);
 }
 
+function hasMeaningfulStandaloneContext(contexts: PositionedBlock[]): boolean {
+  const sourceBackedText = contexts
+    .map(({ block }) => block)
+    .filter((block): block is ContextLessonBlock => block.kind === 'context')
+    .filter((block) => block.variant === 'theory' || block.variant === 'example')
+    .flatMap((block) => block.paragraphs)
+    .map((paragraph) => paragraph.text.trim())
+    .filter(Boolean);
+  return sourceBackedText.length >= 2
+    && sourceBackedText.join(' ').length >= MIN_STANDALONE_CONTEXT_CHARS;
+}
+
 export function projectLesson({
   bookId,
   pageNumber,
@@ -449,6 +462,9 @@ export function projectLesson({
 
   const interactions = interactionBlocks(analysis);
   const contexts = contextBlocks(analysis, interactions);
+  if (interactions.length === 0 && !hasMeaningfulStandaloneContext(contexts)) {
+    return { status: 'UNAVAILABLE', reason: 'NO_MEANINGFUL_CONTENT' };
+  }
   const blocks = [...contexts, ...interactions]
     .sort((a, b) => a.sourceY - b.sourceY || a.block.id.localeCompare(b.block.id))
     .map(({ block }) => block);

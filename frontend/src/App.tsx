@@ -32,7 +32,6 @@ import { currentPageStage, isCurrentPageProcessing, isProcessingStage, processLa
 import { useProcessingRecoveryTracker } from './reader/useProcessingRecovery';
 import {
   getBookPage,
-  getBookPages,
   getPageProcessAction,
   processBookPage,
   type BookPageResource,
@@ -58,6 +57,7 @@ import {
   fetchPageCorrection,
   type AnswerKey,
   type CorrectionSlot,
+  type PageCorrectionResolution,
 } from './api/correction';
 import { computeCorrectionMap, parseMatchingPairsFromEntry } from './reader/correction';
 import {
@@ -155,9 +155,14 @@ export default function App() {
   const [theme, setTheme] = useState<ThemeMode>(() => readThemeModePreference());
   const [readerMode, setReaderMode] = useState<ReaderMode>(readReaderMode);
   const [answerKey, setAnswerKey] = useState<AnswerKey | null>(null);
-  const [pageUnitNumber, setPageUnitNumber] = useState<number | null>(null);
-  const [pageUnitTitle, setPageUnitTitle] = useState<string | null>(null);
-  const [correctionSlots, setCorrectionSlots] = useState<CorrectionSlot[]>([]);
+  const [pageCorrection, setPageCorrection] = useState<PageCorrectionResolution | null>(null);
+  const [pageLoadError, setPageLoadError] = useState<string | null>(null);
+  const [correctionLoadError, setCorrectionLoadError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [sourceLoadError, setSourceLoadError] = useState<string | null>(null);
+  const [pageReloadNonce, setPageReloadNonce] = useState(0);
+  const [correctionReloadNonce, setCorrectionReloadNonce] = useState(0);
+  const [sourceReloadNonce, setSourceReloadNonce] = useState(0);
   const [correctionVerdicts, setCorrectionVerdicts] = useState<Record<string, CorrectionVerdict | undefined>>({});
   const [correctionResolutions, setCorrectionResolutions] = useState<Record<string, AnswerResolutionStatus>>({});
   const [correctionDetails, setCorrectionDetails] = useState<Record<string, { correctCount: number; totalCount: number }>>({});
@@ -171,6 +176,19 @@ export default function App() {
   const uploadTokenRef = useRef(0);
   const correctionCheckRef = useRef<() => void>(() => {});
   activePage.current = selectedPage;
+
+  const currentAnswerKey = answerKey?.bookId === book?.id ? answerKey : null;
+  const currentPageCorrection = pageCorrection !== null
+    && pageCorrection.bookId === book?.id
+    && pageCorrection.pageNumber === selectedPage
+    ? pageCorrection
+    : null;
+  const correctionSlots: CorrectionSlot[] = currentPageCorrection?.slots ?? [];
+  const pageUnitNumber = currentPageCorrection?.unitNumber ?? null;
+  const pageUnitTitle = currentPageCorrection?.unitTitle ?? null;
+  const correctionReady = currentAnswerKey !== null
+    && currentPageCorrection !== null
+    && correctionLoadError === null;
 
   const handleToggleTheme = useCallback(() => {
     setTheme((curr) => {
@@ -311,11 +329,31 @@ export default function App() {
     if (nextPage === activePage.current) return;
     flushPendingAnswers();
     clearPageInteraction();
+    setPageCorrection(null);
+    setPageLoadError(null);
+    setCorrectionLoadError(null);
     const bookId = bookIdRef.current;
     if (bookId) setRotation(readPageRotation(bookId, nextPage));
     setSelectedPage(nextPage);
     localStorage.setItem(CURRENT_PAGE_KEY, String(nextPage));
   }, [clearPageInteraction, flushPendingAnswers]);
+
+  const loadAnswerKey = useCallback(async (bookId: string, signal?: AbortSignal) => {
+    try {
+      const key = await fetchAnswerKey(bookId, signal);
+      setAnswerKey(key);
+      setCorrectionLoadError(null);
+    } catch (error) {
+      const requestError = error as Error & { name?: string; status?: number };
+      if (requestError.name === 'AbortError') return;
+      setAnswerKey(null);
+      if (requestError.status === 404) {
+        setCorrectionLoadError(null);
+      } else {
+        setCorrectionLoadError('Correction data could not be loaded. Your answers are safe; try again before checking them.');
+      }
+    }
+  }, []);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -375,84 +413,92 @@ export default function App() {
       const restoreToken = uploadTokenRef.current;
       setStatus('restoring');
       try {
-        const [bookRes, sourceRes, pages] = await Promise.all([
-          fetch(`/api/books/${bookId}`),
-          fetch(`/api/books/${bookId}/source`),
-          getBookPages(bookId),
-        ]);
+        const bookRes = await fetch(`/api/books/${bookId}`);
         if (uploadTokenRef.current !== restoreToken) return;
-        if (!bookRes.ok || !sourceRes.ok) throw new Error('Stored book is unavailable');
+        if (!bookRes.ok) throw new Error('Stored book is unavailable');
 
         const storedBook: BookInfo = await bookRes.json();
-        const restoredPage = Math.min(selectedPage, storedBook.pageCount);
+        const restoredPage = Math.min(activePage.current, storedBook.pageCount);
         if (uploadTokenRef.current !== restoreToken) return;
         setSelectedPage(restoredPage);
         localStorage.setItem(CURRENT_PAGE_KEY, String(restoredPage));
         setBook(storedBook);
-        setPdfData(await sourceRes.arrayBuffer());
+        setPdfData(null);
         setRotation(readPageRotation(storedBook.id, restoredPage));
-        showPage(pages.find((candidate) => candidate.pageNumber === restoredPage) ?? null, storedBook.id);
         setStatus('ready');
-
-        fetchAnswerKey(storedBook.id)
-          .then((key) => setAnswerKey(key))
-          .catch((err) => {
-            if (err.status !== 404) console.warn('Answer key fetch failed:', err);
-          });
+        void loadAnswerKey(storedBook.id);
       } catch (error) {
         if (uploadTokenRef.current !== restoreToken) return;
         localStorage.removeItem(CURRENT_BOOK_KEY);
         setStatus('idle');
-        console.error('Restore failed:', error);
+        setUploadError('The saved workbook could not be reopened. Upload it again to continue.');
       }
     };
 
     void restore();
-  }, []);
+  }, [loadAnswerKey]);
 
   useEffect(() => {
     if (!book || status === 'restoring') return;
 
     const controller = new AbortController();
     clearPageInteraction();
+    setPageLoadError(null);
 
-    void getBookPages(book.id, controller.signal)
-      .then((pages) => {
-        const persisted = pages.find((candidate) => candidate.pageNumber === selectedPage);
-        showPage(persisted ?? null, book.id);
+    void getBookPage(book.id, selectedPage, controller.signal)
+      .then((persisted) => {
+        showPage(persisted, book.id);
       })
       .catch((error) => {
-        if (error.name !== 'AbortError') console.error('Page loading failed:', error);
+        if (error.name === 'AbortError') return;
+        if (error.status === 404) {
+          showPage(null, book.id);
+          return;
+        }
+        setPageLoadError('This page could not be loaded. Try again, or continue with the source in Classic mode.');
       });
 
     return () => controller.abort();
-  }, [book, selectedPage, status, showPage, clearPageInteraction]);
+  }, [book, selectedPage, status, showPage, clearPageInteraction, pageReloadNonce]);
 
   useEffect(() => {
     if (!book || status === 'restoring') return;
-    if (!answerKey) {
-      setCorrectionSlots([]);
-      setPageUnitNumber(null);
-      setPageUnitTitle(null);
+    if (!currentAnswerKey) {
+      setPageCorrection(null);
       return;
     }
     const controller = new AbortController();
+    setPageCorrection(null);
+    setCorrectionLoadError(null);
     fetchPageCorrection(book.id, selectedPage, controller.signal)
       .then((resolution) => {
-        setCorrectionSlots(resolution.slots);
-        setPageUnitNumber(resolution.unitNumber);
-        setPageUnitTitle(resolution.unitTitle);
+        setPageCorrection(resolution);
       })
       .catch((error) => {
         if (error.name !== 'AbortError') {
-          console.warn('Correction resolution failed:', error);
-          setCorrectionSlots([]);
-          setPageUnitNumber(null);
-          setPageUnitTitle(null);
+          setPageCorrection(null);
+          setCorrectionLoadError('Correction data could not be loaded. Your answers are safe; try again before checking them.');
         }
       });
     return () => controller.abort();
-  }, [book, selectedPage, status, answerKey]);
+  }, [book, selectedPage, status, currentAnswerKey, correctionReloadNonce]);
+
+  useEffect(() => {
+    if (!book || readerMode !== 'classic' || pdfData || status === 'restoring') return;
+    const controller = new AbortController();
+    setSourceLoadError(null);
+    void fetch(`/api/books/${book.id}/source`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Source loading failed: ${response.status}`);
+        setPdfData(await response.arrayBuffer());
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') {
+          setSourceLoadError('The source PDF could not be loaded. Try again without leaving this workbook.');
+        }
+      });
+    return () => controller.abort();
+  }, [book, readerMode, pdfData, status, sourceReloadNonce]);
 
   const getActivePageNumber = useCallback(() => activePage.current, []);
 
@@ -467,45 +513,43 @@ export default function App() {
 
   const handleUpload = useCallback(async (file: File) => {
     const uploadToken = ++uploadTokenRef.current;
+    const fallbackStatus: Status = book ? 'ready' : 'idle';
     setStatus('uploading');
+    setUploadError(null);
     setRotation(0);
     const form = new FormData();
     form.append('file', file);
     form.append('language', 'de');
 
-    const res = await fetch('/api/books', { method: 'POST', body: form });
-    if (uploadTokenRef.current !== uploadToken) return;
-    if (!res.ok) {
-      setStatus('idle');
-      console.error('Upload failed:', res.status);
-      return;
-    }
-    const info: BookInfo = await res.json();
-    if (uploadTokenRef.current !== uploadToken) return;
-    if (!info?.id) {
-      setStatus('idle');
-      console.error('Upload returned invalid book info');
-      return;
-    }
+    try {
+      const res = await fetch('/api/books', { method: 'POST', body: form });
+      if (uploadTokenRef.current !== uploadToken) return;
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      const info: BookInfo = await res.json();
+      if (uploadTokenRef.current !== uploadToken) return;
+      if (!info?.id) throw new Error('Upload returned invalid book info');
 
-    flushPendingAnswers();
-    setBook(info);
-    clearPageInteraction();
-    setSelectedPage(1);
-    localStorage.setItem(CURRENT_BOOK_KEY, info.id);
-    localStorage.setItem(CURRENT_PAGE_KEY, '1');
-    const data = await file.arrayBuffer();
-    if (uploadTokenRef.current !== uploadToken) return;
-    setPdfData(data);
-    setStatus('ready');
-    setAnswerKey(null);
-
-    fetchAnswerKey(info.id)
-      .then((key) => setAnswerKey(key))
-      .catch((err) => {
-        if (err.status !== 404) console.warn('Answer key fetch failed:', err);
-      });
-  }, [clearPageInteraction, flushPendingAnswers]);
+      const data = await file.arrayBuffer();
+      if (uploadTokenRef.current !== uploadToken) return;
+      flushPendingAnswers();
+      setAnswerKey(null);
+      setPageCorrection(null);
+      setCorrectionLoadError(null);
+      setBook(info);
+      clearPageInteraction();
+      setSelectedPage(1);
+      localStorage.setItem(CURRENT_BOOK_KEY, info.id);
+      localStorage.setItem(CURRENT_PAGE_KEY, '1');
+      setPdfData(data);
+      setSourceLoadError(null);
+      setStatus('ready');
+      void loadAnswerKey(info.id);
+    } catch {
+      if (uploadTokenRef.current !== uploadToken) return;
+      setStatus(fallbackStatus);
+      setUploadError('The PDF could not be uploaded. Check the connection and choose the file again.');
+    }
+  }, [book, clearPageInteraction, flushPendingAnswers, loadAnswerKey]);
 
   const handleProcessPage = useCallback(async () => {
     if (!book) return;
@@ -786,14 +830,19 @@ export default function App() {
   }, [rotation]);
 
   const handleCorrectionCheck = useCallback(() => {
-    if (!answerKey) return;
+    if (!correctionReady) return;
     const slots = correctionSlots;
 
-    function findEntry(kind: string, index: number) {
+    function correctionSource(kind: string, index: number) {
       const slot = slots.find(
         (s) => s.interactionKind === kind && s.ordinal === index,
       );
-      return slot?.resolution === 'RESOLVED' ? (slot.entry ?? undefined) : undefined;
+      return {
+        entry: slot?.resolution === 'RESOLVED' ? (slot.entry ?? undefined) : undefined,
+        sourceResolution: slot
+          ? AnswerResolutionStatus[slot.resolution]
+          : AnswerResolutionStatus.UNMAPPED,
+      };
     }
 
     const result = computeCorrectionMap({
@@ -801,13 +850,13 @@ export default function App() {
         id: blank.id,
         blank,
         learnerValue: interaction.answers[blank.id],
-        entry: findEntry('fill-in-line', index),
+        ...correctionSource('fill-in-line', index),
       })),
       choices: interaction.choices.map((choice, index) => ({
         id: choice.id,
         choice,
         learnerValue: interaction.answers[choice.id],
-        entry: findEntry('choice', index),
+        ...correctionSource('choice', index),
       })),
       choiceGroups: interaction.choiceGroups,
       grids: interaction.grids.map((grid, index) => ({
@@ -817,25 +866,25 @@ export default function App() {
           grid.rows.map((row) => [row.id, interaction.answers[row.id]]),
         ),
         rows: grid.rows,
-        entry: findEntry('choice-grid', index),
+        ...correctionSource('choice-grid', index),
       })),
       orderings: interaction.sentenceOrderings.map((ordering, index) => ({
         id: ordering.id,
         ordering,
         learnerValue: interaction.answers[ordering.id],
-        entry: findEntry('sentence-ordering', index),
+        ...correctionSource('sentence-ordering', index),
       })),
       matchings: interaction.matchings.map((matching, index) => ({
         id: matching.id,
         matching,
         learnerValue: interaction.answers[matching.id],
-        entry: findEntry('matching', index),
+        ...correctionSource('matching', index),
       })),
       freeTexts: interaction.freeTexts.map((freeText, index) => ({
         id: freeText.id,
         freeText,
         learnerValue: interaction.answers[freeText.id],
-        entry: findEntry('free-text', index),
+        ...correctionSource('free-text', index),
       })),
     });
 
@@ -843,7 +892,7 @@ export default function App() {
     setCorrectionResolutions(result.resolutionByItem);
     setCorrectionDetails(result.resultDetailsByItem);
     setCorrectionUiState('CHECKED');
-  }, [answerKey, correctionSlots, interaction]);
+  }, [correctionReady, correctionSlots, interaction]);
 
   correctionCheckRef.current = handleCorrectionCheck;
 
@@ -961,6 +1010,25 @@ export default function App() {
     writeBooleanPreference(key, value);
   }, []);
 
+  const handleRetryPageLoad = useCallback(() => {
+    setPageLoadError(null);
+    setPageReloadNonce((value) => value + 1);
+  }, []);
+
+  const handleRetryCorrectionLoad = useCallback(() => {
+    setCorrectionLoadError(null);
+    if (book && !currentAnswerKey) {
+      void loadAnswerKey(book.id);
+    } else {
+      setCorrectionReloadNonce((value) => value + 1);
+    }
+  }, [book, currentAnswerKey, loadAnswerKey]);
+
+  const handleRetrySourceLoad = useCallback(() => {
+    setSourceLoadError(null);
+    setSourceReloadNonce((value) => value + 1);
+  }, []);
+
   const currentPageProcessing = isCurrentPageProcessing(processingTarget, book?.id, selectedPage);
   const pageStage = currentPageStage(page?.processingStatus, currentPageProcessing);
   const processing = isProcessingStage(pageStage);
@@ -1008,8 +1076,21 @@ export default function App() {
           onReaderModeChange={handleReaderModeChange}
         />
 
+        {uploadError && (
+          <div className="reader-request-alert" role="alert">
+            <span>{uploadError}</span>
+            <button type="button" onClick={() => setUploadError(null)}>Dismiss</button>
+          </div>
+        )}
+
         <main className={`reader-layout ${readerMode === 'interactive' ? 'reader-layout-interactive' : ''}`}>
           <div className="page-area">
+            {readerMode === 'classic' && pageLoadError && (
+              <div className="reader-page-warning" role="alert">
+                <span>{pageLoadError}</span>
+                <button type="button" onClick={handleRetryPageLoad}>Retry page data</button>
+              </div>
+            )}
             {status === 'restoring' ? (
               <div className="restoration-skeleton" aria-label="Restoring PDF">
                 <Skeleton width="100%" height="100%" />
@@ -1021,6 +1102,8 @@ export default function App() {
                 pageCount={book.pageCount}
                 pageStage={pageStage}
                 failureReason={page?.failureReason ?? null}
+                pageLoadError={pageLoadError}
+                correctionLoadError={correctionLoadError}
                 answers={interaction.answers}
                 matchingSelection={matchingSelection}
                 verdictByItem={correctionVerdicts}
@@ -1028,9 +1111,11 @@ export default function App() {
                 correctionDetails={correctionDetails}
                 reveal={correctionReveal}
                 expectedByItem={expectedAnswersByItem}
-                canCheck={answerKey !== null}
+                canCheck={correctionReady}
                 onSelectPage={selectPage}
                 onProcessPage={() => void handleProcessPage()}
+                onRetryPageLoad={handleRetryPageLoad}
+                onRetryCorrectionLoad={handleRetryCorrectionLoad}
                 onUseClassic={() => handleReaderModeChange('classic')}
                 onAnswerChange={handleAnswerChange}
                 onChoiceSelect={handleChoiceSelect}
@@ -1043,6 +1128,17 @@ export default function App() {
                 onRetry={handleCorrectionRetry}
                 onReveal={handleCorrectionReveal}
               />
+            ) : readerMode === 'classic' && sourceLoadError ? (
+              <div className="reader-source-error" role="alert">
+                <FileText size={32} aria-hidden="true" />
+                <h1>Classic source unavailable</h1>
+                <p>{sourceLoadError}</p>
+                <button type="button" onClick={handleRetrySourceLoad}>Retry source</button>
+              </div>
+            ) : readerMode === 'classic' && !pdfData ? (
+              <div className="restoration-skeleton" aria-label="Loading Classic source">
+                <Skeleton width="100%" height="100%" />
+              </div>
             ) : pdfData ? (
               <Suspense fallback={(
                 <div className="restoration-skeleton" aria-label="Loading Classic reader">
@@ -1173,7 +1269,7 @@ export default function App() {
             correctionDetails={correctionDetails}
             correctionReveal={correctionReveal}
             correctionUiState={correctionUiState}
-            hasAnswerKey={answerKey !== null}
+            hasAnswerKey={correctionReady}
             correctionSlots={correctionSlots}
             onCheck={handleCorrectionCheck}
             onRetry={handleCorrectionRetry}

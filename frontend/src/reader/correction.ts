@@ -350,12 +350,14 @@ export interface CorrectionMapInput {
     blank: { kind: string };
     learnerValue: string | undefined;
     entry: AnswerKeyEntry | undefined;
+    sourceResolution?: AnswerResolutionStatus;
   }>;
   choices: Array<{
     id: string;
     choice: { kind: string; optionGroupId: string | null };
     learnerValue: string | undefined;
     entry: AnswerKeyEntry | undefined;
+    sourceResolution?: AnswerResolutionStatus;
   }>;
   choiceGroups: Record<string, ChoiceGroup>;
   grids: Array<{
@@ -364,24 +366,28 @@ export interface CorrectionMapInput {
     learnerValues: Record<string, string>;
     rows: ChoiceGridRow[];
     entry: AnswerKeyEntry | undefined;
+    sourceResolution?: AnswerResolutionStatus;
   }>;
   orderings: Array<{
     id: string;
     ordering: { kind: string; items: Array<{ id: string }> };
     learnerValue: string | undefined;
     entry: AnswerKeyEntry | undefined;
+    sourceResolution?: AnswerResolutionStatus;
   }>;
   matchings: Array<{
     id: string;
     matching: { kind: string };
     learnerValue: string | undefined;
     entry: AnswerKeyEntry | undefined;
+    sourceResolution?: AnswerResolutionStatus;
   }>;
   freeTexts: Array<{
     id: string;
     freeText: { kind: string };
     learnerValue: string | undefined;
     entry: AnswerKeyEntry | undefined;
+    sourceResolution?: AnswerResolutionStatus;
   }>;
 }
 
@@ -396,34 +402,43 @@ export function computeCorrectionMap(
   const resolutionByItem: Record<string, AnswerResolutionStatus> = {};
   const resultDetailsByItem: Record<string, { correctCount: number; totalCount: number }> = {};
 
+  const preserveSourceResolution = (
+    sourceResolution: AnswerResolutionStatus | undefined,
+    compare: () => CorrectionResult,
+  ): CorrectionResult => (
+    sourceResolution && sourceResolution !== AnswerResolutionStatus.RESOLVED
+      ? { verdict: undefined, resolution: sourceResolution }
+      : compare()
+  );
+
   for (const blank of input.blanks) {
-    const result = compareBlank({
+    const result = preserveSourceResolution(blank.sourceResolution, () => compareBlank({
       learnerValue: blank.learnerValue,
       entry: blank.entry,
-    });
+    }));
     verdictByItem[blank.id] = result.verdict;
     resolutionByItem[blank.id] = result.resolution;
   }
 
   for (const choice of input.choices) {
-    const result = compareChoice({
+    const result = preserveSourceResolution(choice.sourceResolution, () => compareChoice({
       learnerValue: choice.learnerValue,
       entry: choice.entry,
       choiceGroups: input.choiceGroups,
       optionGroupId: choice.choice.optionGroupId,
-    });
+    }));
     verdictByItem[choice.id] = result.verdict;
     resolutionByItem[choice.id] = result.resolution;
   }
 
   for (const grid of input.grids) {
-    const result = compareGrid({
+    const result = preserveSourceResolution(grid.sourceResolution, () => compareGrid({
       learnerValues: grid.learnerValues,
       rows: grid.rows,
       entry: grid.entry,
       choiceGroups: input.choiceGroups,
       optionGroupId: grid.grid.optionGroupId,
-    });
+    }));
     verdictByItem[grid.id] = result.verdict;
     resolutionByItem[grid.id] = result.resolution;
     if (result.details) {
@@ -435,11 +450,11 @@ export function computeCorrectionMap(
   }
 
   for (const ordering of input.orderings) {
-    const result = compareOrdering({
+    const result = preserveSourceResolution(ordering.sourceResolution, () => compareOrdering({
       learnerValue: ordering.learnerValue,
       entry: ordering.entry,
       itemCount: ordering.ordering.items.length,
-    });
+    }));
     verdictByItem[ordering.id] = result.verdict;
     resolutionByItem[ordering.id] = result.resolution;
     if (result.details) {
@@ -451,10 +466,10 @@ export function computeCorrectionMap(
   }
 
   for (const matching of input.matchings) {
-    const result = compareMatching({
+    const result = preserveSourceResolution(matching.sourceResolution, () => compareMatching({
       learnerValue: matching.learnerValue,
       entry: matching.entry,
-    });
+    }));
     verdictByItem[matching.id] = result.verdict;
     resolutionByItem[matching.id] = result.resolution;
     if (result.details) {
@@ -467,7 +482,7 @@ export function computeCorrectionMap(
 
   for (const freeText of input.freeTexts) {
     const hasReference = freeText.entry?.typedPayload?.kind === 'reference';
-    const result = checkFreeText(hasReference);
+    const result = preserveSourceResolution(freeText.sourceResolution, () => checkFreeText(hasReference));
     verdictByItem[freeText.id] = result.verdict;
     resolutionByItem[freeText.id] = result.resolution;
   }

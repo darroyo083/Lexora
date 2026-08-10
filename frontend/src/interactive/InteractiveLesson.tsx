@@ -23,6 +23,8 @@ interface Props {
   pageCount: number;
   pageStage: PageProcessingStatus | null;
   failureReason: string | null;
+  pageLoadError: string | null;
+  correctionLoadError: string | null;
   answers: Record<string, string>;
   matchingSelection: MatchingSelection | null;
   verdictByItem: Record<string, CorrectionVerdict | undefined>;
@@ -33,6 +35,8 @@ interface Props {
   canCheck: boolean;
   onSelectPage: (page: number) => void;
   onProcessPage: () => void;
+  onRetryPageLoad: () => void;
+  onRetryCorrectionLoad: () => void;
   onUseClassic: () => void;
   onAnswerChange: (itemId: string, value: string) => void;
   onChoiceSelect: (choiceId: string, optionId: string) => void;
@@ -294,6 +298,7 @@ function LessonBlockView({ block, index, props }: {
                     className="lesson-match-item"
                     data-selected={selected?.itemId === item.id}
                     data-paired={Boolean(pairs[item.id])}
+                    aria-pressed={selected?.itemId === item.id || Boolean(pairs[item.id])}
                     onClick={() => props.onMatchingItemClick(block.interaction.id, item.id, 'left')}
                   >{item.label}. {item.text}</button>
                 ))}
@@ -307,6 +312,7 @@ function LessonBlockView({ block, index, props }: {
                     className="lesson-match-item"
                     data-selected={selected?.itemId === item.id}
                     data-paired={pairedRightIds.has(item.id)}
+                    aria-pressed={selected?.itemId === item.id || pairedRightIds.has(item.id)}
                     onClick={() => props.onMatchingItemClick(block.interaction.id, item.id, 'right')}
                   >{item.label}. {item.text}</button>
                 ))}
@@ -365,19 +371,24 @@ export default function InteractiveLesson(props: Props) {
   if (props.projection.status === 'UNAVAILABLE') {
     const waiting = isProcessingStage(props.pageStage);
     const failed = props.pageStage === 'FAILED';
+    const loadFailed = Boolean(props.pageLoadError);
     return (
       <div className="interactive-lesson interactive-unavailable">
         <div className="lesson-state-mark"><BookOpen size={28} aria-hidden="true" /></div>
         <p className="lesson-eyebrow">Interactive mode</p>
-        <h1>{waiting ? 'Building this lesson' : failed ? 'This lesson could not be built' : 'This page is not interactive yet'}</h1>
-        <p>{waiting
+        <h1>{loadFailed ? 'This lesson could not be loaded' : waiting ? 'Building this lesson' : failed ? 'This lesson could not be built' : 'This page is not interactive yet'}</h1>
+        <p>{loadFailed
+          ? props.pageLoadError
+          : waiting
           ? 'Lexora is reading the source page. You can keep using Classic mode while processing finishes.'
           : failed
             ? props.failureReason || 'Page analysis failed. Retry when the analysis service is available.'
             : 'Interactive mode only appears when the source analysis is complete and trustworthy.'}</p>
         <div className="lesson-state-actions">
           <button type="button" className="lesson-primary-action" onClick={props.onUseClassic}>Open Classic mode</button>
-          {!waiting && <button type="button" onClick={props.onProcessPage}>{failed ? 'Retry analysis' : 'Process this page'}</button>}
+          {loadFailed
+            ? <button type="button" onClick={props.onRetryPageLoad}>Retry loading</button>
+            : !waiting && <button type="button" onClick={props.onProcessPage}>{failed ? 'Retry analysis' : 'Process this page'}</button>}
         </div>
         <PageNavigation {...props} />
       </div>
@@ -414,11 +425,16 @@ export default function InteractiveLesson(props: Props) {
       <footer className="lesson-completion-bar">
         <div>
           <strong>Ready to check your work?</strong>
-          <span>{props.canCheck ? 'Only authoritative answers will be graded.' : 'No answer key is available for this workbook.'}</span>
+          <span>{props.correctionLoadError
+            ?? (props.canCheck ? 'Only authoritative answers will be graded.' : 'No answer key is available for this workbook.')}</span>
         </div>
-        <button type="button" className="lesson-primary-action" disabled={!props.canCheck} onClick={props.onCheck}>
-          <Check size={16} aria-hidden="true" /> Check answers
-        </button>
+        {props.correctionLoadError
+          ? <button type="button" onClick={props.onRetryCorrectionLoad}>Retry correction data</button>
+          : (
+            <button type="button" className="lesson-primary-action" disabled={!props.canCheck} onClick={props.onCheck}>
+              <Check size={16} aria-hidden="true" /> Check answers
+            </button>
+          )}
       </footer>
 
       <PageNavigation {...props} />

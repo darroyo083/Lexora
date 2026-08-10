@@ -93,12 +93,14 @@ public class CorrectionResolutionService {
 
         var key = answerKeyService.findAnswerKey(bookId).orElse(null);
         if (key == null) {
-            return PageCorrectionResolution.unmapped(bookId, pdfPageNumber, unit.unitNumber());
+            return PageCorrectionResolution.unmapped(
+                bookId, pdfPageNumber, unit.unitNumber(), unit.title());
         }
 
         var entries = unitEntries(key, unit.unitNumber());
         if (entries.isEmpty()) {
-            return PageCorrectionResolution.unmapped(bookId, pdfPageNumber, unit.unitNumber());
+            return PageCorrectionResolution.unmapped(
+                bookId, pdfPageNumber, unit.unitNumber(), unit.title());
         }
 
         var requestedAnalysis = loadAnalysis(bookId, pdfPageNumber);
@@ -112,7 +114,7 @@ public class CorrectionResolutionService {
 
         var status = statusOf(slots);
         return new PageCorrectionResolution(bookId, pdfPageNumber, status,
-            unit.unitNumber(), List.copyOf(slots));
+            unit.unitNumber(), unit.title(), List.copyOf(slots));
     }
 
     private static List<AnswerKeyEntry> unitEntries(AnswerKey key, int unitNumber) {

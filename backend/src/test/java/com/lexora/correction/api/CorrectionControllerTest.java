@@ -41,7 +41,7 @@ class CorrectionControllerTest {
     void resolvedPageReturnsSlotsShape() throws Exception {
         var entry = new ResolvedAnswerEntry(227, "1", 4, "1", "FillBlank", 1,
             "der Hund", List.of(), false, false, "strict", "", 1.0, List.of(), null, null);
-        var resolution = new PageCorrectionResolution(bookId, 12, "RESOLVED", 4,
+        var resolution = new PageCorrectionResolution(bookId, 12, "RESOLVED", 4, "Satzklammer",
             List.of(new CorrectionSlot("fill-in-line", 0, "RESOLVED", entry)));
         when(resolutionService.resolve(bookId, 12)).thenReturn(resolution);
 
@@ -51,6 +51,7 @@ class CorrectionControllerTest {
             .andExpect(jsonPath("$.pageNumber").value(12))
             .andExpect(jsonPath("$.status").value("RESOLVED"))
             .andExpect(jsonPath("$.unitNumber").value(4))
+            .andExpect(jsonPath("$.unitTitle").value("Satzklammer"))
             .andExpect(jsonPath("$.slots.length()").value(1))
             .andExpect(jsonPath("$.slots[0].interactionKind").value("fill-in-line"))
             .andExpect(jsonPath("$.slots[0].ordinal").value(0))

@@ -13,6 +13,7 @@ public record PageCorrectionResolution(
     int pageNumber,
     String status,
     Integer unitNumber,
+    String unitTitle,
     List<CorrectionSlot> slots
 ) {
     public static final String RESOLVED = "RESOLVED";
@@ -23,7 +24,18 @@ public record PageCorrectionResolution(
         slots = slots == null ? List.of() : List.copyOf(slots);
     }
 
+    public PageCorrectionResolution(UUID bookId, int pageNumber, String status,
+                                    Integer unitNumber, List<CorrectionSlot> slots) {
+        this(bookId, pageNumber, status, unitNumber, null, slots);
+    }
+
     public static PageCorrectionResolution unmapped(UUID bookId, int pageNumber, Integer unitNumber) {
-        return new PageCorrectionResolution(bookId, pageNumber, UNMAPPED, unitNumber, List.of());
+        return unmapped(bookId, pageNumber, unitNumber, null);
+    }
+
+    public static PageCorrectionResolution unmapped(UUID bookId, int pageNumber,
+                                                    Integer unitNumber, String unitTitle) {
+        return new PageCorrectionResolution(bookId, pageNumber, UNMAPPED,
+            unitNumber, unitTitle, List.of());
     }
 }

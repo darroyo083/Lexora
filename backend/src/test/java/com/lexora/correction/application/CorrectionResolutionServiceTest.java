@@ -181,6 +181,7 @@ class CorrectionResolutionServiceTest {
 
         assertThat(result.status()).isEqualTo(PageCorrectionResolution.UNMAPPED);
         assertThat(result.unitNumber()).isEqualTo(4);
+        assertThat(result.unitTitle()).isEqualTo(profile.unit(4).orElseThrow().title());
         assertThat(result.slots()).isEmpty();
     }
 

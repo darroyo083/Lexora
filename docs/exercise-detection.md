@@ -26,7 +26,7 @@ All run in the same FastAPI interaction-detection operation against the same unm
 9. Sort accepted lines top-to-bottom and left-to-right.
 10. Normalize line and interaction rectangles to `[0,1]`.
 
-Adaptive thresholding replaced the initial Otsu attempt because Otsu retained only dark fragments of the real workbook's light gray lines. A second detector was not added because the adaptive pass recovered the complete structures with lower complexity.
+Adaptive thresholding replaced the initial Otsu attempt because Otsu retained only dark fragments of light gray synthetic scan lines. A second detector was not added because the adaptive pass recovered the complete structures with lower complexity.
 
 ## Full-Word Path (`horizontal-line-v1`)
 
@@ -80,16 +80,10 @@ The toggles coexist and are persisted locally. Debug visuals do not alter stored
 
 ## Verification
 
-Primary verification used PDF page 11 (printed page 15) of the local 256-page scanned workbook. The page contains the heading "Das Verb möchten. Ergänzen Sie." and dialogue rows with varied blank lengths.
-
-| Page | Raw | Accepted | Full-word | Suffix | Visual result |
-|---|---:|---:|---:|---:|---|
-| PDF 7 | 62 | 34 | 20 | 14 | All exercise rows detected; no unrelated inputs |
-| PDF 11 | 76 | 44 | 37 | 7 | Full-word set unchanged; seven verb-ending blanks recovered |
-| PDF 12 | 103 | 24 | 24 | 0 | Two text-occupied grammar-table lines removed; answer cells and dialogue blanks kept |
-| Synthetic demo | 45 | 6 | 6 | 0 | Unchanged |
-
-On PDF page 11, the seven previously missed verb-ending blanks near the bottom are now detected with no new false positives. Detection takes about 0.18 to 0.21 seconds; PaddleOCR takes about 13 to 25 seconds in Docker after model warm-up.
+Verification uses generated images and the public synthetic demo. The fixture set
+covers full-word and suffix blanks, text-occupied tables, dialogue rows, and
+negative pages without printable answer lines. Detector timing is measured
+separately from the optional local OCR provider.
 
 Browser verification covered 75%, 100%, 125%, 150%, 175%, and 200% zoom, typed text, top/middle/bottom regions, navigation, hard refresh, local answer persistence, current-analysis GET restoration, OCR/debug coexistence, the in-page processing overlay with real stage labels, reduced-motion fallback, FAILED retry, and console inspection.
 

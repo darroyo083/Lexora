@@ -231,56 +231,43 @@ without these fields deserialize to empty collections on every layer.
 "Show ordering detection" toggle renders per-exercise dashed bounds, per-prompt
 bounds, and per-item boxes with IDs and the score, rotated with the page.
 
-## Verified real pages (private workbook, uncommitted)
+## Verification
 
-| Page | Result |
-| --- | --- |
-| 33 (primary) | 4 exercises / 22 prompts; matching exercise, grammar box, example sentences, error-correction prose excluded; no grouping regression |
-| 65 (secondary) | 1 exercise / 9 prompts, periods as independent orderable chips; 2-fragment rows assessed |
-| 15 | exercise 3: exactly 5 prompts with correct fragment membership and 1→5 reading order (two columns 3+2, right-column wrap merged into its own column); exercise 4: 5 prompts in dialogue order, `?`/`.` as orderable chips; ChoiceGrid limitation untouched |
-| 21 | 2 exercises / 14 prompts preserved; verb-bank FP rejected; **hybrid ordering/transformation variant documented below** |
-| 30 | 1 exercise / 5 prompts (genuine) |
-| 11, 16, 29 | 0 detections (FillBlank / Choice / ChoiceGrid pages) |
-| 8, 9, 10, 100, 120 | 0 detections |
-| 22 | verb banks rejected (0 accepted) |
+Generated fixtures and the public synthetic demo cover multi-prompt groups,
+two-column reading order, wrapped continuations, punctuation chips, mixed
+interaction pages, prose and word-bank rejection, and negative pages.
 
 Detector timing: ~60-190 ms per page on CPU (PaddleOCR excluded).
 
-## PDF 21 hybrid variant (documented limitation)
+## Hybrid ordering/transformation limitation
 
-Page 21's "IM BÜRO" exercise detects 9 prompts correctly, but they are NOT pure
-reorder-only prompts: they use separable verbs and require the learner to
-conjugate/transform verb forms (`an,schalten: den Computer • ich • Um 8 Uhr` →
-"Ich schalte den Computer um 8 Uhr an"). The exact printed fragments are
-insufficient to construct the grammatical answer (the separable prefix is not
-printed as a fragment). PoC 4 therefore honestly records the learner's chosen
-ordering of the printed fragments and does NOT claim to fully answer this
-exercise. A later FreeText / transformation-capable interaction is the right
-home for this variant; detection is preserved.
+Some prompts combine ordering with conjugation or another transformation. The
+printed fragments alone are insufficient to construct a grammatical answer.
+Lexora therefore records only the learner's chosen order and does not claim to
+solve the transformation; FreeText or another explicit interaction is the
+appropriate future model.
 
 ## Known limitations
 
 - Terminal punctuation (`. ? !`) splitting is accepted but not fully hardened:
-  some real workbook cases (attached vs. standalone marks, multi-mark runs,
+  some layouts (attached vs. standalone marks, multi-mark runs,
   abbreviation-like periods) need additional refinement later. **Non-blocking
   for PoC 5.**
-- Rows with ≤2 printed fragments are not detected (e.g. page 65 row 5).
+- Rows with ≤2 printed fragments are not detected.
 - A separator dot OCR misreads as `-` keeps two fragments merged (boundaries
   still correct; text shows the OCR hyphen).
 - An unnumbered wrap whose band does not align with a numbered row of a
   neighbouring column and whose gap is not significantly tighter than the
-  column's prompt spacing is not merged (page 21's "Kunden und Kundinnen"
-  line stays a standalone prompt — the accepted current behavior).
+  column's prompt spacing is not merged.
 - Uniform word banks adjacent to real ordering rows would be hard to reject.
 - No answer-key grading; answers are the learner's chosen order only.
 
 ## Browser behavior (verified)
 
-33 hardening checks + 18 page checks with headless Chromium: zoom F5
+Headless-Chromium checks cover zoom/refresh
 persistence (150/200%), zoom across navigation, side panel outside the PDF,
 tabs/collapse/reopen, prev/next/reset, chips + keyboard (Enter, arrows,
 Delete), view-state combo (zoom 200% + rotation 90° + partial answer + F5),
-page 65 punctuation consistency, page 15 5-prompt exercise 3 + merged
-continuation, page 21 9-prompt IM BÜRO, single-flight processing with
-navigation mid-flight (result persists, no client-abort noise), regressions
-on 11/16/29, zero console errors.
+punctuation consistency, multi-prompt grouping, merged continuations,
+single-flight processing with navigation mid-flight (result persists, no
+client-abort noise), and zero console errors.

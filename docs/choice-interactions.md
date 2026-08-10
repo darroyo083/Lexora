@@ -107,13 +107,9 @@ Blank detection and choice detection run together in one FastAPI operation (`/in
 
 ## Verification
 
-Primary acceptance: PDF page 16 of the local scanned workbook (printed page 20), exercise "Das Modalverb können. Welche Bedeutung passt? Notieren Sie die Zahl."
-
-| Page | Raw rings | Accepted | Groups | Visual result |
-|---:|---:|---:|---:|---|
-| PDF 16 | 22 | 12 | 1 (`1,2,3`) | All 12 printed circles on 7 sentence rows; no glyph holes, bullets, or decorative `P` icons accepted |
-| PDF 18 | 10 | 8 | 0 | Real circles in an image-matching exercise detected; no legend → honest no-group state |
-| PDF 7–15, 17, 19–26, 29, 33–39 | — | 0 | 0 | No false positives on pages without ring markers |
+Acceptance uses generated ring layouts and public synthetic demo analysis. The
+fixtures cover numbered option groups, targets without reliable legends, glyph
+holes and decorative-icon rejection, and negative pages without markers.
 
 Browser verification covered: opening the selector, choosing, changing a selection, one value per target, `Escape`, outside click, arrow-key navigation, `Enter`/`Space` selection, navigation and F5 persistence, mixed fill-blank + choice pages, reprocessing with answer survival, 75/100/125/150/175/200% zoom alignment, 200% scrolling, and the update flow for pre-PoC 2 pages.
 

@@ -39,7 +39,8 @@ Reference tables, conjugation tables, and decorative boxes are rejected by:
 - header check: labels must be short tokens, above the cells, and on a single line (dialogue fragments spread over multiple lines do not qualify);
 - vertical-divider check: dividers must cross the row rules.
 
-Verified negative pages include the static grammar tables on PDF pages 12, 30, 44, and 120 (no grids produced), and dialogue-based exercises on PDF pages 22 and 47.
+Generated negative fixtures include static grammar tables and dialogue layouts;
+neither produces a grid.
 
 ## Persisted Shape
 
@@ -113,22 +114,18 @@ Grid detection runs inside the existing `DETECTING_INTERACTIONS` stage, in the s
 
 ## Verification
 
-Primary acceptance: PDF page 29 of the local scanned workbook (printed page 33), exercise 5 "Welche Antwort passt? Lesen Sie und kreuzen Sie an."
+Acceptance uses generated grids and the public synthetic demo. Fixtures cover
+short column headers, empty selectable cells, pre-filled-row exclusion, dotted
+separator limits, static-table rejection, and dialogue/fill-blank negatives.
 
-| Page | Grids | Rows | Options | Visual result |
-|---|---:|---:|---|---|
-| PDF 29 | 1 | 7 | `ja, nein, doch` | All 7 question rows and 3 columns detected; cells empty; headers on one line |
-| PDF 15 | 1 | 3 of 5 | `möchte, kann, wollen, dürft, müsst, können, muss` | Real "Welches Verb passt? Kreuzen Sie an." grid; example row with printed marks excluded; dotted separators partially supported |
-| PDF 12, 30, 44, 120 | 0 | — | — | Static grammar tables rejected |
-| PDF 22, 47 | 0 | — | — | Dialogue/fill-blank pages rejected |
-| PDF 7–14, 16–21, 23–28, 31–43, 45–70 | 0 | — | — | No false positives |
-
-Browser verification covered: selection, replacement, one mark per row, arrow-key navigation, F5 and navigation persistence, page isolation, 75–200% zoom alignment, 200% scrolling, mixed fill-blank/choice/grid pages, the update flow for pre-PoC 3 pages, and regression checks on PoC 1 (PDF 11) and PoC 2 (PDF 16) pages.
+Browser verification covered selection, replacement, one mark per row,
+arrow-key navigation, refresh/navigation persistence, page isolation, 75–200%
+zoom alignment, scrolling, mixed interaction pages, and analysis updates.
 
 ## Known Limits
 
 - The supported pattern requires empty answer cells; grids whose cells contain printed text are treated as static tables.
-- Dotted row separators are only partially supported: rows separated by dashed/dotted rules with gaps larger than the morphological kernel may merge (PDF 15 loses one row this way).
+- Dotted row separators are only partially supported: rows separated by dashed/dotted rules with gaps larger than the morphological kernel may merge.
 - Header labels must be short tokens on a single line; multi-line option legends are not extracted.
 - Grids without vertical dividers (only horizontal rules) are rejected because columns cannot be determined.
 - `candidateScore` is a heuristic and not calibrated across book designs.

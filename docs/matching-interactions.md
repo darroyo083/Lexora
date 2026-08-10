@@ -168,22 +168,12 @@ Same store as PoC 1–4 (`lexora.exerciseAnswers.v1`), new kind `matching`.
 (id/score/cardinality), per-item boxes (label + side, left/right colored),
 and green anchor rectangles — all rotated with the page. Development-only.
 
-## Verified real pages (private workbook, uncommitted)
+## Verification
 
-| Page | Result |
-| --- | --- |
-| 49 (primary, printed 53, exercise 5) | exactly 1 interaction, 6 left + 6 right items, all 12 anchors, numeric left / alphabetic right labels (printed `6` not OCR'd), score 0.99, coexists with 20 FillBlank rows on the same page |
-| 48 | 1 interaction, 4+4, one right anchor missing in print → `anchorBbox: null` on that item |
-| 106 | 3 stacked interactions (5+5 each), shared anchor columns split by row gap |
-| 188 | 2 stacked interactions (4+4 each) |
-| 130 | 1 interaction, 6+6 |
-| 182 | 1 interaction, 4+4 (page also has 3 ordering prompts) |
-| 8 | 1 interaction, 6+6 |
-| 29 | 1 interaction, 6+6 (page also has its known ChoiceGrid; regions do not overlap) |
-| 5, 20, 70, 243 | 0 detections (scan-flagged dot columns rejected) |
-| 11, 16, 18, 44, 100, 120, 39 | 0 detections (FillBlank / Choice / prose pages) |
-| 15, 21 | 0 detections (ChoiceGrid + ordering pages; grid/ordering interactions unchanged) |
-| 33, 65 | 0 detections (sentence-ordering pages; 239 candidate column pairs on 33 all rejected) |
+Generated fixtures and the public synthetic demo cover complete anchor pairs,
+one missing printed anchor, stacked exercises, mixed interaction pages, and
+negative dot columns. Detector acceptance is structural; no private source page
+or exercise text is part of the tracked suite.
 
 Detector timing: matching-v1 alone ~70–130 ms per page on CPU (PaddleOCR
 excluded); the whole detect-interactions endpoint is ~600–850 ms dominated by
@@ -214,16 +204,15 @@ the other detectors and serialization.
 - one-to-many / many-to-many matching
 - image-to-text matching (images as items)
 - matching without explicit printed anchors
-- mixed exercise layouts (matching + transformation), similar to the
-  sentence-ordering hybrid on PDF 21
+- mixed exercise layouts (matching + transformation)
 
 ## Browser behavior (verified)
 
-48 headless-Chromium checks: detection (12 hit areas on page 49), left→right
+Headless-Chromium checks cover detection, left→right
 and right→left pairing, one-to-one replacement (reusing a matched right item
 frees its old left item), unpair, reset, reverse pairing, persistence across
 page navigation and F5, rotation 90°/270°, zoom 150%/200%, line/anchor
 geometric alignment at 0°, 90° and 200% (endpoints at the exact printed anchor
-centers), multi-exercise isolation on page 106 (cross-exercise clicks never
-pair), keyboard activation, matching debug overlay, Update analysis flow on a
+centers), multi-exercise isolation (cross-exercise clicks never pair),
+keyboard activation, matching debug overlay, Update analysis flow on a
 negative page, zero console errors.

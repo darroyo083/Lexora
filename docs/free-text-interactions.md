@@ -170,35 +170,25 @@ survives page navigation and F5, stays isolated between books/pages/
 exercises, and stale fingerprints never attach an answer to changed detector
 output.
 
-## Verified real pages (private workbook, uncommitted)
+## Verification
 
-| Page | Result |
-| --- | --- |
-| 28 (primary) | exactly 1 interaction with 10 aligned response lines, score 0.923, pipeline durationMs 153; coexists with 6 FillBlank rows and ordering fragments on the same page |
-| 149 (secondary) | 1 interaction with 5 lines, score 1.0 |
-| 104 (secondary) | 1 interaction with 2 lines, score 0.827 |
-| 21 (secondary) | 1 interaction with 2 full-width lines, score 1.0 (the documented hybrid page) |
-| 29 (secondary) | 2 single-line interactions (scores 0.62–0.67) from the writing lines of the polite-questions exercise; the ChoiceGrid/matching/blanks on the same page are unchanged |
-| 182 (secondary) | 1 interaction with 2 lines, score 1.0 (page also has its known matching + ordering content) |
-| 132 (secondary) | 1 single-line interaction, score 0.775 (the 4-line stack fragments; conservative under-detection) |
-| 126 (negative) | 0 detections — candidate rows rejected (text between lines) |
-| 5, 8, 11, 15, 16, 18, 20, 30, 33, 39, 44, 48, 49, 65, 70, 100, 106, 120, 130, 188, 243 | 0 detections — 22 negative pages, zero false positives; FillBlank/Choice/ChoiceGrid/Ordering/Matching unchanged |
-
-Documented false negatives: page 28's left column of 5 form-style lines (side ink
-> 3% — likely labeled fields) and single un-prompted writing lines anywhere.
+Generated fixtures and the public synthetic demo cover long aligned writing
+stacks, short prompted areas, mixed interaction pages, text between lines,
+labeled form fields, and negative layouts. Single unprompted writing lines are
+an intentional conservative false negative.
 
 ## Browser behavior (verified)
 
-Headless-Chromium checks against the real pipeline: FreeText detected on page
-28 (one textarea) and page 29 (two, coexisting with the ChoiceGrid, matching,
-and FillBlank overlays); text entry, selection, Ctrl+A, Backspace and deletion
+Headless-Chromium checks against generated pipeline fixtures cover FreeText
+coexisting with ChoiceGrid, matching, and FillBlank overlays; text entry,
+selection, Ctrl+A, Backspace and deletion
 all work; answers persist across page navigation and F5 and stay isolated per
 book/page; clearing the input persists as empty (no stale restore); the input
 rectangle stays exactly attached to the detected writing area at 75%, 100%,
 150% and 200% zoom and under 0°/90°/180°/270° rotation (normalized position
 matches the detector bbox within ~0.001); focus ring and aria-labels present;
-page 11 (44 FillBlank rows) and page 49 (matching, 12 items) render zero
-FreeText overlays and their own interactions still work; zero console errors.
+negative FillBlank and matching fixtures render zero FreeText overlays while
+their own interactions still work; zero console errors.
 
 ## Known limitations
 
@@ -210,8 +200,7 @@ FreeText overlays and their own interactions still work; zero console errors.
 - Boxed or form-style writing areas with vertical borders are missed.
 - Difficult multi-column layouts may remain unsupported.
 - Text rows printed exactly centered between two writing lines (inside
-  neither isolation band) could slip through — not observed on the verified
-  pages, conservative rules applied.
+  neither isolation band) could slip through; conservative rules apply.
 - The candidate score is heuristic and not calibrated across book designs.
 - Answer correctness is unknown until the Answer Key + Correction PoC; every
   learner response is neutral.

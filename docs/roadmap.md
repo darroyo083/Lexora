@@ -1,242 +1,90 @@
-# Roadmap
+# Lexora Roadmap
 
-## PoC 0: OCR Overlay on Scanned Pages (Complete)
+This roadmap describes product capabilities and public-safe verification. It
+does not contain private workbook titles, page mappings, exercise text, or
+source-derived acceptance data.
 
-- [x] Upload and persist a scanned PDF
-- [x] Render original pages with PDF.js
-- [x] Rasterize an explicitly selected page at 300 DPI
-- [x] Run local German OCR with PaddleOCR
-- [x] Preserve source geometry by disabling orientation and unwarping transforms
-- [x] Normalize OCR boxes to `[0,1]`
-- [x] Persist one JSONB analysis per processed page
-- [x] Reuse `READY` pages without rerunning OCR
-- [x] Retry `FAILED` pages
-- [x] Expose real coarse processing stages and deterministic stage progress
-- [x] Maintain overlay alignment at 75%, 100%, 125%, and 150%
-- [x] Inspect clickable spans and confidence data
-- [x] Restore the book, page, analysis, and OCR-box preference after refresh
-- [x] Show a PDF-area skeleton during restoration
-- [x] Run the complete local stack through Docker Compose
+## Completed foundation
 
-PoC 0 processing remains intentionally explicit and per page. It does not automatically process a newly uploaded book or a page opened during navigation.
+- PDF upload, page rasterization, and persisted page-processing state.
+- Source-faithful Classic Mode with zoom, rotation, navigation, and recovery.
+- Normalized interaction geometry shared across rendering scales.
+- Deterministic local-development detectors for FillBlank, Choice, ChoiceGrid,
+  SentenceOrdering, Matching, and FreeText.
+- A viewport-native Interactive Mode projected from persisted analysis.
+- Local answer persistence with interaction fingerprints and stale-data guards.
+- Source-grounded correction with explicit unresolved and unavailable states.
+- Keyboard, narrow-viewport, reduced-motion, and WCAG A/AA browser coverage.
 
-## PoC 1: Fill-in-the-Blank Exercise Detection (Complete)
+## Public portfolio release
 
-- [x] Detect graphical horizontal answer lines without a VLM
-- [x] Derive physical-line and interaction geometry
-- [x] Overlay interactive HTML inputs on the original page
-- [x] Persist blank geometry in `PageAnalysis` v0.2
-- [x] Preserve input and text alignment at 75%, 100%, 125%, 150%, 175%, and 200%
-- [x] Restore current analyses without rerunning OCR or OpenCV
-- [x] Offer explicit updates for legacy READY analyses
-- [x] Recover tiny verb-ending suffix blanks through a conservative short-suffix path
-- [x] Reject text-occupied structural grammar-table lines
-- [x] Persist exercise answers locally per browser, book, and page
-- [x] Replace the toolbar percentage bar with an in-page analysis overlay and real stage labels
+- External Vision provider boundary for production; no local OCR runtime or
+  model downloads in the production AI image.
+- Read-only synthetic demo initialized server-side with precomputed analysis.
+- No anonymous upload, processing, extraction, or provider-spend path.
+- Public landing, real product evidence, reproducible Remotion film, social
+  preview, recruiter-oriented README, and production runbook.
+- Security headers, proxy limits, loopback-only public binding, health checks,
+  migration validation, and restart/persistence proof.
+- Public assets and examples generated only from the curated synthetic demo.
 
-PoC 1 is intentionally heuristic. It validates horizontal graphical blanks, not general exercise understanding. Very dense table cells and a clean hyphen between words remain known edge cases.
+## Interaction-family limits
 
-## PoC 2: Choice-Marker Interactions (Complete)
+### FillBlank
 
-- [x] Detect hollow circular answer markers locally without a VLM (`empty-ring-v1`)
-- [x] Persist `ChoiceTarget` geometry and `ChoiceGroup` option sets additively in `PageAnalysis` v0.2
-- [x] Extract numbered `1 = ...` legends deterministically and attach targets to option groups
-- [x] Render transparent, keyboard-accessible hit areas on the printed circles
-- [x] Open a compact anchored selector with the group options and a clear action
-- [x] Display the selected value centered inside the printed circle, scaling with zoom
-- [x] Persist structured `targetId -> optionId` answers locally per browser, book, and page
-- [x] Keep selection aligned at 75%, 100%, 125%, 150%, 175%, and 200% zoom
-- [x] Restore choices across navigation and hard refresh; ignore stale interaction fingerprints
-- [x] Rename the pipeline stage to `DETECTING_INTERACTIONS` with a `V004` migration
-- [x] Offer explicit **Update analysis** for pre-PoC 2 pages instead of silent reprocessing
-- [x] Add a distinct choice-detection debug overlay and inspection panel
-- [x] Verify on PDF page 16 (printed page 20) and a second marker page (PDF 18)
+- Supports horizontal answer lines and conservative short-suffix blanks.
+- Rejects dense tables and occupied structural rules where evidence is weak.
+- Does not support curved, dotted, vertical, boxed, or handwritten answers.
 
-PoC 2 is intentionally structural. It detects markers and structures the learner's selection; it does not know which option is correct, does not extract answer keys, and does not implement grading or explanations.
+### Choice
 
-## PoC 3: Choice-Grid Interactions (Complete)
+- Supports hollow circular targets and reliable numbered legends.
+- A target without a trustworthy legend remains visible but not answerable.
+- Filled marks, arbitrary icons, and semantic correctness are out of scope.
 
-- [x] Detect interactive choice grids locally without a VLM (`table-grid-v1`)
-- [x] Reject static/explanatory grammar tables and dialogue pages
-- [x] Extract short column headers as a shared `ChoiceGroup` (`ja / nein / doch`)
-- [x] Persist normalized grid, row, and cell geometry additively in `PageAnalysis` v0.2
-- [x] Render transparent radio targets over the printed answer cells
-- [x] One structured selection per row (`rowId -> optionId`), replacing on change
-- [x] Display a restrained `×` centered in the selected cell, scaling with zoom
-- [x] Persist grid answers locally per browser, book, and page with row fingerprints
-- [x] Restore selections across navigation and hard refresh
-- [x] Keyboard-accessible rows via native radio-group semantics
-- [x] Add a distinct choice-grid debug overlay
-- [x] Verify on PDF page 29 (printed page 33) and a second real grid (PDF 15)
-- [x] Verify negative static-table pages (PDF 12, 44, 120) produce no grids
+### ChoiceGrid
 
-PoC 3 is intentionally structural. It detects grids and structures one selection per row; it does not know which option is correct, does not extract answer keys, and does not implement grading or explanations.
+- Supports empty cells under short, aligned headers with one choice per row.
+- Static tables and pre-filled cells are rejected.
+- Dotted separators and multi-line headers remain conservative edge cases.
 
-## PoC 4: Sentence-Ordering Interactions (Complete)
+### SentenceOrdering
 
-- [x] Detect sentence-ordering prompt rows locally without a VLM (`sentence-ordering-v1`)
-- [x] Use printed separator-dot glyphs (`•`/`·`) in OCR text plus OpenCV dot evidence in each line band
-- [x] Group consecutive prompt rows into exercises; reject prose, matching layouts, grammar boxes, examples, and uniform word banks
-- [x] Persist interaction, exercise, and per-item normalized geometry additively in `PageAnalysis` v0.2
-- [x] Deterministic item IDs (`page-block-row-item-index`); duplicate fragment texts keep distinct identities
-- [x] Render transparent, keyboard-accessible hit areas over each printed fragment
-- [x] Click-to-order UX: fragments append with position badges; click again to remove
-- [x] Floating per-exercise answer card with numbered chips, previous/next prompt, per-prompt reset, and progress
-- [x] Chips support click-to-remove, ArrowLeft/ArrowRight moves, and Delete removal
-- [x] Persist partial and complete `orderedItemIds` answers locally (kind `sentence-ordering`)
-- [x] Fingerprints ignore rotation, zoom, and view state; stale geometry/count invalidates answers
-- [x] Restore orders across navigation and hard refresh; mixed stores with PoC 1-3 answers verified
-- [x] Rotate 0/90/180/270 with upright cards; zoom to 200% with aligned targets
-- [x] Add a distinct sentence-ordering debug overlay
-- [x] Verify primary PDF 33 (4 exercises / 22 prompts), secondary PDF 65, and negatives (11, 16, 29, 30, 15, 21, 22, 8, 9, 10, 100, 120)
-- [x] Hardening: zoom persists across F5; terminal punctuation (`. ? !`) normalized as independent orderable items, attached and standalone OCR forms equivalent, abbreviations (`usw.`/`z.B.`) preserved
-- [x] Hardening: wrapped continuation lines merge into their prompt (PDF 15 exercise 3 = exactly 5 prompts)
-- [x] Hardening: two-column exercises — column structure inferred from geometry (shared print rows), continuations group within their own column, reading order left column top-to-bottom then right column top-to-bottom; indented dialogue rows stay single-column
-- [x] Hardening: collapsed floating bubbles are draggable too — shared click-vs-drag pointer state (5 px threshold), click still expands, release after drag stays collapsed, clamped to the visible reader area
-- [x] Hardening: answer UI moved from floating cards to a side panel outside the PDF (tabbed with Debug, collapsible, keyboard-accessible)
-- [x] Hardening: single-flight processing — one heavy analysis at a time, navigation no longer aborts it, client disconnects logged as expected not as errors
-- [x] Hardening: processing target identity separate from the global lock — only the analyzed page shows the processing shell; other pages render normally with a "Processing page N…" indicator and a disabled Process action, no stale shell on navigation
-- [x] Hardening: PDF 21 hybrid ordering/transformation variant documented as a limitation for a later FreeText interaction
-- [x] Hardening: explicit **Update analysis** action on any `READY` page with persisted analysis reruns OCR + detection on demand (single-flight, no auto-reprocess)
-- [x] Hardening: ordering presentation returns to floating per-exercise bubbles (one expanded at a time, drag handle, collapse/close/reopen) with Dock → right-rail panel → Float round-trip sharing one answer state; smart default position from exercise geometry, session-only drag positions, upright at all rotations/zooms
+- Supports printed fragment sequences with stable item identity.
+- Wrapped and two-column layouts are handled only when geometry is unambiguous.
+- Prompts requiring conjugation or rewriting are not misrepresented as pure
+  ordering; a transformation-capable interaction is future work.
 
-PoC 4 is intentionally structural. It detects ordering prompts and records the learner's chosen sequence; it does not know the correct order, does not parse the answer key, and does not implement grading or explanations.
+### Matching
 
-### Known follow-up (non-blocking for PoC 5)
+- Supports one-to-one pairs with printed anchor evidence.
+- One-to-many, image-to-text, and anchorless layouts are not supported.
+- Ambiguous or heavily interleaved layouts fail closed.
 
-- Terminal punctuation (`. ? !`) is now represented as ORDERABLE
-  sentence-ordering items, and that behavior is ACCEPTED for PoC 4. However,
-  punctuation splitting/detection still needs additional refinement on some
-  real workbook pages (edge cases around attached vs. standalone marks,
-  multi-mark runs, and abbreviation-like periods). This is recorded as a
-  known follow-up for later hardening — do NOT treat punctuation detection as
-  fully solved.
+### FreeText
 
-## PoC 5: Matching Interactions (Complete)
+- Supports isolated writing lines and aligned multi-line response areas.
+- Single unprompted rules, form-like fields, and dense boxed regions are
+  intentionally rejected to avoid false positives.
+- Learner text is local; the current interaction does not infer correctness.
 
-- [x] Detect clean two-column one-to-one matching exercises locally without a VLM (`matching-v1`)
-- [x] Use printed connection anchor dots as the primary evidence: isolated small filled blobs forming two perfectly aligned vertical columns
-- [x] Reject punctuation glyphs (`?`/`!`/periods), prose, unrelated lists, vocabulary columns, FillBlank rows, ChoiceGrid tables, SentenceOrdering separator dots, headers/footers, and weak 1–2-dot candidates
-- [x] Persist interaction, item, and anchor normalized geometry additively in `PageAnalysis` v0.2 (no migration)
-- [x] Deterministic IDs (`matching-page-index`, items `-left-i` / `-right-j`)
-- [x] Tolerant label detection: numeric left (`1`–`6`) and alphabetic right (`A`–`F`) labels, standalone or glued; ordinary uppercase words never become labels
-- [x] Multi-line (wrapped) items grouped within their row band; reading order per side independent of the printed right-side scramble
-- [x] Multiple exercises per page: stacked exercises share anchor columns and split by row gap (page 106 = 3 exercises, page 188 = 2)
-- [x] Missing single anchors tolerated (`anchorBbox: null`, item still interactive)
-- [x] Click-to-pair UX directly on the page: left → right and right → left, active-item highlight, thin SVG connection lines between printed anchors
-- [x] One-to-one enforced structurally: rematching frees both previous partners; unpair via anchor ✕; compact reset pill per exercise
-- [x] Persist partial `leftItemId -> rightItemId` answers locally (kind `matching`)
-- [x] Fingerprints ignore rotation/zoom/view state; stale geometry or item-count changes invalidate answers
-- [x] Restore pairs across navigation and hard refresh; mixed stores with PoC 1–4 answers verified
-- [x] Lines and hitboxes rotate 0/90/180/270 and zoom to 200% with the shared normalized geometry (`rotateBBox`)
-- [x] Exercise-isolated state: clicks in exercise A never connect to exercise B
-- [x] Keyboard-accessible item buttons with aria labels and focus styles; no mouse-only paths
-- [x] Add a distinct matching debug overlay (exercise/items/anchors, left/right colored)
-- [x] Verify primary PDF 49 (printed 53, exercise 5: exactly 1 interaction, 6+6 items, 12/12 anchors) and secondaries 48, 106 (×3), 188 (×2), 130, 182, 8, 29
-- [x] Verify negatives: 5, 11, 15, 16, 18, 20, 21, 30, 33, 39, 44, 65, 70, 100, 120, 243 (0 detections; all prior interaction types unchanged)
-- [x] Detector runtime ~70–130 ms/page (matching-v1 alone)
+## Verification policy
 
-PoC 5 is intentionally structural. It detects clean two-column one-to-one
-exercises and records the learner's chosen pairs; it does NOT know which pairs
-are correct, does not parse the answer key, and does not implement grading or
-explanations (Answer Key + Correction is a later PoC).
+Automated tests generate their own public-safe geometry, OCR spans, analysis,
+and answers. The curated demo covers all six interaction families plus Classic
+Mode, correction, navigation, progress, responsive layouts, and recovery. Local
+private-source compatibility may be checked separately through ignored local
+configuration and process-local environment variables; results and source
+material must never become tracked fixtures or public assets.
 
-### Known follow-up (for later hardening)
+## Next product capabilities
 
-- Matching exercises without printed anchor dots are not detected.
-- One-to-many / many-to-many / image-to-text matching are out of scope.
-- Exercises stacked without a title-line gap merge into one interaction;
-  side-by-side exercises with horizontally interleaved columns are not
-  supported.
+- Vocabulary capture and click-to-translate.
+- More explicit grammar explanations grounded in source evidence.
+- Additional transformation-aware interaction types.
+- Optional user accounts and cross-device progress, only with a deliberate
+  privacy and abuse-control design.
+- Production observability, backup/restore drills, and live deployment runbooks.
 
-## PoC 6: FreeText Interactions (Complete)
-
-- [x] Detect FreeText writing areas locally without a VLM (`free-text-v1`): long thin lines whose print rows are empty, clustered into aligned stacks
-- [x] Explicit FillBlank vs FreeText separation: row-band emptiness + stack structure + prompt proximity; a line claimed by FreeText is removed from `exerciseBlanks` (IoU ≥ 0.5), everything else stays
-- [x] One or two lines accepted only with a printed prompt near the stack; three or more clean parallel lines stand on their own; single un-prompted rules, underlines, footers, decorative rules, tables and grids rejected
-- [x] Persist interaction and per-line normalized geometry additively in `PageAnalysis` v0.2 (no migration, schemaVersion unchanged)
-- [x] Deterministic IDs (`free-text-page-index`, lines `-line-j`)
-- [x] Frontend: single-line response → text input centered on the printed line; multi-line response → one textarea whose line height matches the printed spacing
-- [x] Persist learner text locally (kind `free-text`); fingerprints ignore rotation/zoom/view state; stale geometry or line-count changes invalidate answers
-- [x] Restore answers across navigation and hard refresh; clearing the input persists as empty; mixed stores with PoC 1–5 answers verified
-- [x] Overlay rotates 0/90/180/270 and zooms 75%–200% with the shared normalized geometry; typing/selection/editing work; focus ring and aria-labels present
-- [x] Add a distinct free-text debug overlay (writing area, per-line rects, id/score/line count)
-- [x] Verify primary PDF 28 (1 interaction, 10 response lines) and secondaries 149, 104, 21, 29, 182, 132; 22 negative pages with zero false positives; all prior interaction types unchanged
-- [x] Detector runtime ~150–330 ms/page on CPU (PaddleOCR excluded)
-
-PoC 6 is intentionally structural. It detects writing areas and records the
-learner's own text; it does NOT know the correct answer, does not parse the
-answer key, and does not implement grading or explanations (Answer Key +
-Correction is a later PoC). Manual acceptance covered representative FreeText
-pages, persistence, zoom, rotation, and coexistence with earlier interaction
-types. The broad reader UX overhaul belongs to PoC 6.5.
-
-### Known follow-up (for later hardening and PoC 6.5)
-
-- SentenceOrdering has false positives on some layouts. This is existing
-  detector-hardening work; PoC 6 did not change SentenceOrdering behavior.
-- Hybrid sentence construction, conjugation, and rewriting exercises need
-  better interaction modeling than the current SentenceOrdering abstraction.
-- PoC 6.5 should add explicit convenient previous/next or incremental page
-  navigation controls as part of the professional reader redesign. Do not
-  restore browser-native number-input spinners.
-
-## Interactive Mode MVP (Release Candidate)
-
-- [x] Add a persisted Interactive / Classic reader mode without rewriting Classic
-- [x] Define a provenance-bearing native `Lesson` model projected from `PageAnalysis`
-- [x] Render context, fill, choice, grid, ordering, matching, and free-text lesson blocks
-- [x] Reuse the existing answer store across both modes
-- [x] Integrate authoritative correction, reveal, retry, and unresolved states without client-side guessing
-- [x] Add lesson navigation and explicit unavailable, loading, failed, and empty states
-- [x] Validate representative real pages spanning all supported interaction families
-- [x] Validate dark/light themes, keyboard operation, WCAG A/AA rules, and narrow responsive layouts
-- [x] Keep Classic PDF rendering behind a lazy runtime boundary
-- [x] Gate the reader journey with deterministic Playwright tests and generated fixtures
-
-The MVP deliberately projects one analyzed source page at a time. It generalizes across persisted interaction structures while retaining Classic as the exact-layout fallback; it is not a bulk workbook conversion system.
-
-## Planned Product Capabilities
-
-### Learning tools
-
-- [ ] Click-to-translate
-- [ ] Contextual vocabulary persistence
-- [x] Interactive graphical fill-in-the-blank placement
-- [x] Interactive choice-marker placement
-- [x] Interactive choice-grid placement
-- [x] Interactive sentence-ordering placement
-- [x] Interactive matching placement (one-to-one)
-- [x] Interactive free-text writing placement
-- [x] Authoritative answer-key correction with safe unresolved states
-- [ ] Generated explanations
-- [ ] Highlights and annotations
-
-### Analysis
-
-- [ ] Higher-level visual understanding
-- [ ] Optional VLM or Gemini-based analysis where useful
-- [x] Graphical fill-in-the-blank placement
-- [x] Choice-marker interactions (`targetId -> optionId`)
-- [x] Choice-grid interactions (`rowId -> selectedColumnOptionId`)
-- [x] Sentence-ordering interactions (`interactionId -> orderedItemIds`)
-- [x] Matching interactions (`leftItemId -> rightItemId`, one-to-one)
-- [x] FreeText interactions (`interactionId -> learner text`)
-- [ ] Matching variants: one-to-many, many-to-many, image-to-text
-- [x] Existing answer-key resolution surfaced in Interactive and Classic modes
-
-### Books and processing
-
-- [ ] Book library UI
-- [ ] Background multi-page processing
-- [ ] Page thumbnails or continuous navigation
-- [ ] Processing history and operational controls
-
-### Later
-
-- [ ] RAG or book chat
-- [ ] User authentication
-- [x] Responsive web adaptation for the Interactive reader
-- [ ] Native mobile app
-- [ ] EPUB or DOCX support
-- [ ] LinguaTint integration
+Public deployment, domain/DNS, live TLS, authentication policy, and a real
+provider smoke remain operational launch work rather than repository fixtures.

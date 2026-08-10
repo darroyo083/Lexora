@@ -116,6 +116,7 @@ export function readRevealBitsForPage(
 
   const blankIds = new Set(blanks.map((b) => b.id));
   const choiceIds = new Set(choices.map((c) => c.id));
+  const gridIds = new Set(grids.map((g) => g.id));
   const gridRowIds = new Set(grids.flatMap((g) => g.rows.map((r) => r.id)));
   const orderingIds = new Set(sentenceOrderings.map((o) => o.id));
   const matchingIds = new Set(matchings.map((m) => m.id));
@@ -124,7 +125,7 @@ export function readRevealBitsForPage(
   const result: Record<string, boolean> = {};
   for (const [id, revealed] of Object.entries(byPage)) {
     if (
-      blankIds.has(id) || choiceIds.has(id) || gridRowIds.has(id) ||
+      blankIds.has(id) || choiceIds.has(id) || gridIds.has(id) || gridRowIds.has(id) ||
       orderingIds.has(id) || matchingIds.has(id) || freeTextIds.has(id)
     ) {
       if (revealed) result[id] = true;

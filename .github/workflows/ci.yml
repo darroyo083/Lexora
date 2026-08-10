@@ -80,12 +80,6 @@ jobs:
     name: Integration (backend + postgres)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' &&
-       (contains(join(github.event.pull_request.changed_files, ','), 'backend/') ||
-        contains(join(github.event.pull_request.changed_files, ','), 'db/migration/')))
     services:
       postgres:
         image: postgres:18-alpine
@@ -124,7 +118,7 @@ jobs:
           trap 'kill $pid 2>/dev/null || true' EXIT
           for i in $(seq 1 90); do
             if curl -fsS http://localhost:8080/api/books >/dev/null 2>&1; then
-              echo "Backend healthy: GET /api/books returned 200 (Flyway V001-V004 applied)"
+              echo "Backend healthy: GET /api/books returned 200 (Flyway V001-V006 applied)"
               exit 0
             fi
             sleep 2

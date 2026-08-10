@@ -66,6 +66,36 @@ class PublicDemoAccessFilterTest {
         verify(chain).doFilter(request, response);
     }
 
+    @Test
+    void publicModeDecodesEncodedPathsBeforeAuthorizing() throws Exception {
+        var request = request(
+            "GET",
+            "/api/books%2F" + PublicDemoConstants.BOOK_ID + "/pages/1"
+        );
+        var response = new MockHttpServletResponse();
+        var chain = mock(FilterChain.class);
+
+        new PublicDemoAccessFilter(true).doFilter(request, response, chain);
+
+        verify(chain).doFilter(request, response);
+    }
+
+    @Test
+    void publicModeRejectsEncodedNonDemoBookPath() throws Exception {
+        var request = request(
+            "GET",
+            "/api/books%2F11111111-1111-4111-8111-111111111111/source"
+        );
+        var response = new MockHttpServletResponse();
+        var chain = mock(FilterChain.class);
+
+        new PublicDemoAccessFilter(true).doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(404);
+        assertThat(response.getContentAsString()).contains("DEMO_BOOK_NOT_FOUND");
+        verifyNoInteractions(chain);
+    }
+
     private static MockHttpServletRequest request(String method, String uri) {
         var request = new MockHttpServletRequest(method, uri);
         request.setRequestURI(uri);

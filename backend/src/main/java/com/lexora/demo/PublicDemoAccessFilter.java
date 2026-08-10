@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 @Component
@@ -32,7 +34,7 @@ public class PublicDemoAccessFilter extends OncePerRequestFilter {
         HttpServletResponse response,
         FilterChain filterChain
     ) throws ServletException, IOException {
-        if (!enabled || !request.getRequestURI().startsWith("/api/books")) {
+        if (!enabled || !decodedPath(request).startsWith("/api/books")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -42,7 +44,7 @@ public class PublicDemoAccessFilter extends OncePerRequestFilter {
             return;
         }
 
-        var matcher = BOOK_PATH.matcher(request.getRequestURI());
+        var matcher = BOOK_PATH.matcher(decodedPath(request));
         if (matcher.matches()
             && !matcher.group(1).equalsIgnoreCase(PublicDemoConstants.BOOK_ID.toString())) {
             reject(response, HttpServletResponse.SC_NOT_FOUND, "DEMO_BOOK_NOT_FOUND");
@@ -50,6 +52,21 @@ public class PublicDemoAccessFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * The decoded application path, so encoded separators cannot smuggle a
+     * non-demo book past the filter (authorization must not depend on the
+     * container's raw-URI handling). The context path is excluded; percent
+     * sequences are decoded with the same UTF-8 assumption Spring uses.
+     */
+    private static String decodedPath(HttpServletRequest request) {
+        var requestUri = request.getRequestURI();
+        var contextPath = request.getContextPath();
+        var raw = !contextPath.isEmpty() && requestUri.startsWith(contextPath)
+            ? requestUri.substring(contextPath.length())
+            : requestUri;
+        return URLDecoder.decode(raw, StandardCharsets.UTF_8);
     }
 
     private static void reject(HttpServletResponse response, int status, String code)

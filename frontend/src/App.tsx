@@ -6,6 +6,8 @@ import PageViewer from './reader/PageViewer';
 import LeftRail from './components/LeftRail';
 import ReaderToolbar from './components/ReaderToolbar';
 import RightRail from './components/RightRail';
+import InteractiveLesson from './interactive/InteractiveLesson';
+import { projectLesson } from './interactive/projectLesson';
 import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './reader/types';
 import {
   emptyPageInteractionState,
@@ -67,6 +69,7 @@ import {
   writeThemeModePreference,
   type ThemeMode,
 } from './state/theme';
+import { readReaderMode, writeReaderMode, type ReaderMode } from './state/readerMode';
 
 type Status = 'idle' | 'restoring' | 'uploading' | 'ready';
 
@@ -149,7 +152,10 @@ export default function App() {
   const { mode: orderingMode, expandedExerciseId: expandedOrderingExercise, closedExerciseIds: closedOrderingExercises } = orderingView;
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => readThemeModePreference());
+  const [readerMode, setReaderMode] = useState<ReaderMode>(readReaderMode);
   const [answerKey, setAnswerKey] = useState<AnswerKey | null>(null);
+  const [pageUnitNumber, setPageUnitNumber] = useState<number | null>(null);
+  const [pageUnitTitle, setPageUnitTitle] = useState<string | null>(null);
   const [correctionSlots, setCorrectionSlots] = useState<CorrectionSlot[]>([]);
   const [correctionVerdicts, setCorrectionVerdicts] = useState<Record<string, CorrectionVerdict | undefined>>({});
   const [correctionResolutions, setCorrectionResolutions] = useState<Record<string, AnswerResolutionStatus>>({});
@@ -171,6 +177,11 @@ export default function App() {
       writeThemeModePreference(next);
       return next;
     });
+  }, []);
+
+  const handleReaderModeChange = useCallback((mode: ReaderMode) => {
+    setReaderMode(mode);
+    writeReaderMode(mode);
   }, []);
 
   const handleToggleDevMode = useCallback(() => {
@@ -420,15 +431,23 @@ export default function App() {
     if (!book || status === 'restoring') return;
     if (!answerKey) {
       setCorrectionSlots([]);
+      setPageUnitNumber(null);
+      setPageUnitTitle(null);
       return;
     }
     const controller = new AbortController();
     fetchPageCorrection(book.id, selectedPage, controller.signal)
-      .then((resolution) => setCorrectionSlots(resolution.slots))
+      .then((resolution) => {
+        setCorrectionSlots(resolution.slots);
+        setPageUnitNumber(resolution.unitNumber);
+        setPageUnitTitle(resolution.unitTitle);
+      })
       .catch((error) => {
         if (error.name !== 'AbortError') {
           console.warn('Correction resolution failed:', error);
           setCorrectionSlots([]);
+          setPageUnitNumber(null);
+          setPageUnitTitle(null);
         }
       });
     return () => controller.abort();
@@ -863,6 +882,42 @@ export default function App() {
     return pairs;
   }, [correctionSlots, interaction.matchings]);
 
+  const expectedAnswersByItem = useMemo(() => {
+    const expected: Record<string, string> = {};
+    const resolvedEntry = (kind: string, ordinal: number) => {
+      const slot = correctionSlots.find(
+        (candidate) => candidate.interactionKind === kind && candidate.ordinal === ordinal,
+      );
+      return slot?.resolution === 'RESOLVED' ? slot.entry : null;
+    };
+    interaction.blanks.forEach((item, index) => {
+      const entry = resolvedEntry('fill-in-line', index);
+      if (entry) expected[item.id] = entry.expectedValue;
+    });
+    interaction.choices.forEach((item, index) => {
+      const entry = resolvedEntry('choice', index);
+      if (entry) expected[item.id] = entry.expectedValue;
+    });
+    interaction.grids.forEach((item, index) => {
+      const entry = resolvedEntry('choice-grid', index);
+      if (entry) expected[item.id] = entry.expectedValue;
+    });
+    interaction.sentenceOrderings.forEach((item, index) => {
+      const entry = resolvedEntry('sentence-ordering', index);
+      if (entry) expected[item.id] = entry.expectedValue;
+    });
+    interaction.matchings.forEach((item, index) => {
+      const entry = resolvedEntry('matching', index);
+      if (entry) expected[item.id] = entry.expectedValue;
+    });
+    interaction.freeTexts.forEach((item, index) => {
+      const entry = resolvedEntry('free-text', index);
+      const reference = entry?.typedPayload?.kind === 'reference' ? entry.typedPayload.modelText : null;
+      if (reference) expected[item.id] = reference;
+    });
+    return expected;
+  }, [correctionSlots, interaction]);
+
   const handleCorrectionRetry = useCallback((itemId: string) => {
     setCorrectionVerdicts((prev) => {
       const next = { ...prev };
@@ -911,6 +966,12 @@ export default function App() {
   const processingBusy = processingTarget !== null;
   const processControl = resolveProcessControl(pageStage, getPageProcessAction(page));
   const processButtonLabel = processLabel(processControl);
+  const lessonProjection = useMemo(() => projectLesson({
+    bookId: book?.id ?? '',
+    pageNumber: selectedPage,
+    analysis: page?.processingStatus === 'READY' ? page.analysis : null,
+    unit: pageUnitNumber ? { number: pageUnitNumber, title: pageUnitTitle } : null,
+  }), [book?.id, page, pageUnitNumber, pageUnitTitle, selectedPage]);
 
   return (
     <div className="app" data-design="stitch" data-theme={theme} data-dev-mode={devMode}>
@@ -942,14 +1003,44 @@ export default function App() {
           onToggleDevMode={handleToggleDevMode}
           theme={theme}
           onToggleTheme={handleToggleTheme}
+          readerMode={readerMode}
+          onReaderModeChange={handleReaderModeChange}
         />
 
-        <main className="reader-layout">
+        <main className={`reader-layout ${readerMode === 'interactive' ? 'reader-layout-interactive' : ''}`}>
           <div className="page-area">
             {status === 'restoring' ? (
               <div className="restoration-skeleton" aria-label="Restoring PDF">
                 <Skeleton width="100%" height="100%" />
               </div>
+            ) : readerMode === 'interactive' && book ? (
+              <InteractiveLesson
+                projection={lessonProjection}
+                pageNumber={selectedPage}
+                pageCount={book.pageCount}
+                pageStage={pageStage}
+                answers={interaction.answers}
+                matchingSelection={matchingSelection}
+                verdictByItem={correctionVerdicts}
+                resolutionByItem={correctionResolutions}
+                correctionDetails={correctionDetails}
+                reveal={correctionReveal}
+                expectedByItem={expectedAnswersByItem}
+                canCheck={answerKey !== null}
+                onSelectPage={selectPage}
+                onProcessPage={() => void handleProcessPage()}
+                onUseClassic={() => handleReaderModeChange('classic')}
+                onAnswerChange={handleAnswerChange}
+                onChoiceSelect={handleChoiceSelect}
+                onGridSelect={handleGridSelect}
+                onOrderingItemClick={handleOrderingFragmentClick}
+                onMatchingItemClick={handleMatchingItemClick}
+                onMatchingUnpair={handleMatchingUnpair}
+                onMatchingReset={handleMatchingReset}
+                onCheck={handleCorrectionCheck}
+                onRetry={handleCorrectionRetry}
+                onReveal={handleCorrectionReveal}
+              />
             ) : pdfData ? (
               <PageViewer
                 pdfData={pdfData}
@@ -1030,7 +1121,7 @@ export default function App() {
             )}
           </div>
 
-          <RightRail
+          {readerMode === 'classic' && <RightRail
             devMode={devMode}
             spans={interaction.spans}
             blanks={interaction.blanks}
@@ -1079,7 +1170,7 @@ export default function App() {
             onCheck={handleCorrectionCheck}
             onRetry={handleCorrectionRetry}
             onReveal={handleCorrectionReveal}
-          />
+          />}
         </main>
       </div>
     </div>

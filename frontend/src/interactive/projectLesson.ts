@@ -56,6 +56,8 @@ function spanText(spanIds: string[], spansById: Map<string, TextSpan>): string |
     .filter(Boolean)
     .join(' ')
     .replace(/\s+/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/([.!?])(?:\s*\1)+/g, '$1')
     .trim();
   return text || null;
 }

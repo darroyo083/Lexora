@@ -16,7 +16,8 @@ function analysis(overrides: Partial<PageAnalysis> = {}): PageAnalysis {
     textSpans: [
       { id: 'title', text: 'Konjunktiv II', confidence: 0.99, confidenceScope: 'line', bbox: box(0.1, 0.04, 0.5) },
       { id: 'instruction', text: 'Ergänzen Sie die Sätze.', confidence: 0.96, confidenceScope: 'line', bbox: box(0.1, 0.15, 0.5) },
-      { id: 'blank-prompt', text: 'Wenn ich Zeit hätte', confidence: 0.93, confidenceScope: 'line', bbox: box(0.1, 0.28, 0.4) },
+      { id: 'blank-prompt', text: 'Wenn ich Zeit hätte?', confidence: 0.93, confidenceScope: 'line', bbox: box(0.1, 0.28, 0.4) },
+      { id: 'blank-punctuation', text: '?', confidence: 0.9, confidenceScope: 'line', bbox: box(0.52, 0.28, 0.02) },
       { id: 'choice-prompt', text: 'Wählen Sie die richtige Form', confidence: 0.92, confidenceScope: 'line', bbox: box(0.1, 0.39, 0.5) },
       { id: 'grid-prompt', text: 'Ordnen Sie die Aussagen zu', confidence: 0.91, confidenceScope: 'line', bbox: box(0.1, 0.5, 0.5) },
       { id: 'ordering-prompt', text: 'Bilden Sie einen Satz', confidence: 0.9, confidenceScope: 'line', bbox: box(0.1, 0.61, 0.4) },
@@ -24,8 +25,8 @@ function analysis(overrides: Partial<PageAnalysis> = {}): PageAnalysis {
       { id: 'free-prompt', text: 'Schreiben Sie Ihre Antwort', confidence: 0.88, confidenceScope: 'line', bbox: box(0.1, 0.84, 0.4) },
     ],
     exerciseBlanks: [
-      { id: 'blank-1', kind: 'fill-in-line', lineBbox: box(0.5, 0.3), interactionBbox: box(0.48, 0.29), detectionMethod: 'horizontal-line-v1', candidateScore: 0.9, nearbyTextSpanIds: ['blank-prompt'] },
-      { id: 'blank-2', kind: 'fill-in-line', lineBbox: box(0.5, 0.33), interactionBbox: box(0.48, 0.32), detectionMethod: 'short-suffix-line-v1', candidateScore: 0.8, nearbyTextSpanIds: ['blank-prompt'] },
+      { id: 'blank-1', kind: 'fill-in-line', lineBbox: box(0.5, 0.3), interactionBbox: box(0.48, 0.29), detectionMethod: 'horizontal-line-v1', candidateScore: 0.9, nearbyTextSpanIds: ['blank-prompt', 'blank-punctuation'] },
+      { id: 'blank-2', kind: 'fill-in-line', lineBbox: box(0.5, 0.33), interactionBbox: box(0.48, 0.32), detectionMethod: 'short-suffix-line-v1', candidateScore: 0.8, nearbyTextSpanIds: ['blank-prompt', 'blank-punctuation'] },
     ],
     blankDetection: null,
     choiceGroups: [{ id: 'choice-group', options: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }] }],
@@ -88,7 +89,7 @@ describe('projectLesson', () => {
     expect(blocks[1]).toMatchObject({ kind: 'context', variant: 'instruction' });
     expect(blocks[2]).toMatchObject({
       kind: 'fill-blank',
-      prompt: 'Wenn ich Zeit hätte',
+      prompt: 'Wenn ich Zeit hätte?',
       evidence: { interactionIds: ['blank-1', 'blank-2'], detectionMethods: ['horizontal-line-v1', 'short-suffix-line-v1'] },
     });
     expect(blocks[3]).toMatchObject({ kind: 'choice', group: { id: 'choice-group' } });

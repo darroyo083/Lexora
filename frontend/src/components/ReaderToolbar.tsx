@@ -3,6 +3,7 @@ import { Sun, Moon } from 'lucide-react';
 import type { ThemeMode } from '../state/theme';
 import { ZOOM_OPTIONS } from '../reader/zoom';
 import type { ProcessControl, ProcessingTarget } from '../reader/processing';
+import type { ReaderMode } from '../state/readerMode';
 
 interface BookInfo {
   id: string;
@@ -31,6 +32,8 @@ interface Props {
   onToggleDevMode: () => void;
   theme: ThemeMode;
   onToggleTheme: () => void;
+  readerMode: ReaderMode;
+  onReaderModeChange: (mode: ReaderMode) => void;
 }
 
 function useRepeatPageAction(onStep: () => void, disabled: boolean) {
@@ -109,6 +112,8 @@ export default function ReaderToolbar({
   onToggleDevMode,
   theme,
   onToggleTheme,
+  readerMode,
+  onReaderModeChange,
 }: Props) {
   const canGoPrev = book ? selectedPage > 1 : false;
   const canGoNext = book ? selectedPage < book.pageCount : false;
@@ -162,6 +167,25 @@ export default function ReaderToolbar({
 
       <div className="toolbar-center">
         {book && (
+          <div className="reader-mode-switch" role="group" aria-label="Reader mode">
+            <button
+              type="button"
+              aria-pressed={readerMode === 'classic'}
+              onClick={() => onReaderModeChange('classic')}
+            >
+              Classic
+            </button>
+            <button
+              type="button"
+              aria-pressed={readerMode === 'interactive'}
+              onClick={() => onReaderModeChange('interactive')}
+            >
+              Interactive
+            </button>
+          </div>
+        )}
+
+        {book && (
           <div className="page-nav-group" aria-label="Page Navigation">
             <button
               type="button"
@@ -204,7 +228,7 @@ export default function ReaderToolbar({
           </div>
         )}
 
-        <div className="view-controls">
+        {readerMode === 'classic' && <div className="view-controls">
           <select
             value={zoom}
             onChange={(event) => onZoomChange(Number(event.target.value))}
@@ -241,7 +265,7 @@ export default function ReaderToolbar({
               </button>
             </div>
           )}
-        </div>
+        </div>}
       </div>
 
       <div className="toolbar-right">

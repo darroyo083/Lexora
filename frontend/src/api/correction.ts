@@ -63,6 +63,7 @@ export interface PageCorrectionResolution {
   bookId: string;
   pageNumber: number;
   unitNumber: number | null;
+  unitTitle: string | null;
   status: PageCorrectionStatus;
   slots: CorrectionSlot[];
 }

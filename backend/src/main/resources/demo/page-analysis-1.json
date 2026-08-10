@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "0.2.0",
+  "pageNumber": 1,
+  "width": 1224,
+  "height": 1584,
+  "language": "de",
+  "textSpans": [
+    {"id":"title","text":"A deliberate daily practice","confidence":1.0,"confidenceScope":"page","parentLineId":null,"bbox":{"x":0.09,"y":0.06,"width":0.58,"height":0.04}},
+    {"id":"intro","text":"Small routines make language practice easier to repeat.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.12,"width":0.62,"height":0.025}},
+    {"id":"fill-prompt","text":"Complete: Jeden Morgen ___ ich Deutsch.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.22,"width":0.58,"height":0.025}},
+    {"id":"choice-prompt","text":"Choose the greeting used in the morning.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.33,"width":0.58,"height":0.025}},
+    {"id":"grid-prompt","text":"Choose the article for Kaffee.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.44,"width":0.5,"height":0.025}},
+    {"id":"order-prompt","text":"Put the sentence in order.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.55,"width":0.45,"height":0.025}},
+    {"id":"match-prompt","text":"Match each German word with its English meaning.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.67,"width":0.68,"height":0.025}},
+    {"id":"free-prompt","text":"Write one sentence about your study routine.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.82,"width":0.62,"height":0.025}}
+  ],
+  "exerciseBlanks": [
+    {"id":"blank-1","kind":"fill-in-line","lineBbox":{"x":0.29,"y":0.245,"width":0.16,"height":0.008},"interactionBbox":{"x":0.28,"y":0.225,"width":0.18,"height":0.04},"detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["fill-prompt"]}
+  ],
+  "blankDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"durationMs":0},
+  "choiceGroups": [
+    {"id":"greetings","options":[{"id":"morning","label":"Guten Morgen"},{"id":"night","label":"Gute Nacht"}]},
+    {"id":"articles","options":[{"id":"der","label":"der"},{"id":"die","label":"die"},{"id":"das","label":"das"}]}
+  ],
+  "choiceTargets": [
+    {"id":"choice-1","kind":"choice","targetBbox":{"x":0.09,"y":0.365,"width":0.5,"height":0.045},"interactionBbox":{"x":0.08,"y":0.355,"width":0.58,"height":0.065},"optionGroupId":"greetings","detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["choice-prompt"]}
+  ],
+  "choiceDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
+  "choiceGrids": [
+    {"id":"grid-1","kind":"choice-grid","gridBbox":{"x":0.09,"y":0.475,"width":0.62,"height":0.055},"optionGroupId":"articles","detectionMethod":"vision-structured-v1","candidateScore":1.0,"rows":[{"id":"coffee-row","rowBbox":{"x":0.09,"y":0.475,"width":0.62,"height":0.055},"promptBbox":{"x":0.09,"y":0.475,"width":0.22,"height":0.04},"nearbyTextSpanIds":["grid-prompt"],"cells":[{"id":"coffee-der","optionId":"der","cellBbox":{"x":0.35,"y":0.475,"width":0.08,"height":0.04},"interactionBbox":{"x":0.34,"y":0.468,"width":0.1,"height":0.055}},{"id":"coffee-die","optionId":"die","cellBbox":{"x":0.46,"y":0.475,"width":0.08,"height":0.04},"interactionBbox":{"x":0.45,"y":0.468,"width":0.1,"height":0.055}},{"id":"coffee-das","optionId":"das","cellBbox":{"x":0.57,"y":0.475,"width":0.08,"height":0.04},"interactionBbox":{"x":0.56,"y":0.468,"width":0.1,"height":0.055}}]}]}
+  ],
+  "choiceGridDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
+  "sentenceOrderings": [
+    {"id":"ordering-1","kind":"sentence-ordering","bbox":{"x":0.09,"y":0.59,"width":0.65,"height":0.06},"exerciseId":"daily-order","promptIndex":1,"detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["order-prompt"],"items":[{"id":"word-1","text":"Ich","bbox":{"x":0.1,"y":0.6,"width":0.08,"height":0.03},"originalIndex":1},{"id":"word-2","text":"lerne","bbox":{"x":0.2,"y":0.6,"width":0.1,"height":0.03},"originalIndex":2},{"id":"word-3","text":"jeden","bbox":{"x":0.32,"y":0.6,"width":0.1,"height":0.03},"originalIndex":3},{"id":"word-4","text":"Tag","bbox":{"x":0.44,"y":0.6,"width":0.08,"height":0.03},"originalIndex":4}]}
+  ],
+  "sentenceOrderingDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
+  "matchingInteractions": [
+    {"id":"matching-1","kind":"matching","bbox":{"x":0.09,"y":0.7,"width":0.7,"height":0.1},"detectionMethod":"vision-structured-v1","candidateScore":1.0,"cardinality":"one-to-one","nearbyTextSpanIds":["match-prompt"],"leftItems":[{"id":"left-learn","label":"1","text":"lernen","bbox":{"x":0.1,"y":0.72,"width":0.18,"height":0.03},"anchorBbox":null,"nearbyTextSpanIds":[]},{"id":"left-book","label":"2","text":"Buch","bbox":{"x":0.1,"y":0.76,"width":0.18,"height":0.03},"anchorBbox":null,"nearbyTextSpanIds":[]}],"rightItems":[{"id":"right-study","label":"A","text":"study","bbox":{"x":0.48,"y":0.72,"width":0.18,"height":0.03},"anchorBbox":null,"nearbyTextSpanIds":[]},{"id":"right-book","label":"B","text":"book","bbox":{"x":0.48,"y":0.76,"width":0.18,"height":0.03},"anchorBbox":null,"nearbyTextSpanIds":[]}]}
+  ],
+  "matchingDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
+  "freeTextInteractions": [
+    {"id":"free-1","kind":"free-text","bbox":{"x":0.09,"y":0.85,"width":0.7,"height":0.09},"detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["free-prompt"],"responseLines":[{"id":"free-line-1","bbox":{"x":0.1,"y":0.88,"width":0.66,"height":0.008}},{"id":"free-line-2","bbox":{"x":0.1,"y":0.91,"width":0.66,"height":0.008}}]}
+  ],
+  "freeTextDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
+  "processor": {"engine":"openai-responses","engineVersion":"v1","model":"curated-provider-result","language":"de","parameters":{"curatedDemo":true},"processedAt":"2026-08-10T12:00:00Z","durationMs":0}
+}

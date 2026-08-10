@@ -1,0 +1,11 @@
+{
+  "schemaVersion":"0.2.0","pageNumber":2,"width":1224,"height":1584,"language":"de",
+  "textSpans":[
+    {"id":"theory-title","text":"Why repetition works","confidence":1.0,"confidenceScope":"page","parentLineId":null,"bbox":{"x":0.09,"y":0.08,"width":0.5,"height":0.04}},
+    {"id":"theory-one","text":"A short routine lowers the effort needed to begin. The same cue helps practice become familiar instead of accidental.","confidence":1.0,"confidenceScope":"paragraph","parentLineId":null,"bbox":{"x":0.09,"y":0.18,"width":0.72,"height":0.08}},
+    {"id":"theory-two","text":"Keep the task small, check the result, and return tomorrow. Consistency gives each new word another useful context.","confidence":1.0,"confidenceScope":"paragraph","parentLineId":null,"bbox":{"x":0.09,"y":0.3,"width":0.72,"height":0.08}},
+    {"id":"theory-example","text":"Example: Jeden Morgen lerne ich zehn Minuten Deutsch.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.44,"width":0.7,"height":0.035}}
+  ],
+  "exerciseBlanks":[],"blankDetection":null,"choiceGroups":[],"choiceTargets":[],"choiceDetection":null,"choiceGrids":[],"choiceGridDetection":null,"sentenceOrderings":[],"sentenceOrderingDetection":null,"matchingInteractions":[],"matchingDetection":null,"freeTextInteractions":[],"freeTextDetection":null,
+  "processor":{"engine":"openai-responses","engineVersion":"v1","model":"curated-provider-result","language":"de","parameters":{"curatedDemo":true},"processedAt":"2026-08-10T12:00:00Z","durationMs":0}
+}

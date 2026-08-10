@@ -95,6 +95,42 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   localStorage.clear();
+  window.history.replaceState({}, '', '/');
+});
+
+describe('curated public demo entry', () => {
+  it('opens the synthetic workbook without exposing upload or analysis actions', async () => {
+    window.history.replaceState({}, '', '/demo');
+
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/public-demo') {
+        return Promise.resolve(jsonResponse({ bookId: 'book-a', pageCount: 3 }));
+      }
+      if (url === '/api/books/book-a') {
+        return Promise.resolve(jsonResponse({ id: 'book-a', pageCount: 3 }));
+      }
+      if (url === '/api/books/book-a/pages/1') {
+        return Promise.resolve(jsonResponse(readyPage(1)));
+      }
+      if (url === '/api/books/book-a/answer-key') {
+        return Promise.resolve(jsonResponse(answerKey()));
+      }
+      if (url === '/api/books/book-a/pages/1/correction') {
+        return Promise.resolve(jsonResponse(correction(1)));
+      }
+      return Promise.reject(new Error(`Unexpected fetch: GET ${url}`));
+    }));
+
+    render(<App />);
+
+    await waitFor(() => expect(pageInput().max).toBe('3'));
+    expect(localStorage.getItem('lexora.currentBookId')).toBe('book-a');
+    expect(screen.queryByText('Upload PDF')).toBeNull();
+    expect(screen.queryByRole('button', { name: /process/i })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Classic' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Interactive' })).toBeTruthy();
+  });
 });
 
 describe('document selection races', () => {

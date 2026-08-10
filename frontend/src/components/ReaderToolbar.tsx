@@ -34,6 +34,7 @@ interface Props {
   onToggleTheme: () => void;
   readerMode: ReaderMode;
   onReaderModeChange: (mode: ReaderMode) => void;
+  readOnly?: boolean;
 }
 
 function useRepeatPageAction(onStep: () => void, disabled: boolean) {
@@ -114,6 +115,7 @@ export default function ReaderToolbar({
   onToggleTheme,
   readerMode,
   onReaderModeChange,
+  readOnly = false,
 }: Props) {
   const canGoPrev = book ? selectedPage > 1 : false;
   const canGoNext = book ? selectedPage < book.pageCount : false;
@@ -146,7 +148,7 @@ export default function ReaderToolbar({
           <span className="doc-tag">Workbook Reader</span>
         </div>
 
-        <label className="upload-btn" title="Upload a scanned workbook PDF">
+        {!readOnly && <label className="upload-btn" title="Upload a scanned workbook PDF">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="17 8 12 3 7 8" />
@@ -162,7 +164,7 @@ export default function ReaderToolbar({
               if (file) void onUpload(file);
             }}
           />
-        </label>
+        </label>}
       </div>
 
       <div className="toolbar-center">
@@ -269,7 +271,7 @@ export default function ReaderToolbar({
       </div>
 
       <div className="toolbar-right">
-        {book && (
+        {book && !readOnly && (
           <div className="analysis-action-group">
             <button
               type="button"

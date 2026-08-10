@@ -79,6 +79,11 @@ interface BookInfo {
   pageCount: number;
 }
 
+interface PublicDemoInfo {
+  bookId: string;
+  pageCount: number;
+}
+
 interface PendingPersist {
   bookId: string;
   pageNumber: number;
@@ -103,13 +108,15 @@ const SHOW_MATCHING_DETECTION_KEY = 'lexora.showMatchingDetection';
 const SHOW_FREE_TEXT_DETECTION_KEY = 'lexora.showFreeTextDetection';
 
 export default function App() {
+  const publicDemoEntry = window.location.pathname.startsWith('/demo');
   const [devMode, setDevMode] = useState<boolean>(() => (
     import.meta.env.DEV && readDevModePreference()
   ));
 
   const [status, setStatus] = useState<Status>(() => (
-    localStorage.getItem(CURRENT_BOOK_KEY) ? 'restoring' : 'idle'
+    localStorage.getItem(CURRENT_BOOK_KEY) || publicDemoEntry ? 'restoring' : 'idle'
   ));
+  const [publicDemo, setPublicDemo] = useState(false);
   const [book, setBook] = useState<BookInfo | null>(null);
   const [selectedPage, setSelectedPage] = useState(() => {
     const storedPage = Number(localStorage.getItem(CURRENT_PAGE_KEY));
@@ -412,21 +419,45 @@ export default function App() {
 
   useEffect(() => {
     const bookId = localStorage.getItem(CURRENT_BOOK_KEY);
-    if (!bookId) return;
+    if (!bookId && !publicDemoEntry) return;
 
     const restore = async () => {
       const restoreToken = uploadTokenRef.current;
       setStatus('restoring');
       try {
-        const bookRes = await fetch(`/api/books/${bookId}`);
+        let nextBookId = bookId;
+        let demoInfo: PublicDemoInfo | null = null;
+
+        if (publicDemoEntry) {
+          const demoRes = await fetch('/api/public-demo');
+          if (uploadTokenRef.current !== restoreToken) return;
+          if (!demoRes.ok) throw new Error('Public demo is unavailable');
+          const parsedDemo: PublicDemoInfo = await demoRes.json();
+          demoInfo = parsedDemo;
+          nextBookId = parsedDemo.bookId;
+          setPublicDemo(true);
+          setReaderMode('interactive');
+          writeReaderMode('interactive');
+        }
+
+        if (!nextBookId) {
+          setStatus('idle');
+          return;
+        }
+
+        const bookRes = await fetch(`/api/books/${nextBookId}`);
         if (uploadTokenRef.current !== restoreToken) return;
         if (!bookRes.ok) throw new Error('Stored book is unavailable');
 
         const storedBook: BookInfo = await bookRes.json();
+        if (demoInfo && storedBook.pageCount !== demoInfo.pageCount) {
+          throw new Error('Public demo metadata is inconsistent');
+        }
         const restoredPage = Math.min(activePage.current, storedBook.pageCount);
         if (uploadTokenRef.current !== restoreToken) return;
         setSelectedPage(restoredPage);
         localStorage.setItem(CURRENT_PAGE_KEY, String(restoredPage));
+        localStorage.setItem(CURRENT_BOOK_KEY, storedBook.id);
         setBook(storedBook);
         setPdfData(null);
         setRotation(readPageRotation(storedBook.id, restoredPage));
@@ -436,12 +467,14 @@ export default function App() {
         if (uploadTokenRef.current !== restoreToken) return;
         localStorage.removeItem(CURRENT_BOOK_KEY);
         setStatus('idle');
-        setUploadError('The saved workbook could not be reopened. Upload it again to continue.');
+        setUploadError(publicDemoEntry
+          ? 'The public demo is temporarily unavailable. Please try again shortly.'
+          : 'The saved workbook could not be reopened. Upload it again to continue.');
       }
     };
 
     void restore();
-  }, [loadAnswerKey]);
+  }, [loadAnswerKey, publicDemoEntry]);
 
   useEffect(() => {
     if (!book || status === 'restoring') return;
@@ -1095,6 +1128,7 @@ export default function App() {
           onToggleTheme={handleToggleTheme}
           readerMode={readerMode}
           onReaderModeChange={handleReaderModeChange}
+          readOnly={publicDemo}
         />
 
         {uploadError && (

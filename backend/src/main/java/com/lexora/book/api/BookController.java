@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.util.List;
@@ -22,6 +23,9 @@ import java.util.UUID;
 public class BookController {
 
     private final BookService service;
+
+    @Value("${lexora.public-demo.enabled:false}")
+    private boolean publicDemoEnabled;
 
     public BookController(BookService service) {
         this.service = service;
@@ -42,14 +46,18 @@ public class BookController {
     }
 
     @GetMapping
-    public List<Book> list() {
-        return service.listBooks();
+    public List<BookResource> list() {
+        return service.listBooks().stream()
+            .filter(book -> !publicDemoEnabled
+                || book.id().equals(com.lexora.demo.PublicDemoConstants.BOOK_ID))
+            .map(BookResource::from)
+            .toList();
     }
 
     @GetMapping("/{bookId}")
-    public Book get(@PathVariable UUID bookId) {
-        return service.getBook(bookId)
-            .orElseThrow(() -> new BookNotFoundException(bookId));
+    public BookResource get(@PathVariable UUID bookId) {
+        return BookResource.from(service.getBook(bookId)
+            .orElseThrow(() -> new BookNotFoundException(bookId)));
     }
 
     @GetMapping(value = "/{bookId}/source", produces = MediaType.APPLICATION_PDF_VALUE)
@@ -78,5 +86,20 @@ public class BookController {
         @RequestParam(defaultValue = "false") boolean refreshAnalysis
     ) throws IOException {
         return service.processPage(bookId, pageNumber, refreshAnalysis);
+    }
+
+    public record BookResource(
+        UUID id,
+        String title,
+        int pageCount,
+        String sourceLanguage,
+        String status
+    ) {
+        static BookResource from(Book book) {
+            return new BookResource(
+                book.id(), book.title(), book.pageCount(),
+                book.sourceLanguage(), book.status().name()
+            );
+        }
     }
 }

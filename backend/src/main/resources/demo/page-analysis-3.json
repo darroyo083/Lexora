@@ -1,0 +1,6 @@
+{
+  "schemaVersion":"0.2.0","pageNumber":3,"width":1224,"height":1584,"language":"de",
+  "textSpans":[{"id":"fallback-title","text":"A source-first fallback","confidence":1.0,"confidenceScope":"page","parentLineId":null,"bbox":{"x":0.09,"y":0.08,"width":0.52,"height":0.04}}],
+  "exerciseBlanks":[],"blankDetection":null,"choiceGroups":[],"choiceTargets":[],"choiceDetection":null,"choiceGrids":[],"choiceGridDetection":null,"sentenceOrderings":[],"sentenceOrderingDetection":null,"matchingInteractions":[],"matchingDetection":null,"freeTextInteractions":[],"freeTextDetection":null,
+  "processor":{"engine":"openai-responses","engineVersion":"v1","model":"curated-provider-result","language":"de","parameters":{"curatedDemo":true},"processedAt":"2026-08-10T12:00:00Z","durationMs":0}
+}

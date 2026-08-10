@@ -9,6 +9,7 @@ from app.schemas.page_analysis import (
     BBox,
 )
 from tests.conftest import fake_analysis
+from app.providers.base import AnalysisProviderError
 
 
 client = TestClient(app)
@@ -89,6 +90,22 @@ class TestAnalyzePage:
             json={"bookId": "abc"},
         )
         assert response.status_code == 422
+
+    @patch("app.api.main._get_ocr")
+    def test_provider_failure_is_explicit_and_recoverable(self, mock_get_ocr):
+        mock_get_ocr.return_value.side_effect = AnalysisProviderError(
+            "Vision provider is unavailable"
+        )
+        response = client.post(
+            "/internal/document-analysis/pages",
+            json={
+                "bookId": "test-book",
+                "pageNumber": 1,
+                "imagePath": "/tmp/test.png",
+            },
+        )
+        assert response.status_code == 503
+        assert response.json() == {"detail": "Vision provider is unavailable"}
 
     @patch("app.api.main._get_ocr")
     def test_accepts_all_required_fields(self, mock_get_ocr, fake_analysis):

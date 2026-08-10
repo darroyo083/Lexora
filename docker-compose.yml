@@ -46,7 +46,7 @@ services:
   ai-service:
     build:
       context: ./ai-service
-      target: runtime
+      target: local-runtime
     ports:
       - "${AI_SERVICE_PORT:-8000}:8000"
     volumes:
@@ -54,6 +54,7 @@ services:
       - ai_models:/root/.paddlex
       - lexora_storage:/app/storage
     environment:
+      LEXORA_ANALYSIS_PROVIDER: local-ocr
       PADDLE_PDX_MODEL_SOURCE: BOS
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]

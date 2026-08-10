@@ -38,14 +38,16 @@ class ExerciseBlank(BaseModel):
     lineBbox: BBox
     interactionBbox: BBox
     detectionMethod: Literal[
-        "horizontal-line-v1", "short-suffix-line-v1"
+        "horizontal-line-v1", "short-suffix-line-v1", "vision-structured-v1"
     ] = "horizontal-line-v1"
     candidateScore: float = Field(ge=0, le=1)
     nearbyTextSpanIds: list[str] = Field(default_factory=list)
 
 
 class BlankDetectionMetadata(BaseModel):
-    detectionMethod: Literal["horizontal-line-v1"] = "horizontal-line-v1"
+    detectionMethod: Literal[
+        "horizontal-line-v1", "vision-structured-v1"
+    ] = "horizontal-line-v1"
     rawCandidateCount: int = Field(ge=0)
     acceptedCount: int = Field(ge=0)
     durationMs: int = Field(ge=0)
@@ -67,13 +69,17 @@ class ChoiceTarget(BaseModel):
     targetBbox: BBox
     interactionBbox: BBox
     optionGroupId: str | None = None
-    detectionMethod: Literal["empty-ring-v1"] = "empty-ring-v1"
+    detectionMethod: Literal[
+        "empty-ring-v1", "vision-structured-v1"
+    ] = "empty-ring-v1"
     candidateScore: float = Field(ge=0, le=1)
     nearbyTextSpanIds: list[str] = Field(default_factory=list)
 
 
 class ChoiceDetectionMetadata(BaseModel):
-    detectionMethod: Literal["empty-ring-v1"] = "empty-ring-v1"
+    detectionMethod: Literal[
+        "empty-ring-v1", "vision-structured-v1"
+    ] = "empty-ring-v1"
     rawCandidateCount: int = Field(ge=0)
     acceptedCount: int = Field(ge=0)
     groupCount: int = Field(ge=0)
@@ -100,13 +106,17 @@ class ChoiceGrid(BaseModel):
     kind: Literal["choice-grid"] = "choice-grid"
     gridBbox: BBox
     optionGroupId: str
-    detectionMethod: Literal["table-grid-v1"] = "table-grid-v1"
+    detectionMethod: Literal[
+        "table-grid-v1", "vision-structured-v1"
+    ] = "table-grid-v1"
     candidateScore: float = Field(ge=0, le=1)
     rows: list[ChoiceGridRow] = Field(default_factory=list)
 
 
 class ChoiceGridDetectionMetadata(BaseModel):
-    detectionMethod: Literal["table-grid-v1"] = "table-grid-v1"
+    detectionMethod: Literal[
+        "table-grid-v1", "vision-structured-v1"
+    ] = "table-grid-v1"
     rawCandidateCount: int = Field(ge=0)
     acceptedCount: int = Field(ge=0)
     groupCount: int = Field(ge=0)
@@ -126,14 +136,18 @@ class SentenceOrderingInteraction(BaseModel):
     bbox: BBox
     exerciseId: str
     promptIndex: int = Field(ge=1)
-    detectionMethod: Literal["sentence-ordering-v1"] = "sentence-ordering-v1"
+    detectionMethod: Literal[
+        "sentence-ordering-v1", "vision-structured-v1"
+    ] = "sentence-ordering-v1"
     candidateScore: float = Field(ge=0, le=1)
     nearbyTextSpanIds: list[str] = Field(default_factory=list)
     items: list[SentenceOrderingItem] = Field(default_factory=list)
 
 
 class SentenceOrderingDetectionMetadata(BaseModel):
-    detectionMethod: Literal["sentence-ordering-v1"] = "sentence-ordering-v1"
+    detectionMethod: Literal[
+        "sentence-ordering-v1", "vision-structured-v1"
+    ] = "sentence-ordering-v1"
     rawCandidateCount: int = Field(ge=0)
     acceptedCount: int = Field(ge=0)
     groupCount: int = Field(ge=0)
@@ -153,7 +167,9 @@ class MatchingInteraction(BaseModel):
     id: str
     kind: Literal["matching"] = "matching"
     bbox: BBox
-    detectionMethod: Literal["matching-v1"] = "matching-v1"
+    detectionMethod: Literal[
+        "matching-v1", "vision-structured-v1"
+    ] = "matching-v1"
     candidateScore: float = Field(ge=0, le=1)
     cardinality: Literal["one-to-one"] = "one-to-one"
     nearbyTextSpanIds: list[str] = Field(default_factory=list)
@@ -162,7 +178,9 @@ class MatchingInteraction(BaseModel):
 
 
 class MatchingDetectionMetadata(BaseModel):
-    detectionMethod: Literal["matching-v1"] = "matching-v1"
+    detectionMethod: Literal[
+        "matching-v1", "vision-structured-v1"
+    ] = "matching-v1"
     rawCandidateCount: int = Field(ge=0)
     acceptedCount: int = Field(ge=0)
     groupCount: int = Field(ge=0)
@@ -178,14 +196,18 @@ class FreeTextInteraction(BaseModel):
     id: str
     kind: Literal["free-text"] = "free-text"
     bbox: BBox
-    detectionMethod: Literal["free-text-v1"] = "free-text-v1"
+    detectionMethod: Literal[
+        "free-text-v1", "vision-structured-v1"
+    ] = "free-text-v1"
     candidateScore: float = Field(ge=0, le=1)
     nearbyTextSpanIds: list[str] = Field(default_factory=list)
     responseLines: list[FreeTextLine] = Field(default_factory=list)
 
 
 class FreeTextDetectionMetadata(BaseModel):
-    detectionMethod: Literal["free-text-v1"] = "free-text-v1"
+    detectionMethod: Literal[
+        "free-text-v1", "vision-structured-v1"
+    ] = "free-text-v1"
     rawCandidateCount: int = Field(ge=0)
     acceptedCount: int = Field(ge=0)
     groupCount: int = Field(ge=0)

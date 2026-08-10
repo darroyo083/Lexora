@@ -1,4 +1,5 @@
 import re
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
@@ -9,9 +10,17 @@ from app.schemas.page_analysis import (
     PageAnalysis,
 )
 from app.answer_key.schema import ExtractAnswerKeyRequest, ExtractAnswerKeyResponse
+from app.providers.base import AnalysisProviderError
+from app.providers.factory import get_analysis_provider
 
 
-app = FastAPI(title="Lexora AI Service", version="0.2.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    get_analysis_provider()
+    yield
+
+
+app = FastAPI(title="Lexora AI Service", version="0.3.0", lifespan=lifespan)
 
 RASTER_PAGE_NUMBER_RE = re.compile(r"-page(\d+)-300dpi\.png$")
 
@@ -35,24 +44,25 @@ def health():
 
 
 def _get_ocr():
-    from app.document.ocr import create_page_analysis
-
-    return create_page_analysis
+    """Compatibility seam for existing deterministic API tests."""
+    return get_analysis_provider().analyze_page
 
 
 def _get_interaction_detector():
-    from app.document.interaction_detection import detect_interactions
-
-    return detect_interactions
+    """Compatibility seam for existing deterministic API tests."""
+    return get_analysis_provider().enrich_interactions
 
 
 @app.post("/internal/document-analysis/pages", response_model=AnalyzePageResponse)
 def analyze_page(request: AnalyzePageRequest):
-    return _get_ocr()(
-        book_id=request.bookId,
-        page_number=request.pageNumber,
-        image_path=request.imagePath,
-    )
+    try:
+        return _get_ocr()(
+            book_id=request.bookId,
+            page_number=request.pageNumber,
+            image_path=request.imagePath,
+        )
+    except AnalysisProviderError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
 
 
 @app.post(
@@ -61,7 +71,11 @@ def analyze_page(request: AnalyzePageRequest):
 )
 def analyze_interactions(request: DetectInteractionsRequest):
     try:
-        return _get_interaction_detector()(request.imagePath, request.analysis)
+        return _get_interaction_detector()(
+            request.imagePath, request.analysis
+        )
+    except AnalysisProviderError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -89,8 +103,7 @@ def extract_answer_key(request: ExtractAnswerKeyRequest):
     all_entries: list = []
     for raster_path in request.rasterPaths:
         page_number = _page_number_from_raster_path(raster_path)
-        ocr_fn = _get_ocr()
-        analysis = ocr_fn(
+        analysis = _get_ocr()(
             book_id=request.bookId,
             page_number=page_number,
             image_path=raster_path,

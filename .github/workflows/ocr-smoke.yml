@@ -21,7 +21,7 @@ jobs:
           cache-dependency-path: ai-service/pyproject.toml
       - name: Full install (incl. paddlepaddle/paddleocr)
         working-directory: ai-service
-        run: pip install ".[test]"
+        run: pip install ".[test,local-ocr]"
       - name: Run full test suite (incl. OCR)
         working-directory: ai-service
         run: python -m pytest

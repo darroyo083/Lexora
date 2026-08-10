@@ -29,13 +29,13 @@ export interface ExerciseBlank {
   kind: 'fill-in-line';
   lineBbox: BBox;
   interactionBbox: BBox;
-  detectionMethod: 'horizontal-line-v1' | 'short-suffix-line-v1';
+  detectionMethod: 'horizontal-line-v1' | 'short-suffix-line-v1' | 'vision-structured-v1';
   candidateScore: number;
   nearbyTextSpanIds: string[];
 }
 
 export interface BlankDetectionMetadata {
-  detectionMethod: 'horizontal-line-v1';
+  detectionMethod: 'horizontal-line-v1' | 'vision-structured-v1';
   rawCandidateCount: number;
   acceptedCount: number;
   durationMs: number;
@@ -57,13 +57,13 @@ export interface ChoiceTarget {
   targetBbox: BBox;
   interactionBbox: BBox;
   optionGroupId: string | null;
-  detectionMethod: 'empty-ring-v1';
+  detectionMethod: 'empty-ring-v1' | 'vision-structured-v1';
   candidateScore: number;
   nearbyTextSpanIds: string[];
 }
 
 export interface ChoiceDetectionMetadata {
-  detectionMethod: 'empty-ring-v1';
+  detectionMethod: 'empty-ring-v1' | 'vision-structured-v1';
   rawCandidateCount: number;
   acceptedCount: number;
   groupCount: number;
@@ -90,13 +90,13 @@ export interface ChoiceGrid {
   kind: 'choice-grid';
   gridBbox: BBox;
   optionGroupId: string;
-  detectionMethod: 'table-grid-v1';
+  detectionMethod: 'table-grid-v1' | 'vision-structured-v1';
   candidateScore: number;
   rows: ChoiceGridRow[];
 }
 
 export interface ChoiceGridDetectionMetadata {
-  detectionMethod: 'table-grid-v1';
+  detectionMethod: 'table-grid-v1' | 'vision-structured-v1';
   rawCandidateCount: number;
   acceptedCount: number;
   groupCount: number;
@@ -116,14 +116,14 @@ export interface SentenceOrderingInteraction {
   bbox: BBox;
   exerciseId: string;
   promptIndex: number;
-  detectionMethod: 'sentence-ordering-v1';
+  detectionMethod: 'sentence-ordering-v1' | 'vision-structured-v1';
   candidateScore: number;
   nearbyTextSpanIds: string[];
   items: SentenceOrderingItem[];
 }
 
 export interface SentenceOrderingDetectionMetadata {
-  detectionMethod: 'sentence-ordering-v1';
+  detectionMethod: 'sentence-ordering-v1' | 'vision-structured-v1';
   rawCandidateCount: number;
   acceptedCount: number;
   groupCount: number;
@@ -143,7 +143,7 @@ export interface MatchingInteraction {
   id: string;
   kind: 'matching';
   bbox: BBox;
-  detectionMethod: 'matching-v1';
+  detectionMethod: 'matching-v1' | 'vision-structured-v1';
   candidateScore: number;
   cardinality: 'one-to-one';
   nearbyTextSpanIds: string[];
@@ -152,7 +152,7 @@ export interface MatchingInteraction {
 }
 
 export interface MatchingDetectionMetadata {
-  detectionMethod: 'matching-v1';
+  detectionMethod: 'matching-v1' | 'vision-structured-v1';
   rawCandidateCount: number;
   acceptedCount: number;
   groupCount: number;
@@ -168,14 +168,14 @@ export interface FreeTextInteraction {
   id: string;
   kind: 'free-text';
   bbox: BBox;
-  detectionMethod: 'free-text-v1';
+  detectionMethod: 'free-text-v1' | 'vision-structured-v1';
   candidateScore: number;
   nearbyTextSpanIds: string[];
   responseLines: FreeTextLine[];
 }
 
 export interface FreeTextDetectionMetadata {
-  detectionMethod: 'free-text-v1';
+  detectionMethod: 'free-text-v1' | 'vision-structured-v1';
   rawCandidateCount: number;
   acceptedCount: number;
   groupCount: number;

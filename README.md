@@ -4,15 +4,19 @@ Lexora turns scanned language workbooks into focused interactive lessons while k
 
 [![Lexora demo video: real product evidence from the curated public demo](frontend/public/release/lexora-demo-poster.png)](frontend/public/release/lexora-demo.mp4)
 
-**Current release candidate:** a synthetic, pre-analyzed, read-only public demo; a production runtime that uses external Vision AI only; and complementary Interactive and Classic readers. No public deployment is performed by this repository.
+**Current release candidate:** a real product runtime with a curated, pre-analyzed, read-only public demo; a production analysis path that uses external Vision AI only; and complementary Interactive and Classic readers. The demo dataset is deliberately synthetic, so everything on the public surface is reproducible and safe to share. No public deployment is performed by this repository.
 
 ## See it
 
-- **Curated demo:** run the production stack below, then open `http://127.0.0.1:8088/demo`.
 - **66-second product film:** [watch or download the caption-led MP4](frontend/public/release/lexora-demo.mp4).
+- **Curated demo:** run the production stack below, then open `http://127.0.0.1:8088/demo`.
 - **Source:** this repository. A real public URL remains a deployment-time decision.
 
-The demo uses deliberately created synthetic content. It cannot upload, process, delete, or expose arbitrary books, and opening it does not call the external provider.
+The demo runs the real product against deliberately created content. It cannot upload, process, delete, or expose arbitrary books, and opening it does not call the external provider.
+
+| Interactive lesson | Classic page fidelity |
+|---|---|
+| ![Interactive lesson](frontend/public/release/lexora-interactive.webp) | ![Classic Mode reader](frontend/public/release/lexora-classic.webp) |
 
 ## Why two readers?
 

@@ -66,8 +66,9 @@ export default function Landing() {
             <p className="landing-kicker"><span>01</span> Source-faithful language practice</p>
             <h1 id="landing-title">Scanned workbooks.<br /><em>Structured practice.</em></h1>
             <p className="hero-deck">
-              Lexora turns workbook pages into focused interactive lessons, then keeps the
-              original source one click away whenever fidelity matters more than transformation.
+              Lexora turns workbook pages into focused interactive lessons, and keeps the
+              original source in a source-faithful Classic Mode whenever fidelity matters
+              more than transformation.
             </p>
             <div className="hero-actions" aria-label="Project actions">
               <a className="landing-button landing-button-primary" href="/demo">
@@ -79,7 +80,7 @@ export default function Landing() {
               </a>
             </div>
             <p className="hero-boundary">
-              <ShieldCheck size={15} aria-hidden="true" /> Public demo is synthetic, pre-analyzed, and read-only.
+              <ShieldCheck size={15} aria-hidden="true" /> Public demo runs real product UI on a curated, pre-analyzed dataset.
             </p>
           </div>
 

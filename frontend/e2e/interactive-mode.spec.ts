@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 const BOOK_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -128,4 +129,59 @@ test('persists mode, navigates to an unavailable lesson, and keeps Classic fallb
   await page.getByRole('button', { name: 'Open Classic mode' }).click();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('lexora.readerMode.v1'))).toBe('classic');
   await expect(page.locator('canvas')).toBeVisible();
+});
+
+for (const theme of ['dark', 'light'] as const) {
+  test(`has no automatically detectable WCAG A or AA violations in ${theme} mode`, async ({ page }) => {
+    await mockWorkbook(page, 'interactive');
+    await page.addInitScript((themeMode) => localStorage.setItem('lexora.themeMode', themeMode), theme);
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+}
+
+test('supports keyboard-only mode changes with visible focus', async ({ page }) => {
+  await mockWorkbook(page, 'interactive');
+  await page.goto('/');
+  const classic = page.getByRole('button', { name: 'Classic', exact: true });
+  await classic.focus();
+  await expect(classic).toBeFocused();
+  await expect(classic).toHaveCSS('outline-style', 'solid');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('canvas')).toBeVisible();
+  const interactive = page.getByRole('button', { name: 'Interactive' });
+  await interactive.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
+});
+
+test('keeps the lesson inside a narrow viewport without page-level overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockWorkbook(page, 'interactive');
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
+  expect(await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    lessonRight: document.querySelector('.interactive-lesson')?.getBoundingClientRect().right,
+  }))).toEqual({ viewport: 390, documentWidth: 390, lessonRight: 390 });
+});
+
+test('does not load the Classic PDF renderer during an Interactive session', async ({ page }) => {
+  const requested: string[] = [];
+  page.on('request', (request) => requested.push(request.url()));
+  await mockWorkbook(page, 'interactive');
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
+  expect(requested.some((url) => url.includes('/src/reader/PageViewer.tsx'))).toBe(false);
+  expect(requested.some((url) => url.includes('pdfjs-dist'))).toBe(false);
+
+  await page.getByRole('button', { name: 'Classic', exact: true }).click();
+  await expect(page.locator('canvas')).toBeVisible();
+  expect(requested.some((url) => url.includes('/src/reader/PageViewer.tsx'))).toBe(true);
 });

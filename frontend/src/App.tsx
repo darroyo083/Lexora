@@ -1,8 +1,7 @@
-import { useState, useCallback, useEffect, useMemo, useRef, useReducer } from 'react';
+import { lazy, Suspense, useState, useCallback, useEffect, useMemo, useRef, useReducer } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { FileText } from 'lucide-react';
-import PageViewer from './reader/PageViewer';
 import LeftRail from './components/LeftRail';
 import ReaderToolbar from './components/ReaderToolbar';
 import RightRail from './components/RightRail';
@@ -70,6 +69,8 @@ import {
   type ThemeMode,
 } from './state/theme';
 import { readReaderMode, writeReaderMode, type ReaderMode } from './state/readerMode';
+
+const PageViewer = lazy(() => import('./reader/PageViewer'));
 
 type Status = 'idle' | 'restoring' | 'uploading' | 'ready';
 
@@ -1043,6 +1044,11 @@ export default function App() {
                 onReveal={handleCorrectionReveal}
               />
             ) : pdfData ? (
+              <Suspense fallback={(
+                <div className="restoration-skeleton" aria-label="Loading Classic reader">
+                  <Skeleton width="100%" height="100%" />
+                </div>
+              )}>
               <PageViewer
                 pdfData={pdfData}
                 pageNumber={selectedPage}
@@ -1097,6 +1103,7 @@ export default function App() {
                 expectedSequencesByItem={orderingExpectedByItem}
                 expectedPairsByItem={expectedPairsByItem}
               />
+              </Suspense>
             ) : (
               <div className="empty-state">
                 <div className="empty-hero">

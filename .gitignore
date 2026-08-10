@@ -58,3 +58,6 @@ docker-compose.override.yml
 .playwright-mcp/
 frontend/playwright-report/
 frontend/test-results/
+
+# Local proof artifacts (screenshots, traces, audits)
+artifacts/

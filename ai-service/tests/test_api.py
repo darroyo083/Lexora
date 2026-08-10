@@ -351,7 +351,7 @@ class TestExtractAnswerKey:
             json={
                 "bookId": "book-1",
                 "rasterPaths": [
-                    "/data/Grammatik-Aktiv-A1-B1-Ausgabe-page227-300dpi.png",
+                    "/data/synthetic-answer-key-v227-page3-300dpi.png",
                 ],
                 "publisher": "cornelsen",
             },
@@ -359,7 +359,7 @@ class TestExtractAnswerKey:
 
         assert response.status_code == 200
         ocr = mock_get_ocr.return_value
-        assert ocr.call_args_list[0].kwargs["page_number"] == 227
+        assert ocr.call_args_list[0].kwargs["page_number"] == 3
 
     @patch("app.api.main._get_ocr")
     def test_integration_style_constructs_real_page_analysis(self, mock_get_ocr):

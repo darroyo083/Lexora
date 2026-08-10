@@ -18,7 +18,7 @@ from app.schemas.page_analysis import (
 WIDTH = 2284
 HEIGHT = 3121
 
-# Canonical synthetic writing area (mirrors a real workbook layout):
+# Canonical synthetic writing area:
 # a prompt line above a stack of long empty writing lines.
 PROMPT_Y = 0.14
 STACK_X0 = 0.15

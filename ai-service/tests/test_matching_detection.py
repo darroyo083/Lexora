@@ -16,7 +16,7 @@ from app.schemas.page_analysis import (
 WIDTH = 2284
 HEIGHT = 3121
 
-# Exercise geometry constants (mirror the real workbook layout):
+# Representative synthetic exercise geometry:
 # [left text] [digit] [L-dot] [R-dot] [letter] [right text]
 LEFT_TEXT_X0 = 0.15
 LEFT_TEXT_X1 = 0.44

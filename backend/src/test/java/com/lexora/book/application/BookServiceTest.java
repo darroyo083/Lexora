@@ -65,12 +65,14 @@ class BookServiceTest {
     }
 
     @Test
-    void getBookLazilyAttachesProfileForKnownChecksum() {
-        var book = Book.create("Grammatik aktiv", "grammatik.pdf", "application/pdf",
-            30267288, BookService.GRAMMATIK_AKTIV_A1_B1_CHECKSUM, 256, "de", "key.pdf");
-        var profile = BookProfileFixtures.realGrammatikAktivProfile();
+    void getBookLazilyAttachesExplicitlyConfiguredLocalProfile() {
+        service.configuredProfileChecksum = "synthetic-checksum";
+        service.configuredProfileEditionKey = "synthetic-workbook-v1";
+        var book = Book.create("Synthetic workbook", "synthetic.pdf", "application/pdf",
+            1_024, "synthetic-checksum", 20, "de", "key.pdf");
+        var profile = BookProfileFixtures.syntheticProfile();
         when(repository.findById(book.id())).thenReturn(Optional.of(book));
-        when(bookProfileRepository.findByEditionKey(BookService.GRAMMATIK_AKTIV_A1_B1_EDITION_KEY))
+        when(bookProfileRepository.findByEditionKey("synthetic-workbook-v1"))
             .thenReturn(Optional.of(profile));
 
         var result = service.getBook(book.id());
@@ -95,7 +97,7 @@ class BookServiceTest {
 
     @Test
     void getBookSkipsAttachWhenProfileAlreadyAttached() {
-        var profile = BookProfileFixtures.realGrammatikAktivProfile();
+        var profile = BookProfileFixtures.syntheticProfile();
         var book = Book.create("Test", "test.pdf", "application/pdf", 100, "abc", 10, "de", "key.pdf")
             .withBookProfileId(profile.id());
         when(repository.findById(book.id())).thenReturn(Optional.of(book));
@@ -108,11 +110,13 @@ class BookServiceTest {
     }
 
     @Test
-    void getBookSkipsAttachWhenKnownChecksumHasNoProfileRow() {
-        var book = Book.create("Grammatik aktiv", "grammatik.pdf", "application/pdf",
-            30267288, BookService.GRAMMATIK_AKTIV_A1_B1_CHECKSUM, 256, "de", "key.pdf");
+    void getBookSkipsAttachWhenConfiguredProfileHasNoLocalRow() {
+        service.configuredProfileChecksum = "synthetic-checksum";
+        service.configuredProfileEditionKey = "synthetic-workbook-v1";
+        var book = Book.create("Synthetic workbook", "synthetic.pdf", "application/pdf",
+            1_024, "synthetic-checksum", 20, "de", "key.pdf");
         when(repository.findById(book.id())).thenReturn(Optional.of(book));
-        when(bookProfileRepository.findByEditionKey(BookService.GRAMMATIK_AKTIV_A1_B1_EDITION_KEY))
+        when(bookProfileRepository.findByEditionKey("synthetic-workbook-v1"))
             .thenReturn(Optional.empty());
 
         var result = service.getBook(book.id());

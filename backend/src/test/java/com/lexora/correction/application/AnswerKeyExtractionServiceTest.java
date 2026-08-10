@@ -220,24 +220,24 @@ class AnswerKeyExtractionServiceTest {
     @Test
     void profilePresentRasterizesProfileLoesungenRange() throws Exception {
         var profileId = UUID.randomUUID();
-        var profile = new BookProfile(profileId, "cornelsen", "grammatik-aktiv-a1-b1-aktualisiert",
-            4, List.of(), new PageRange(198, 230), List.of());
-        var rasters = List.of(Path.of("storage/key-page198-300dpi.png"));
+        var profile = new BookProfile(profileId, "synthetic", "synthetic-workbook-v1",
+            2, List.of(), new PageRange(18, 20), List.of());
+        var rasters = List.of(Path.of("storage/key-page18-300dpi.png"));
         when(bookService.getBook(bookId)).thenReturn(Optional.of(book(230).withBookProfileId(profileId)));
         when(bookService.getBookSource(bookId)).thenReturn(Path.of("storage/key.pdf"));
         when(bookProfileRepository.findById(profileId)).thenReturn(Optional.of(profile));
         when(bookService.rasterizePages(any(), anyInt(), anyInt())).thenReturn(rasters);
-        var response = new ExtractAnswerKeyResponse(bookId.toString(), "cornelsen", "1.0.0", "198-230",
+        var response = new ExtractAnswerKeyResponse(bookId.toString(), "cornelsen", "1.0.0", "18-20",
             List.of(entry), 1);
         when(analysisClient.extractAnswerKey(any(), any(), any())).thenReturn(response);
-        when(answerKeyService.extractAnswerKey(eq(bookId), eq("cornelsen"), eq("1.0.0"), eq("198-230"), any()))
+        when(answerKeyService.extractAnswerKey(eq(bookId), eq("cornelsen"), eq("1.0.0"), eq("18-20"), any()))
             .thenReturn(readyKey());
 
         var result = service.extract(bookId, false);
 
         assertThat(result.extractionStatus()).isEqualTo(ExtractionStatus.READY);
-        verify(bookService).rasterizePages(any(), eq(198), eq(230));
-        verify(answerKeyService).extractAnswerKey(bookId, "cornelsen", "1.0.0", "198-230", List.of(entry));
+        verify(bookService).rasterizePages(any(), eq(18), eq(20));
+        verify(answerKeyService).extractAnswerKey(bookId, "cornelsen", "1.0.0", "18-20", List.of(entry));
     }
 
     @Test

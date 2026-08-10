@@ -38,7 +38,7 @@ class CorrectionResolutionServiceTest {
         .build();
 
     private final UUID bookId = UUID.randomUUID();
-    private final BookProfile profile = BookProfileFixtures.realGrammatikAktivProfile();
+    private final BookProfile profile = BookProfileFixtures.syntheticProfile();
 
     private BookService bookService;
     private BookProfileRepository bookProfileRepository;
@@ -55,8 +55,8 @@ class CorrectionResolutionServiceTest {
     }
 
     private void stubBook(UUID profileId) {
-        var book = new Book(bookId, "Grammatik aktiv", "grammatik.pdf", "application/pdf",
-            30267288, "abc", 256, "de", "key.pdf", ProcessingStatus.UPLOADED,
+        var book = new Book(bookId, "Synthetic workbook", "synthetic.pdf", "application/pdf",
+            1_024, "abc", 20, "de", "key.pdf", ProcessingStatus.UPLOADED,
             Instant.now(), Instant.now(), profileId);
         when(bookService.getBook(bookId)).thenReturn(Optional.of(book));
     }
@@ -68,7 +68,7 @@ class CorrectionResolutionServiceTest {
 
     private void stubKey(List<AnswerKeyEntry> entries) {
         when(answerKeyService.findAnswerKey(bookId)).thenReturn(Optional.of(
-            new AnswerKey(bookId, "cornelsen", "1.0.0", "198-230",
+            new AnswerKey(bookId, "cornelsen", "1.0.0", "18-20",
                 ExtractionStatus.READY, null, Instant.now(), entries, Instant.now(), Instant.now())));
     }
 
@@ -143,20 +143,20 @@ class CorrectionResolutionServiceTest {
     }
 
     @Test
-    void partnerseitenPageResolvesUnmapped() {
+    void configuredNonUnitPageResolvesUnmapped() {
         stubProfile();
 
-        var result = service.resolve(bookId, 155);
+        var result = service.resolve(bookId, 3);
 
         assertThat(result.status()).isEqualTo(PageCorrectionResolution.UNMAPPED);
         assertThat(result.unitNumber()).isNull();
     }
 
     @Test
-    void loesungenPageResolvesUnmapped() {
+    void solutionPageResolvesUnmapped() {
         stubProfile();
 
-        var result = service.resolve(bookId, 198);
+        var result = service.resolve(bookId, 18);
 
         assertThat(result.status()).isEqualTo(PageCorrectionResolution.UNMAPPED);
         assertThat(result.unitNumber()).isNull();
@@ -166,7 +166,7 @@ class CorrectionResolutionServiceTest {
     void pageWithoutUnitResolvesUnmapped() {
         stubProfile();
 
-        var result = service.resolve(bookId, 5);
+        var result = service.resolve(bookId, 4);
 
         assertThat(result.status()).isEqualTo(PageCorrectionResolution.UNMAPPED);
         assertThat(result.unitNumber()).isNull();
@@ -305,7 +305,7 @@ class CorrectionResolutionServiceTest {
     }
 
     @Test
-    void sourceLoesungenPageNumberIsNotExerciseIdentity() {
+    void sourceSolutionPageNumberIsNotExerciseIdentity() {
         stubProfile();
         stubKey(List.of(entry(228, "1", "FillBlank", 1, "der Hund", 4, "1", List.of("der Hund"))));
         stubPage(12, analysis(12, List.of(blank("b1")), List.of(), List.of(), List.of()));
@@ -393,7 +393,7 @@ class CorrectionResolutionServiceTest {
 
         assertThatThrownBy(() -> service.resolve(bookId, 0))
             .isInstanceOf(PageNotFoundException.class);
-        assertThatThrownBy(() -> service.resolve(bookId, 257))
+        assertThatThrownBy(() -> service.resolve(bookId, 21))
             .isInstanceOf(PageNotFoundException.class);
     }
 

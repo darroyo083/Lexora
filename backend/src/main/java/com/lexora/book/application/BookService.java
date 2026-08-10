@@ -20,7 +20,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,20 +31,6 @@ public class BookService {
     private static final Logger log = LoggerFactory.getLogger(BookService.class);
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
-    /**
-     * Deterministic book checksum -> BookProfile edition association. Only the
-     * known private workbook is mapped; unknown books stay profile-less and
-     * correct as UNMAPPED (fail-closed).
-     */
-    static final String GRAMMATIK_AKTIV_A1_B1_CHECKSUM =
-        "0d54de09b60a1e1879edfdb4eeaaab120bbf1d76686622140c9a6c2fef31abec";
-    static final String GRAMMATIK_AKTIV_A1_B1_EDITION_KEY =
-        "grammatik-aktiv-a1-b1-aktualisiert";
-
-    private static final Map<String, String> CHECKSUM_TO_EDITION_KEY = Map.of(
-        GRAMMATIK_AKTIV_A1_B1_CHECKSUM, GRAMMATIK_AKTIV_A1_B1_EDITION_KEY
-    );
-
     private final BookRepository repository;
     private final BookProfileRepository bookProfileRepository;
     private final DocumentAnalysisClient analysisClient;
@@ -53,6 +38,12 @@ public class BookService {
 
     @Value("${lexora.analysis.raster-dpi:300}")
     private int rasterDpi = 300;
+
+    @Value("${lexora.book-profile.checksum:}")
+    String configuredProfileChecksum = "";
+
+    @Value("${lexora.book-profile.edition-key:}")
+    String configuredProfileEditionKey = "";
 
     public BookService(BookRepository repository,
                        BookProfileRepository bookProfileRepository,
@@ -243,7 +234,8 @@ public class BookService {
 
     /**
      * Lazy fallback for books uploaded before profiles existed: attach the
-     * profile when the stored checksum matches a known edition.
+     * profile when the stored checksum matches an explicitly configured local
+     * edition. Public builds carry no source-specific checksum or profile.
      */
     private Book attachProfileIfKnown(Book book) {
         if (book.bookProfileId() != null) {
@@ -262,11 +254,12 @@ public class BookService {
         if (checksum == null) {
             return Optional.empty();
         }
-        var editionKey = CHECKSUM_TO_EDITION_KEY.get(checksum.toLowerCase());
-        if (editionKey == null) {
+        if (configuredProfileChecksum.isBlank() || configuredProfileEditionKey.isBlank()
+            || !configuredProfileChecksum.equalsIgnoreCase(checksum)) {
             return Optional.empty();
         }
-        return bookProfileRepository.findByEditionKey(editionKey).map(BookProfile::id);
+        return bookProfileRepository.findByEditionKey(configuredProfileEditionKey)
+            .map(BookProfile::id);
     }
 
     private static String extractTitle(String filename) {

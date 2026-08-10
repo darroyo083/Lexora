@@ -82,7 +82,7 @@ Copy-Item .env.example .env
 ./scripts/dev-status.ps1
 ```
 
-Open `http://localhost:5173`. Stop the stack with `./scripts/dev-down.ps1`. Private books belong only in ignored local storage and must never become fixtures, screenshots, logs, or release assets.
+Open `http://localhost:5173`. Stop the stack with `./scripts/dev-down.ps1`. Private books belong only in ignored local storage and must never become fixtures, screenshots, logs, or release assets. To attach a page profile to a specific private upload during development, set `LEXORA_BOOK_PROFILE_CHECKSUM` and `LEXORA_BOOK_PROFILE_EDITION_KEY`; the repository itself ships no source-specific profile.
 
 ## Verification
 

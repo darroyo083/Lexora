@@ -74,8 +74,8 @@ class BookControllerTest {
     @Test
     void publicDemoListContainsOnlyTheCuratedBook() throws Exception {
         var demo = book(PublicDemoConstants.BOOK_ID, "Lexora Public Demo");
-        var privateBook = book(UUID.randomUUID(), "Private workbook");
-        when(bookService.listBooks()).thenReturn(List.of(privateBook, demo));
+        var nonDemoBook = book(UUID.randomUUID(), "Non-demo book");
+        when(bookService.listBooks()).thenReturn(List.of(nonDemoBook, demo));
         ReflectionTestUtils.setField(
             mvc.getDispatcherServlet().getWebApplicationContext()
                 .getBean(BookController.class),

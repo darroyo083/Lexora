@@ -2,10 +2,17 @@
 
 Some scanned language books lack selectable text, click-to-translate, vocabulary persistence, and interactive exercises. Lexora preserves the original page while adding the interactive learning tools that static scans are missing.
 
-**Status:** PoC 4 complete; PoC 5 (matching) complete; PoC 6 (free-text writing) complete. Lexora detects graphical fill-in lines, circular choice markers, interactive choice grids, sentence-ordering rows, matching exercises, and free-text writing areas locally, and places zoom-safe inputs, selectors, radio targets, ordering chips, matching pair lines, and writing overlays over the original scanned page. Answer checking and broader exercise understanding remain planned.
+**Status:** Interactive Mode MVP release candidate. Lexora now offers two complementary readers: **Interactive** projects persisted page analysis into a native, responsive lesson; **Classic** preserves the original PDF and its geometry-aligned overlays. Both modes share one answer store and the backend's authoritative correction result.
 
 ## What Works Today
 
+- Native Interactive lessons derived from persisted `PageAnalysis`, with no duplicate OCR or parallel content model
+- Explicit Interactive / Classic mode switch, persisted per browser
+- Responsive lesson navigation with clear unavailable, loading, failed, and empty states
+- Native context, fill-in, choice, choice-grid, sentence-ordering, matching, and free-text blocks
+- Source provenance on every projected block through page, span, interaction, geometry, confidence, and processor metadata
+- Authoritative answer-key correction with `CORRECT`, `INCORRECT`, `UNANSWERED`, `AMBIGUOUS`, and `UNMAPPED` states; reveal and retry reuse the same correction contract
+- Shared answers across Interactive and Classic, stored only in the current browser
 - Scanned PDF upload and original-page rendering with PDF.js
 - Explicit per-page processing through PDFBox and PaddleOCR
 - Persisted `PageAnalysis` JSONB for each processed page
@@ -34,21 +41,21 @@ Some scanned language books lack selectable text, click-to-translate, vocabulary
 - Book, selected page, and debug overlay preference restoration after refresh
 - PDF-area loading skeleton during restoration
 - Four-service Docker Compose development workflow
+- Automated native-lesson journeys, Classic fallback, keyboard navigation, responsive overflow checks, and WCAG A/AA axe checks in Playwright
 
 ## Notes
 
 - Exercise answers are stored only in the browser's `localStorage` under `lexora.exerciseAnswers.v1`. They persist across navigation and refresh, but are per-browser data, not cloud or user-account data.
 - Answers are attached to a stable interaction fingerprint. If a page is reprocessed and a blank or choice target moves or its option group changes, the old answer is ignored rather than attached to the wrong interaction.
-- Choice answers are structured option IDs (for example `choice-group-16-1-3`), never rendered coordinates. Lexora does not know whether the chosen option is correct.
-- Choice-grid answers are structured per row (`grid-row-id -> option-id`), one selection per row. Lexora does not know whether the chosen option is correct.
-- Sentence-ordering answers are ordered item IDs; matching answers are `leftItemId -> rightItemId` pairs with one-to-one enforcement; free-text answers are the learner's own text. Lexora does not know the correct order, the correct pairs, or whether a written response is correct.
+- Answers remain structured IDs and learner text rather than rendered coordinates. Correction is reported only when the authoritative answer-key mapping can resolve an interaction; unresolved or ambiguous content is never guessed.
+- Interactive Mode is page-scoped by design. It fails closed when no persisted analysis exists and offers Classic as the faithful fallback.
 
 ## Not Implemented Yet
 
 - Click-to-translate
 - Contextual vocabulary persistence
-- Exercise correction and explanations
-- Answer-key matching (PoC 5 records learner pairs only)
+- Generated explanations or AI-authored feedback
+- Complete answer-key coverage for every publisher layout; unsupported mappings remain explicitly `UNMAPPED` or `AMBIGUOUS`
 - Matching variants: one-to-many, many-to-many, image-to-text, no-anchor layouts
 - Backend or account-based answer persistence
 - Higher-level visual understanding
@@ -59,8 +66,8 @@ Some scanned language books lack selectable text, click-to-translate, vocabulary
 
 | Layer | Technology | Responsibility |
 |---|---|---|
-| Frontend | React 19, TypeScript 7, Vite 8, PDF.js 6.2 | PDF rendering, page status, OCR overlays, interactive blank inputs, choice selectors, grid targets, ordering chips, matching pair lines, and free-text writing overlays |
-| Backend | Java 21, Spring Boot 4.1, PDFBox, PostgreSQL 18 | Upload, rasterization, processing orchestration, and persistence |
+| Frontend | React 19, TypeScript 7, Vite 8, PDF.js 6.2 | Native lesson projection/rendering, shared answer state, correction UI, and lazily loaded Classic PDF rendering |
+| Backend | Java 21, Spring Boot 4.1, PDFBox, PostgreSQL 18 | Upload, rasterization, processing orchestration, persistence, and authoritative correction resolution |
 | AI service | Python 3.12, FastAPI, PaddleOCR 3.7, OpenCV 4.10 | OCR, graphical blank/choice-marker/choice-grid/ordering/matching/free-text detection, normalization, and processor metadata |
 
 See [`docs/architecture.md`](docs/architecture.md), [`docs/page-analysis.md`](docs/page-analysis.md), [`docs/exercise-detection.md`](docs/exercise-detection.md), [`docs/choice-interactions.md`](docs/choice-interactions.md), [`docs/choice-grid-interactions.md`](docs/choice-grid-interactions.md), [`docs/sentence-ordering-interactions.md`](docs/sentence-ordering-interactions.md), [`docs/matching-interactions.md`](docs/matching-interactions.md), and [`docs/free-text-interactions.md`](docs/free-text-interactions.md) for the durable technical contract.
@@ -110,7 +117,18 @@ docker compose --profile test run --rm --build ai-test
 cd backend; ./mvnw.cmd test
 cd ../frontend; npm test -- --run
 npm run build
+npm run test:e2e
 ```
+
+Playwright installs Chromium with `npx playwright install chromium`. The E2E suite uses a generated two-page PDF and mocked analysis/correction responses; it never requires or records a private workbook.
+
+## Quick Demo
+
+1. Open Lexora and select a processed book page.
+2. Compare the source-faithful **Classic** page with the native **Interactive** lesson.
+3. Complete two or more interaction types and choose **Check answers**.
+4. Inspect correct, incorrect, unanswered, and safely unresolved results; use **Reveal** and **Retry**.
+5. Navigate between lessons and return to Classic to confirm the shared answers and fallback behavior.
 
 ## Roadmap
 

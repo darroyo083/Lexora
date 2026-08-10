@@ -181,6 +181,21 @@ types. The broad reader UX overhaul belongs to PoC 6.5.
   navigation controls as part of the professional reader redesign. Do not
   restore browser-native number-input spinners.
 
+## Interactive Mode MVP (Release Candidate)
+
+- [x] Add a persisted Interactive / Classic reader mode without rewriting Classic
+- [x] Define a provenance-bearing native `Lesson` model projected from `PageAnalysis`
+- [x] Render context, fill, choice, grid, ordering, matching, and free-text lesson blocks
+- [x] Reuse the existing answer store across both modes
+- [x] Integrate authoritative correction, reveal, retry, and unresolved states without client-side guessing
+- [x] Add lesson navigation and explicit unavailable, loading, failed, and empty states
+- [x] Validate representative real pages spanning all supported interaction families
+- [x] Validate dark/light themes, keyboard operation, WCAG A/AA rules, and narrow responsive layouts
+- [x] Keep Classic PDF rendering behind a lazy runtime boundary
+- [x] Gate the reader journey with deterministic Playwright tests and generated fixtures
+
+The MVP deliberately projects one analyzed source page at a time. It generalizes across persisted interaction structures while retaining Classic as the exact-layout fallback; it is not a bulk workbook conversion system.
+
 ## Planned Product Capabilities
 
 ### Learning tools
@@ -193,7 +208,8 @@ types. The broad reader UX overhaul belongs to PoC 6.5.
 - [x] Interactive sentence-ordering placement
 - [x] Interactive matching placement (one-to-one)
 - [x] Interactive free-text writing placement
-- [ ] Exercise correction and explanations
+- [x] Authoritative answer-key correction with safe unresolved states
+- [ ] Generated explanations
 - [ ] Highlights and annotations
 
 ### Analysis
@@ -207,7 +223,7 @@ types. The broad reader UX overhaul belongs to PoC 6.5.
 - [x] Matching interactions (`leftItemId -> rightItemId`, one-to-one)
 - [x] FreeText interactions (`interactionId -> learner text`)
 - [ ] Matching variants: one-to-many, many-to-many, image-to-text
-- [ ] Exercise correction and explanations
+- [x] Existing answer-key resolution surfaced in Interactive and Classic modes
 
 ### Books and processing
 
@@ -220,6 +236,7 @@ types. The broad reader UX overhaul belongs to PoC 6.5.
 
 - [ ] RAG or book chat
 - [ ] User authentication
-- [ ] Mobile adaptation
+- [x] Responsive web adaptation for the Interactive reader
+- [ ] Native mobile app
 - [ ] EPUB or DOCX support
 - [ ] LinguaTint integration

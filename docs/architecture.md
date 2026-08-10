@@ -1,12 +1,12 @@
 # Lexora Architecture
 
-Lexora is a four-service Docker Compose system that preserves the original PDF as the visual source of truth and adds persisted OCR, interactive blank geometry, choice-marker targets, choice grids, and sentence-ordering prompts per page. PoC 1 established the pipeline and fill-in blanks, PoC 2 added choice-marker interactions, PoC 3 added choice-grid interactions, and PoC 4 added sentence-ordering interactions.
+Lexora is a four-service Docker Compose system with one persisted source pipeline and two reader projections. Interactive Mode converts an analyzed page into a native lesson. Classic Mode preserves the PDF and geometry-aligned overlays. They share answers and correction; neither duplicates OCR or invents source content.
 
 ## Runtime Topology
 
 ```mermaid
 flowchart LR
-    Browser[React + PDF.js] -->|REST /api| Backend[Spring Boot]
+    Browser[React Interactive + lazy Classic PDF.js] -->|REST /api| Backend[Spring Boot]
     Backend -->|JDBC| Postgres[(PostgreSQL 18)]
     Backend -->|shared storage| Storage[(lexora_storage)]
     Backend -->|HTTP/1.1 internal API| AI[FastAPI]
@@ -21,6 +21,12 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 
 ### React Frontend
 
+- Projects a `READY` `PageAnalysis` into a page-scoped discriminated `Lesson` model with context, fill, choice, grid, ordering, matching, and free-text blocks.
+- Carries source provenance on projected blocks: book/page identity, source span or interaction IDs, normalized geometry, confidence, schema version, and processor methods.
+- Renders Interactive Mode as semantic native controls independent of PDF canvas geometry.
+- Keeps Classic Mode as the source-faithful reader and loads its PDF.js runtime only when Classic is requested.
+- Uses one versioned answer store and the same correction response in both modes.
+- Treats absent, stale, failed, or unsupported analysis as explicit UI state; projection fails closed instead of fabricating a lesson.
 - Restores the current book, selected page, source PDF, and debug preferences from local state.
 - Shows a `react-loading-skeleton` page placeholder while restoration requests complete.
 - Renders the original PDF page with PDF.js and a device-pixel-ratio backing store.
@@ -30,7 +36,7 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 - Starts processing only after an explicit user action.
 - Polls persisted coarse stages while the synchronous processing request runs.
 - Shows an in-page analysis overlay with real stage labels while a rendered page is processed, with a CSS-only scan beam that is disabled under `prefers-reduced-motion`.
-- Persists exercise answers (fill-in text and choice option IDs) in versioned `localStorage` keyed by book, page, and stable interaction fingerprint.
+- Persists structured exercise answers in versioned `localStorage` keyed by book, page, and stable interaction fingerprint.
 - Reuses `READY` analysis immediately, offers retry for `FAILED`, exposes an explicit **Update analysis** action for any `READY` page with persisted analysis, and never requests processing merely because a page was opened.
 
 ### Spring Boot Backend
@@ -42,6 +48,7 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 - Calls separate FastAPI OCR and interaction-detection operations over HTTP/1.1 and stores only the final analysis as PostgreSQL JSONB.
 - Returns an existing `READY` page without rasterization or OCR.
 - Streams the stored source PDF for browser restoration.
+- Resolves learner answers against the imported answer-key profile and returns authoritative per-interaction correction states plus the resolved unit title.
 - Applies Flyway migrations for books, pages, legacy processing-status conversion, and the `DETECTING_INTERACTIONS` stage rename.
 
 ### FastAPI AI Service
@@ -52,8 +59,8 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 - Detects graphical horizontal answer lines with adaptive thresholding, morphology, and OCR spatial context.
 - Detects hollow circular choice markers and numbered option legends with contour analysis and OCR spatial context.
 - Detects interactive choice grids (rows with empty answer cells under short column headers) with line morphology, cell-emptiness checks, and OCR spatial context, while rejecting static/explanatory tables.
-- Detects sentence-ordering prompts (fragment rows separated by printed dot glyphs) from OCR text and separator-dot pixel evidence, grouped into exercises, rejecting prose, matching layouts, and uniform word banks.
-- Returns text, exercise blanks, choice targets/groups, choice grids, sentence-ordering prompts, normalized geometry, and concise processor metadata.
+- Detects sentence-ordering, matching, and free-text interactions in addition to blanks, choices, and choice grids.
+- Returns OCR spans, all supported interaction structures, normalized geometry, and concise processor metadata.
 
 PaddleOCR document orientation classification, document unwarping, and text-line orientation are intentionally disabled. Those transforms can change pixel geometry even when output dimensions remain unchanged, which would detach OCR boxes from the original PDF page.
 
@@ -114,8 +121,30 @@ Content-Type: application/json
 }
 ```
 
-The second request runs blank, choice-marker, and choice-grid detection and returns the completed v0.2 analysis, which Spring persists as JSONB. See [`page-analysis.md`](page-analysis.md), [`choice-interactions.md`](choice-interactions.md), and [`choice-grid-interactions.md`](choice-grid-interactions.md).
+The second request runs interaction detection and returns the completed v0.2 analysis, which Spring persists as JSONB. This persisted object is the sole source for both reader modes. See [`page-analysis.md`](page-analysis.md) and the interaction-specific documents in this directory.
+
+## Interactive Lesson Projection
+
+`projectLesson` is a pure frontend boundary between source analysis and presentation:
+
+```text
+Persisted PageAnalysis
+  -> validate page-scoped source data
+  -> group nearby OCR context and interactions
+  -> emit provenance-bearing Lesson blocks
+  -> render native semantic controls
+```
+
+The projector does not call OCR, correction, or a generative model. It preserves stable interaction IDs so the existing answer fingerprints and backend correction mappings remain authoritative. When several interactions share nearby text, prompts are assigned by source geometry rather than copied across exercises.
+
+## Correction Safety
+
+The browser submits structured answers through the existing correction API. The backend owns answer-key resolution and returns `CORRECT`, `INCORRECT`, `UNANSWERED`, `AMBIGUOUS`, or `UNMAPPED`. Interactive Mode renders those states but never derives a verdict itself. Reveal and retry operate on the returned correction payload and shared answer state. An unavailable mapping remains visibly unresolved.
+
+## Mode Boundary and Performance
+
+Interactive Mode is the default native reading experience for analyzed pages. Classic remains available for exact page fidelity, unsupported content, and debugging. `PageViewer` is a lazy chunk, so Interactive startup does not download or initialize PDF.js; changing mode is the explicit boundary that loads it.
 
 ## Current Boundaries
 
-PoC 3 detects horizontal fill-in lines, hollow circular choice markers, and interactive choice grids (while rejecting static tables). It does not include answer validation, translation, vocabulary storage, VLM analysis, RAG, authentication, or background multi-page jobs.
+Interactive Mode covers the interaction types already present in `PageAnalysis`; it does not convert every possible publisher layout. Answer-key gaps stay `UNMAPPED` or `AMBIGUOUS`. Translation, vocabulary storage, VLM analysis, RAG, authentication, generated explanations, and background multi-page processing remain outside the MVP.

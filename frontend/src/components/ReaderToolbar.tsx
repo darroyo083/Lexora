@@ -204,6 +204,7 @@ export default function ReaderToolbar({
               Page
               <input
                 type="number"
+                name="page"
                 min={1}
                 max={book.pageCount}
                 value={selectedPage}

@@ -96,13 +96,13 @@ html[data-surface="landing"] #root {
 .landing-hero {
   display: grid; grid-template-columns: minmax(360px, .82fr) minmax(560px, 1.18fr);
   gap: clamp(38px, 5vw, 86px); align-items: center;
-  min-height: calc(100svh - 72px);
-  padding: clamp(52px, 6vw, 84px) clamp(22px, 5vw, 84px) 64px;
+  min-height: calc(92svh - 72px);
+  padding: clamp(44px, 5vw, 72px) clamp(22px, 5vw, 84px) 64px;
 }
 .landing-kicker {
   display: flex; align-items: center; gap: 12px; color: var(--landing-sage);
   font-family: var(--font-mono); font-size: 11px; font-weight: 650;
-  letter-spacing: .07em; text-transform: uppercase;
+  letter-spacing: .055em; text-transform: uppercase;
 }
 .landing-kicker span { color: var(--landing-dim); font-variant-numeric: tabular-nums; }
 .hero-copy h1, .section-heading h2, .landing-safety h2, .landing-final h2 {
@@ -425,7 +425,7 @@ html[data-surface="landing"] #root {
 .landing-footer > a:last-child {
   justify-self: end; display: flex; align-items: center; gap: 6px;
 }
-.landing-shell :focus-visible { outline: 2px solid var(--landing-sage); outline-offset: 4px; }
+.landing-shell :focus-visible { outline: 3px solid var(--landing-sage); outline-offset: 3px; }
 
 @media (max-width: 1080px) {
   .landing-hero { grid-template-columns: 1fr; min-height: auto; }

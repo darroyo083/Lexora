@@ -1,7 +1,7 @@
 import { useState, type PointerEvent } from 'react';
 import {
-  ArrowRight, ArrowUpRight, BookOpen, Braces, Check, Code2,
-  Layers3, Play, ScanLine, ShieldCheck, Sparkles,
+ArrowRight, ArrowUpRight, BookOpen, Braces, Check, Code2,
+Layers3, Play, ScanLine, ScanText, ShieldCheck,
 } from 'lucide-react';
 import './landing.css';
 
@@ -178,7 +178,7 @@ export default function Landing() {
               ))}
             </div>
             <div className="interaction-detail" aria-live="polite">
-              <Sparkles size={22} aria-hidden="true" />
+              <ScanText size={22} aria-hidden="true" />
               <p className="mode-label">Selected family</p>
               <h3>{interactionFamilies[activeFamily].name}</h3>
               <p>{interactionFamilies[activeFamily].detail}</p>

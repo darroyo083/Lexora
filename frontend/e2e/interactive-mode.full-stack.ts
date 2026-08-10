@@ -55,7 +55,7 @@ async function openBook(page: Page, pageNumber: number) {
     localStorage.setItem('lexora.currentPage', String(persistedPage));
     localStorage.setItem('lexora.readerMode.v1', 'interactive');
   }, { persistedBookId: bookId, persistedPage: pageNumber });
-  await page.goto('/');
+  await page.goto('/demo');
   await expect(page.locator('.interactive-lesson')).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('This page is not interactive yet');
 }

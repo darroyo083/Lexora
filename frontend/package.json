@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:full-stack": "playwright test --config playwright.full-stack.config.ts",
-    "test:e2e:production": "playwright test --config playwright.production.config.ts"
+    "test:e2e:production": "playwright test --config playwright.production.config.ts",
+    "capture:release": "node scripts/capture-release-assets.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.30.0",

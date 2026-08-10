@@ -71,6 +71,12 @@ async function mockWorkbook(page: Page, mode: 'classic' | 'interactive', options
     localStorage.setItem('lexora.readerMode.v1', readerMode);
   }, { bookId: BOOK_ID, readerMode: mode });
 
+  await page.route('**/api/public-demo', (route) => route.fulfill({
+    status: 404,
+    contentType: 'application/json',
+    body: '{}',
+  }));
+
   await page.route('**/api/books/**', async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === `/api/books/${BOOK_ID}`) return json(route, { id: BOOK_ID, pageCount: 2 });
@@ -128,7 +134,7 @@ async function expectViewportNative(page: Page) {
 
 test('completes native interactions, checks conservatively, and restores work', async ({ page }) => {
   await mockWorkbook(page, 'interactive');
-  await page.goto('/');
+  await page.goto('/demo');
 
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
   const fill = await advanceToKind(page, 'fill-blank');
@@ -175,7 +181,7 @@ test('completes native interactions, checks conservatively, and restores work', 
 
 test('persists mode, navigates to an unavailable lesson, and keeps Classic fallback', async ({ page }) => {
   await mockWorkbook(page, 'classic');
-  await page.goto('/');
+  await page.goto('/demo');
 
   await expect(page.locator('canvas')).toBeVisible();
   await page.getByRole('button', { name: 'Interactive' }).click();
@@ -193,7 +199,7 @@ for (const theme of ['dark', 'light'] as const) {
   test(`has no automatically detectable WCAG A or AA violations in ${theme} mode`, async ({ page }) => {
     await mockWorkbook(page, 'interactive');
     await page.addInitScript((themeMode) => localStorage.setItem('lexora.themeMode', themeMode), theme);
-    await page.goto('/');
+    await page.goto('/demo');
     await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
 
     const results = await new AxeBuilder({ page })
@@ -205,7 +211,7 @@ for (const theme of ['dark', 'light'] as const) {
 
 test('supports keyboard-only mode changes with visible focus', async ({ page }) => {
   await mockWorkbook(page, 'interactive');
-  await page.goto('/');
+  await page.goto('/demo');
   const classic = page.locator('.lesson-classic-link');
   await classic.focus();
   await expect(classic).toBeFocused();
@@ -220,7 +226,7 @@ test('supports keyboard-only mode changes with visible focus', async ({ page }) 
 
 test('supports keyboard operation across all six native interaction families', async ({ page }) => {
   await mockWorkbook(page, 'interactive');
-  await page.goto('/');
+  await page.goto('/demo');
 
   const openStep = async (stepId: string, kind: string) => {
     await page.evaluate(({ lessonId, nextStepId }) => {
@@ -276,7 +282,7 @@ test('keeps a native interaction inside every target viewport without document s
     stepId: 'page-1-matching-matching-1:item:matching-1',
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/demo');
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
   await expect(page.locator('.lesson-step[data-kind="matching"]')).toBeVisible();
 
@@ -299,7 +305,7 @@ test('keeps a native interaction inside every target viewport without document s
 test('uses truthful rotating processing copy, shimmer, Classic fallback, and reduced-motion gating', async ({ page }) => {
   await mockWorkbook(page, 'interactive', { processingPageTwo: true });
   await page.addInitScript(() => localStorage.setItem('lexora.currentPage', '2'));
-  await page.goto('/');
+  await page.goto('/demo');
 
   await expect(page.getByRole('heading', { name: 'Reading the page' })).toBeVisible();
   const message = page.locator('.lesson-processing-message');
@@ -317,7 +323,7 @@ test('does not load the Classic PDF renderer during an Interactive session', asy
   const requested: string[] = [];
   page.on('request', (request) => requested.push(request.url()));
   await mockWorkbook(page, 'interactive');
-  await page.goto('/');
+  await page.goto('/demo');
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
   expect(requested.some((url) => url.includes('/src/reader/PageViewer.tsx'))).toBe(false);
   expect(requested.some((url) => url.includes('pdfjs-dist'))).toBe(false);

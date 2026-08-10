@@ -431,13 +431,16 @@ export default function App() {
         if (publicDemoEntry) {
           const demoRes = await fetch('/api/public-demo');
           if (uploadTokenRef.current !== restoreToken) return;
-          if (!demoRes.ok) throw new Error('Public demo is unavailable');
-          const parsedDemo: PublicDemoInfo = await demoRes.json();
-          demoInfo = parsedDemo;
-          nextBookId = parsedDemo.bookId;
-          setPublicDemo(true);
-          setReaderMode('interactive');
-          writeReaderMode('interactive');
+          if (demoRes.ok) {
+            const parsedDemo: PublicDemoInfo = await demoRes.json();
+            demoInfo = parsedDemo;
+            nextBookId = parsedDemo.bookId;
+            setPublicDemo(true);
+            setReaderMode('interactive');
+            writeReaderMode('interactive');
+          } else if (demoRes.status !== 404) {
+            throw new Error('Public demo is unavailable');
+          }
         }
 
         if (!nextBookId) {

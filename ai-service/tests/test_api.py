@@ -247,6 +247,22 @@ class TestExtractAnswerKey:
         assert ocr.call_args_list[1].kwargs["image_path"] == "/data/key-page202-300dpi.png"
 
     @patch("app.api.main._get_ocr")
+    def test_accepts_bounded_production_raster_dpi(self, mock_get_ocr):
+        mock_get_ocr.return_value.return_value = self._loesungen_analysis()
+
+        response = client.post(
+            "/internal/answer-key/extract",
+            json={
+                "bookId": "book-1",
+                "rasterPaths": ["/data/key-page201-160dpi.png"],
+                "publisher": "cornelsen",
+            },
+        )
+
+        assert response.status_code == 200
+        assert mock_get_ocr.return_value.call_args.kwargs["page_number"] == 201
+
+    @patch("app.api.main._get_ocr")
     def test_unknown_publisher_is_bad_request(self, mock_get_ocr):
         mock_get_ocr.return_value.return_value = self._loesungen_analysis()
 

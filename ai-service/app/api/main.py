@@ -22,7 +22,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Lexora AI Service", version="0.3.0", lifespan=lifespan)
 
-RASTER_PAGE_NUMBER_RE = re.compile(r"-page(\d+)-300dpi\.png$")
+RASTER_PAGE_NUMBER_RE = re.compile(r"-page(\d+)-\d+dpi\.png$")
 
 
 def _page_number_from_raster_path(raster_path: str) -> int:
@@ -32,7 +32,7 @@ def _page_number_from_raster_path(raster_path: str) -> int:
             status_code=500,
             detail=(
                 "Cannot derive source page number from raster path "
-                f"(expected filename pattern '-page<number>-300dpi.png'): {raster_path}"
+                f"(expected filename pattern '-page<number>-<dpi>dpi.png'): {raster_path}"
             ),
         )
     return int(match.group(1))

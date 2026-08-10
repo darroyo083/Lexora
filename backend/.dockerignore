@@ -1,0 +1,7 @@
+storage
+target
+.mvn
+*.log
+*.tmp
+.env
+.env.*

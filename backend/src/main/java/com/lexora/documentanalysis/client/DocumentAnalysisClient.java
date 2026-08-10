@@ -103,8 +103,7 @@ public class DocumentAnalysisClient {
 
             if (response.statusCode() >= 400) {
                 throw new RuntimeException(
-                    "Analysis failed: HTTP " + response.statusCode()
-                    + " body=" + response.body()
+                    "Analysis service returned HTTP " + response.statusCode()
                 );
             }
 

@@ -51,6 +51,9 @@ public class BookService {
     private final DocumentAnalysisClient analysisClient;
     private final Path storageBasePath;
 
+    @Value("${lexora.analysis.raster-dpi:300}")
+    private int rasterDpi = 300;
+
     public BookService(BookRepository repository,
                        BookProfileRepository bookProfileRepository,
                        DocumentAnalysisClient analysisClient,
@@ -197,18 +200,21 @@ public class BookService {
         return renderPage(renderer, pdfPath, pageNumber, outputPath);
     }
 
-    private static Path rasterOutputPath(Path pdfPath, int pageNumber) {
+    private Path rasterOutputPath(Path pdfPath, int pageNumber) {
         return Path.of(
             pdfPath.getParent().toString(),
             pdfPath.getFileName().toString().replace(
-                ".pdf", "-page" + pageNumber + "-300dpi.png"
+                ".pdf", "-page" + pageNumber + "-" + rasterDpi + "dpi.png"
             )
         );
     }
 
-    private static Path renderPage(org.apache.pdfbox.rendering.PDFRenderer renderer,
-                                   Path pdfPath, int pageNumber, Path outputPath) throws IOException {
-        var bufferedImage = renderer.renderImageWithDPI(pageNumber - 1, 300);
+    private Path renderPage(org.apache.pdfbox.rendering.PDFRenderer renderer,
+                            Path pdfPath, int pageNumber, Path outputPath) throws IOException {
+        if (rasterDpi < 96 || rasterDpi > 300) {
+            throw new IllegalStateException("Raster DPI must be between 96 and 300");
+        }
+        var bufferedImage = renderer.renderImageWithDPI(pageNumber - 1, rasterDpi);
         javax.imageio.ImageIO.write(bufferedImage, "PNG", outputPath.toFile());
         return outputPath;
     }

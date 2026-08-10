@@ -218,6 +218,55 @@ test('supports keyboard-only mode changes with visible focus', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
 });
 
+test('supports keyboard operation across all six native interaction families', async ({ page }) => {
+  await mockWorkbook(page, 'interactive');
+  await page.goto('/');
+
+  const openStep = async (stepId: string, kind: string) => {
+    await page.evaluate(({ lessonId, nextStepId }) => {
+      localStorage.setItem('lexora.lessonProgress.v1', JSON.stringify({ version: 1, stepByLesson: { [lessonId]: nextStepId } }));
+    }, { lessonId: `${BOOK_ID}:page:1`, nextStepId: stepId });
+    await page.reload();
+    return page.locator(`.lesson-step[data-kind="${kind}"]`);
+  };
+
+  const fill = await openStep('page-1-fill-blank-1:item:blank-1', 'fill-blank');
+  await fill.getByRole('textbox', { name: 'Your answer' }).focus();
+  await page.keyboard.type('bin');
+  await expect(fill.getByRole('textbox', { name: 'Your answer' })).toHaveValue('bin');
+
+  const choice = await openStep('page-1-choice-choice-1:item:choice-1', 'choice');
+  const choiceRadio = choice.getByRole('radio').first();
+  await choiceRadio.focus();
+  await page.keyboard.press('Space');
+  await expect(choiceRadio).toBeChecked();
+
+  const grid = await openStep('page-1-grid-grid-1:row:row-1', 'choice-grid');
+  const gridRadio = grid.getByRole('radio').first();
+  await gridRadio.focus();
+  await page.keyboard.press('Space');
+  await expect(gridRadio).toBeChecked();
+
+  const ordering = await openStep('page-1-ordering-order-exercise:item:ordering-1', 'sentence-ordering');
+  const token = ordering.locator('.lesson-token').first();
+  await token.focus();
+  await page.keyboard.press('Enter');
+  await expect(token).toHaveAttribute('aria-pressed', 'true');
+
+  const matching = await openStep('page-1-matching-matching-1:item:matching-1', 'matching');
+  const matchButtons = matching.locator('.lesson-match-item');
+  await matchButtons.first().focus();
+  await page.keyboard.press('Space');
+  await matchButtons.last().focus();
+  await page.keyboard.press('Enter');
+  await expect(matchButtons.first()).toHaveAttribute('data-paired', 'true');
+
+  const freeText = await openStep('page-1-free-free-1:item:free-1', 'free-text');
+  await freeText.getByRole('textbox', { name: 'Your response' }).focus();
+  await page.keyboard.type('Keyboard response');
+  await expect(freeText.getByRole('textbox', { name: 'Your response' })).toHaveValue('Keyboard response');
+});
+
 test('keeps a native interaction inside every target viewport without document scrolling', async ({ page }) => {
   await mockWorkbook(page, 'interactive');
   await page.addInitScript(({ lessonId, stepId }) => {

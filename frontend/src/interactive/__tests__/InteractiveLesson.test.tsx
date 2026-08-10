@@ -80,6 +80,7 @@ describe('InteractiveLesson', () => {
     render(<InteractiveLesson {...callbacks} />);
 
     expect(screen.getByRole('heading', { name: 'Satzklammer', level: 1 })).toBeTruthy();
+    expect(screen.getByRole('progressbar').querySelector('span')?.style.transform).toBe('scaleX(0.5)');
     fireEvent.change(screen.getByRole('textbox', { name: 'Your answer' }), { target: { value: 'ist' } });
     expect(callbacks.onAnswerChange).toHaveBeenCalledWith('blank-1', 'ist');
     fireEvent.click(screen.getByRole('button', { name: 'Check answer' }));

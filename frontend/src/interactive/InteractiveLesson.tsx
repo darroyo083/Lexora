@@ -564,7 +564,7 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
 
   const activeIndex = Math.max(0, steps.findIndex((step) => step.id === activeStepId));
   const step = steps[activeIndex] ?? steps[0];
-  const progress = steps.length <= 1 ? 100 : (activeIndex / (steps.length - 1)) * 100;
+  const progress = steps.length === 0 ? 0 : ((activeIndex + 1) / steps.length) * 100;
 
   useEffect(() => {
     if (!focusAfterNavigation.current) return;

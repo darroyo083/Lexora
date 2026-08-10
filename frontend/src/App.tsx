@@ -154,7 +154,7 @@ export default function App() {
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => readThemeModePreference());
   const [readerMode, setReaderMode] = useState<ReaderMode>(readReaderMode);
-  const [answerKey, setAnswerKey] = useState<AnswerKey | null>(null);
+  const [answerKey, setAnswerKey] = useState<{ bookId: string; value: AnswerKey } | null>(null);
   const [pageCorrection, setPageCorrection] = useState<PageCorrectionResolution | null>(null);
   const [pageLoadError, setPageLoadError] = useState<string | null>(null);
   const [correctionLoadError, setCorrectionLoadError] = useState<string | null>(null);
@@ -177,7 +177,9 @@ export default function App() {
   const correctionCheckRef = useRef<() => void>(() => {});
   activePage.current = selectedPage;
 
-  const currentAnswerKey = answerKey?.bookId === book?.id ? answerKey : null;
+  const currentAnswerKey = answerKey !== null && answerKey.bookId === book?.id
+    ? answerKey.value
+    : null;
   const currentPageCorrection = pageCorrection !== null
     && pageCorrection.bookId === book?.id
     && pageCorrection.pageNumber === selectedPage
@@ -341,7 +343,7 @@ export default function App() {
   const loadAnswerKey = useCallback(async (bookId: string, signal?: AbortSignal) => {
     try {
       const key = await fetchAnswerKey(bookId, signal);
-      setAnswerKey(key);
+      setAnswerKey({ bookId, value: key });
       setCorrectionLoadError(null);
     } catch (error) {
       const requestError = error as Error & { name?: string; status?: number };

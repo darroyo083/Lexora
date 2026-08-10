@@ -64,7 +64,7 @@ function readyPage(pageNumber: number, blankId = `blank-${pageNumber}`) {
 
 function answerKey() {
   return {
-    id: 'key-a', bookId: 'book-a', extractionMethod: 'test', parserVersion: '1', sourcePageRange: '1-2',
+    extractionMethod: 'test', parserVersion: '1', sourcePageRange: '1-2',
     extractionStatus: 'READY', failureReason: null, extractedAt: '2026-08-10T00:00:00Z', entryCount: 2, entries: [],
   };
 }

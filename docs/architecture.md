@@ -48,7 +48,7 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 - Calls separate FastAPI OCR and interaction-detection operations over HTTP/1.1 and stores only the final analysis as PostgreSQL JSONB.
 - Returns an existing `READY` page without rasterization or OCR.
 - Streams the stored source PDF for browser restoration.
-- Resolves learner answers against the imported answer-key profile and returns authoritative per-interaction correction states plus the resolved unit title.
+- Resolves page interactions against the imported answer-key profile and returns authoritative per-interaction answer slots plus the resolved unit title.
 - Applies Flyway migrations for books, pages, legacy processing-status conversion, and the `DETECTING_INTERACTIONS` stage rename.
 
 ### FastAPI AI Service
@@ -139,7 +139,7 @@ The projector does not call OCR, correction, or a generative model. It preserves
 
 ## Correction Safety
 
-The browser submits structured answers through the existing correction API. The backend owns answer-key resolution and returns `CORRECT`, `INCORRECT`, `UNANSWERED`, `AMBIGUOUS`, or `UNMAPPED`. Interactive Mode renders those states but never derives a verdict itself. Reveal and retry operate on the returned correction payload and shared answer state. An unavailable mapping remains visibly unresolved.
+The browser requests page-scoped correction slots from the backend. The backend owns answer-key-to-interaction resolution and returns `RESOLVED`, `AMBIGUOUS`, or `UNMAPPED` slots with authoritative expected values only when resolution succeeds. The frontend compares the browser-local learner answer against a resolved slot using the slot's normalization policy, producing `CORRECT`, `INCORRECT`, `UNANSWERED`, or `NOT_AUTO_GRADABLE`. It never compares against an ambiguous, unmapped, stale, or failed response. Page identity binds the correction payload, and navigation revokes the previous page's authority before the next request starts. Reveal and retry use that same page-bound payload and shared answer state.
 
 ## Mode Boundary and Performance
 

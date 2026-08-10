@@ -3485,14 +3485,9 @@ html, body, #root {
   display: none;
 }
 
-.app[data-reader-mode="interactive"] .dev-toggle-badge {
-  display: none;
-}
-
+.app[data-reader-mode="interactive"] .dev-mode-toggle,
 .app[data-reader-mode="interactive"] .dev-toggle-btn {
-  width: 36px;
-  justify-content: center;
-  padding: 0;
+  display: none;
 }
 
 .reader-layout-interactive .page-area {
@@ -3534,8 +3529,8 @@ html, body, #root {
   --lesson-border: oklch(0.86 0.018 135);
   --lesson-border-strong: oklch(0.76 0.03 135);
   --lesson-text: oklch(0.24 0.025 145);
-  --lesson-text-muted: oklch(0.44 0.03 145);
-  --lesson-text-soft: oklch(0.53 0.025 145);
+  --lesson-text-muted: oklch(0.39 0.03 145);
+  --lesson-text-soft: oklch(0.42 0.025 145);
   --lesson-accent: oklch(0.47 0.09 145);
   --lesson-accent-strong: oklch(0.39 0.09 145);
   --lesson-accent-soft: oklch(0.47 0.09 145 / 0.09);

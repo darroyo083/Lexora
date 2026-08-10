@@ -61,10 +61,62 @@ async function openBook(page: Page, pageNumber: number) {
 }
 
 async function goToPage(page: Page, pageNumber: number) {
+  await page.evaluate(() => localStorage.removeItem('lexora.lessonProgress.v1'));
   const pageInput = page.locator('input.page-input');
+  if (await pageInput.inputValue() === String(pageNumber)) {
+    const resetPage = pageNumber === 1 ? 2 : 1;
+    await pageInput.fill(String(resetPage));
+    await expect(pageInput).toHaveValue(String(resetPage));
+  }
   await pageInput.fill(String(pageNumber));
   await expect(pageInput).toHaveValue(String(pageNumber));
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('lexora.currentPage'))).toBe(String(pageNumber));
   await expect(page.locator('.interactive-lesson')).toBeVisible();
+}
+
+async function completeCurrentStep(page: Page) {
+  if (await page.locator('.lesson-empty-state').isVisible().catch(() => false)) {
+    throw new Error('Reached an unavailable page before the expected real interaction family.');
+  }
+  const step = page.locator('.lesson-step');
+  const kind = await step.getAttribute('data-kind');
+
+  if (kind === 'fill-blank') {
+    await step.getByRole('textbox', { name: 'Your answer' }).fill('__navigation_probe__');
+  } else if (kind === 'choice' || kind === 'choice-grid') {
+    await step.getByRole('radio').first().locator('..').click();
+  } else if (kind === 'sentence-ordering') {
+    const tokens = step.locator('.lesson-token');
+    for (let index = 0; index < await tokens.count(); index += 1) await tokens.nth(index).click();
+  } else if (kind === 'matching') {
+    const columns = step.locator('.lesson-matching-columns > div');
+    const left = columns.nth(0).locator('.lesson-match-item');
+    const right = columns.nth(1).locator('.lesson-match-item');
+    for (let index = 0; index < Math.min(await left.count(), await right.count()); index += 1) {
+      await left.nth(index).click();
+      await right.nth(index).click();
+    }
+  } else if (kind === 'free-text') {
+    await step.getByRole('textbox', { name: 'Your response' }).fill('Navigation probe');
+  }
+
+  const primary = page.locator('.lesson-primary-action');
+  await expect(primary).toBeEnabled();
+  const initialLabel = (await primary.textContent())?.trim() ?? '';
+  await primary.click();
+  if (initialLabel === 'Check answer' || initialLabel === 'Save response') {
+    await expect(primary).toContainText('Continue');
+    await primary.click();
+  }
+}
+
+async function advanceToKind(page: Page, kind: string) {
+  for (let index = 0; index < 40; index += 1) {
+    const target = page.locator(`.lesson-step[data-kind="${kind}"]`);
+    if (await target.isVisible().catch(() => false)) return target;
+    await completeCurrentStep(page);
+  }
+  throw new Error(`Could not reach real lesson step ${kind}.`);
 }
 
 test('uses real page authority for correct, incorrect, reveal, retry, and Classic fallback', async ({ page, request }) => {
@@ -73,11 +125,10 @@ test('uses real page authority for correct, incorrect, reveal, retry, and Classi
   const expected = await resolvedFillAnswer(request);
   await openBook(page, resolvedPage);
 
-  await expect(page.getByRole('button', { name: 'Check answers' })).toBeEnabled();
-  const resolvedFill = page.locator('.lesson-exercise[data-kind="fill-blank"]').first();
+  const resolvedFill = await advanceToKind(page, 'fill-blank');
   await expect(resolvedFill).toBeVisible();
-  await resolvedFill.locator('input').first().fill('__definitely_incorrect__');
-  await page.getByRole('button', { name: 'Check answers' }).click();
+  await resolvedFill.getByRole('textbox', { name: 'Your answer' }).fill('__definitely_incorrect__');
+  await page.getByRole('button', { name: 'Check answer' }).click();
 
   const incorrect = page.locator('.lesson-feedback[data-verdict="incorrect"]').first();
   await expect(incorrect).toContainText('Not quite');
@@ -85,15 +136,15 @@ test('uses real page authority for correct, incorrect, reveal, retry, and Classi
   await expect(incorrect.locator('.lesson-expected')).toContainText('Answer:');
   await incorrect.getByRole('button', { name: 'Try again' }).click();
   await expect(incorrect).toHaveCount(0);
-  await resolvedFill.locator('input').first().fill(expected);
-  await page.getByRole('button', { name: 'Check answers' }).click();
+  await resolvedFill.getByRole('textbox', { name: 'Your answer' }).fill(expected);
+  await page.getByRole('button', { name: 'Check answer' }).click();
   await expect(page.locator('.lesson-feedback[data-verdict="correct"]').first()).toContainText('Correct');
 
   expect(requests).toContain(`/api/books/${bookId}/pages/${resolvedPage}`);
   expect(requests).not.toContain(`/api/books/${bookId}/pages`);
   expect(requests).not.toContain(`/api/books/${bookId}/source`);
 
-  await page.getByRole('button', { name: 'Classic' }).click();
+  await page.locator('.lesson-classic-link').click();
   await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('.page-overlay .blank-input').first()).toBeVisible();
   expect(requests).toContain(`/api/books/${bookId}/source`);
@@ -104,7 +155,7 @@ test('renders every representative native interaction family from real persisted
 
   for (const [kind, pageNumber] of Object.entries(representativePages)) {
     await goToPage(page, pageNumber);
-    const exercise = page.locator(`.lesson-exercise[data-kind="${kind}"]`).first();
+    const exercise = await advanceToKind(page, kind);
     await expect(exercise).toBeVisible();
     if (kind === 'choice' || kind === 'choice-grid') {
       const option = exercise.getByRole('radio').first();
@@ -132,9 +183,8 @@ test('renders every representative native interaction family from real persisted
 test('keeps Classic navigation, overlays, interactions, and correction authoritative', async ({ page, request }) => {
   const expected = await resolvedFillAnswer(request);
   await openBook(page, resolvedPage);
-  await expect(page.locator('.lesson-context').first()).toBeVisible();
 
-  await page.getByRole('button', { name: 'Classic' }).click();
+  await page.locator('.lesson-classic-link').click();
   await expect(page.locator('.interactive-lesson')).toHaveCount(0);
   await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
   const overlayInput = page.locator('.page-overlay .blank-input').first();
@@ -168,7 +218,7 @@ test('keeps Classic navigation, overlays, interactions, and correction authorita
 test('navigates to unsupported content and returns through the real Classic fallback', async ({ page }) => {
   await openBook(page, resolvedPage);
   await goToPage(page, unsupportedPage);
-  await expect(page.getByRole('heading', { name: 'This page is not interactive yet' })).toBeVisible();
-  await page.getByRole('button', { name: 'Open Classic mode' }).click();
+  await expect(page.getByRole('heading', { name: 'Turn this page into a guided lesson' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Classic' }).click();
   await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
 });

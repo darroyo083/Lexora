@@ -135,7 +135,7 @@ function ProcessingExperience({ stage, onUseClassic }: {
         <LoaderCircle size={26} />
       </div>
       <p className="lesson-state-label">Interactive lesson</p>
-      <h1 id="lesson-preparing-title" role="status" aria-live="polite">
+      <h1 id="lesson-preparing-title" aria-live="polite">
         {copy?.title ?? 'Preparing your lesson'}
       </h1>
       <div className="lesson-processing-message" aria-hidden="true">
@@ -640,6 +640,7 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
             aria-valuemin={1}
             aria-valuemax={steps.length}
             aria-valuenow={activeIndex + 1}
+            aria-label={`Lesson step ${activeIndex + 1} of ${steps.length}`}
           >
             <span style={{ transform: `scaleX(${progress / 100})` }} />
           </div>

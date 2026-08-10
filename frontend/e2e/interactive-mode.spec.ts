@@ -64,7 +64,7 @@ async function json(route: Route, body: unknown) {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 }
 
-async function mockWorkbook(page: Page, mode: 'classic' | 'interactive') {
+async function mockWorkbook(page: Page, mode: 'classic' | 'interactive', options: { processingPageTwo?: boolean } = {}) {
   await page.addInitScript(({ bookId, readerMode }) => {
     localStorage.setItem('lexora.currentBookId', bookId);
     localStorage.setItem('lexora.currentPage', '1');
@@ -78,6 +78,9 @@ async function mockWorkbook(page: Page, mode: 'classic' | 'interactive') {
       return route.fulfill({ status: 200, contentType: 'application/pdf', body: tinyPdf() });
     }
     if (url.pathname === `/api/books/${BOOK_ID}/pages/1`) return json(route, pageOne);
+    if (url.pathname === `/api/books/${BOOK_ID}/pages/2` && options.processingPageTwo) {
+      return json(route, { id: 'page-2', bookId: BOOK_ID, pageNumber: 2, processingStatus: 'OCR', analysis: null, failureReason: null });
+    }
     if (url.pathname === `/api/books/${BOOK_ID}/pages/2`) {
       return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
     }
@@ -95,27 +98,79 @@ async function mockWorkbook(page: Page, mode: 'classic' | 'interactive') {
   });
 }
 
+async function advanceToKind(page: Page, kind: string) {
+  for (let index = 0; index < 20; index += 1) {
+    const target = page.locator(`.lesson-step[data-kind="${kind}"]`);
+    if (await target.isVisible().catch(() => false)) return target;
+    await page.locator('.lesson-primary-action').click();
+  }
+  throw new Error(`Could not reach lesson step ${kind}.`);
+}
+
+async function backToKind(page: Page, kind: string) {
+  for (let index = 0; index < 20; index += 1) {
+    const target = page.locator(`.lesson-step[data-kind="${kind}"]`);
+    if (await target.isVisible().catch(() => false)) return target;
+    await page.locator('.lesson-back-action').click();
+  }
+  throw new Error(`Could not return to lesson step ${kind}.`);
+}
+
+async function expectViewportNative(page: Page) {
+  expect(await page.evaluate(() => {
+    const area = document.querySelector('.reader-layout-interactive .page-area');
+    return {
+      documentScroll: document.documentElement.scrollHeight > window.innerHeight,
+      areaScroll: area ? area.scrollHeight > area.clientHeight : true,
+    };
+  })).toEqual({ documentScroll: false, areaScroll: false });
+}
+
 test('completes native interactions, checks conservatively, and restores work', async ({ page }) => {
   await mockWorkbook(page, 'interactive');
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
-  await page.getByRole('textbox', { name: /Answer 1/i }).fill('bin');
-  await page.getByRole('radio', { name: 'A', exact: true }).first().locator('..').click();
-  await page.getByRole('radio', { name: 'Ordnen Sie zu.: B' }).locator('..').click();
-  await page.getByRole('button', { name: 'Ich' }).click();
-  await page.getByRole('button', { name: 'lerne', exact: true }).click();
-  await page.getByRole('button', { name: /1\. lernen/ }).click();
-  await page.getByRole('button', { name: /A\. study/ }).click();
-  await page.getByRole('textbox', { name: 'Your response' }).fill('Eine freie Antwort.');
-  await page.getByRole('button', { name: 'Check answers' }).click();
-
+  const fill = await advanceToKind(page, 'fill-blank');
+  await fill.getByRole('textbox', { name: 'Your answer' }).fill('bin');
+  await page.getByRole('button', { name: 'Check answer' }).click();
   await expect(page.getByText('Correct', { exact: true })).toBeVisible();
-  await expect(page.getByText(/No authoritative answer is mapped/).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  const choice = await advanceToKind(page, 'choice');
+  await choice.getByRole('radio', { name: 'A', exact: true }).locator('..').click();
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  await expect(page.getByText('Not graded')).toBeVisible();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  const grid = await advanceToKind(page, 'choice-grid');
+  await grid.getByRole('radio').last().locator('..').click();
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  const ordering = await advanceToKind(page, 'sentence-ordering');
+  await ordering.getByRole('button', { name: 'Ich' }).click();
+  await ordering.getByRole('button', { name: 'lerne', exact: true }).click();
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  const matching = await advanceToKind(page, 'matching');
+  await matching.getByRole('button', { name: /1\. lernen/ }).click();
+  await matching.getByRole('button', { name: /A\. study/ }).click();
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  const freeText = await advanceToKind(page, 'free-text');
+  await freeText.getByRole('textbox', { name: 'Your response' }).fill('Eine freie Antwort.');
+  await page.getByRole('button', { name: 'Save response' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('heading', { name: 'Lesson complete' })).toBeVisible();
+
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: /Answer 1/i })).toHaveValue('bin');
-  await expect(page.getByRole('textbox', { name: 'Your response' })).toHaveValue('Eine freie Antwort.');
+  await expect(page.getByRole('heading', { name: 'Lesson complete' })).toBeVisible();
+  await expect((await backToKind(page, 'free-text')).getByRole('textbox', { name: 'Your response' })).toHaveValue('Eine freie Antwort.');
+  await expect((await backToKind(page, 'fill-blank')).getByRole('textbox', { name: 'Your answer' })).toHaveValue('bin');
 });
 
 test('persists mode, navigates to an unavailable lesson, and keeps Classic fallback', async ({ page }) => {
@@ -127,9 +182,9 @@ test('persists mode, navigates to an unavailable lesson, and keeps Classic fallb
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('lexora.readerMode.v1'))).toBe('interactive');
 
-  await page.getByRole('navigation', { name: 'Lesson pages' }).first().getByRole('button', { name: /Next/ }).click();
-  await expect(page.getByRole('heading', { name: 'This page is not interactive yet' })).toBeVisible();
-  await page.getByRole('button', { name: 'Open Classic mode' }).click();
+  await page.getByRole('button', { name: 'Next Page' }).click();
+  await expect(page.getByRole('heading', { name: 'Turn this page into a guided lesson' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Classic' }).click();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('lexora.readerMode.v1'))).toBe('classic');
   await expect(page.locator('canvas')).toBeVisible();
 });
@@ -151,7 +206,7 @@ for (const theme of ['dark', 'light'] as const) {
 test('supports keyboard-only mode changes with visible focus', async ({ page }) => {
   await mockWorkbook(page, 'interactive');
   await page.goto('/');
-  const classic = page.getByRole('button', { name: 'Classic', exact: true });
+  const classic = page.locator('.lesson-classic-link');
   await classic.focus();
   await expect(classic).toBeFocused();
   await expect(classic).toHaveCSS('outline-style', 'solid');
@@ -163,16 +218,50 @@ test('supports keyboard-only mode changes with visible focus', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
 });
 
-test('keeps the lesson inside a narrow viewport without page-level overflow', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('keeps a native interaction inside every target viewport without document scrolling', async ({ page }) => {
   await mockWorkbook(page, 'interactive');
+  await page.addInitScript(({ lessonId, stepId }) => {
+    localStorage.setItem('lexora.lessonProgress.v1', JSON.stringify({ version: 1, stepByLesson: { [lessonId]: stepId } }));
+  }, {
+    lessonId: `${BOOK_ID}:page:1`,
+    stepId: 'page-1-matching-matching-1:item:matching-1',
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
-  expect(await page.evaluate(() => ({
-    viewport: window.innerWidth,
-    documentWidth: document.documentElement.scrollWidth,
-    lessonRight: document.querySelector('.interactive-lesson')?.getBoundingClientRect().right,
-  }))).toEqual({ viewport: 390, documentWidth: 390, lessonRight: 390 });
+  await expect(page.locator('.lesson-step[data-kind="matching"]')).toBeVisible();
+
+  for (const viewport of [
+    { width: 1920, height: 1080 },
+    { width: 1440, height: 900 },
+    { width: 1366, height: 768 },
+    { width: 1280, height: 720 },
+    { width: 430, height: 932 },
+    { width: 390, height: 844 },
+    { width: 375, height: 812 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expectViewportNative(page);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
+    await expect(page.locator('.lesson-player-actions')).toBeInViewport();
+  }
+});
+
+test('uses truthful rotating processing copy, shimmer, Classic fallback, and reduced-motion gating', async ({ page }) => {
+  await mockWorkbook(page, 'interactive', { processingPageTwo: true });
+  await page.addInitScript(() => localStorage.setItem('lexora.currentPage', '2'));
+  await page.goto('/');
+
+  await expect(page.getByRole('heading', { name: 'Reading the page' })).toBeVisible();
+  const message = page.locator('.lesson-processing-message');
+  const shimmer = message.locator('span');
+  const initialMessage = await message.textContent();
+  await expect.poll(() => message.textContent(), { timeout: 5_000 }).not.toBe(initialMessage);
+  await expect(shimmer).toHaveCSS('animation-name', /lesson-message-shimmer/);
+  await expect(page.getByRole('button', { name: 'Open Classic' })).toBeVisible();
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(shimmer).toHaveCSS('animation-name', 'none');
 });
 
 test('does not load the Classic PDF renderer during an Interactive session', async ({ page }) => {
@@ -184,7 +273,7 @@ test('does not load the Classic PDF renderer during an Interactive session', asy
   expect(requested.some((url) => url.includes('/src/reader/PageViewer.tsx'))).toBe(false);
   expect(requested.some((url) => url.includes('pdfjs-dist'))).toBe(false);
 
-  await page.getByRole('button', { name: 'Classic', exact: true }).click();
+  await page.locator('.lesson-classic-link').click();
   await expect(page.locator('canvas')).toBeVisible();
   expect(requested.some((url) => url.includes('/src/reader/PageViewer.tsx'))).toBe(true);
 });

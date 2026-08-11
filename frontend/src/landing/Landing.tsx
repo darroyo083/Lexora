@@ -15,7 +15,7 @@ const interactionFamilies = [
 ] as const;
 
 const architecture = [
-  { id: 'vision', label: 'External Vision', meta: 'AI-only production analysis', detail: 'A concrete external Vision provider returns a strict, versioned PageAnalysis contract. Local OCR stays development-only.' },
+  { id: 'vision', label: 'Private AI analysis', meta: 'OpenCode Go / MiMo V2.5', detail: 'The local/private workflow sends a bounded page image to MiMo and validates a strict, versioned PageAnalysis contract.' },
   { id: 'service', label: 'Spring Boot', meta: 'Books, profiles, correction', detail: 'The application core owns book state, page profiles, correction authority, and the public read-only boundary.' },
   { id: 'projection', label: 'Lesson projection', meta: 'Source-backed transformation', detail: 'A deterministic projection turns supported page structures into focused lesson steps without inventing content.' },
   { id: 'reader', label: 'React reader', meta: 'Interactive + Classic', detail: 'One product surface provides guided practice and a source-faithful fallback, including keyboard, touch, and responsive layouts.' },
@@ -72,7 +72,7 @@ export default function Landing() {
             </p>
             <div className="hero-actions" aria-label="Project actions">
               <a className="landing-button landing-button-primary" href="/demo">
-                Try the curated demo <ArrowRight size={17} aria-hidden="true" />
+                Try the real precomputed demo <ArrowRight size={17} aria-hidden="true" />
               </a>
               <a className="landing-button landing-button-secondary"
                 href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer">
@@ -80,7 +80,7 @@ export default function Landing() {
               </a>
             </div>
             <p className="hero-boundary">
-              <ShieldCheck size={15} aria-hidden="true" /> Public demo runs real product UI on a curated, pre-analyzed dataset.
+              <ShieldCheck size={15} aria-hidden="true" /> Interactive demo generated from a real MiMo analysis and precomputed for zero-cost public access.
             </p>
           </div>
 
@@ -161,8 +161,8 @@ export default function Landing() {
           <div className="section-heading split">
             <div><p className="landing-kicker"><span>04</span> Interaction system</p>
               <h2 id="interactions-title">Six families.<br />One correction model.</h2></div>
-            <p>Hover, focus, or tap an interaction. The public demo carries every family in one
-              synthetic workbook, so the evidence is reproducible without private material.</p>
+            <p>Hover, focus, or tap an interaction. The product supports six families; the public
+              workbook shows the structures MiMo detected in original synthetic material.</p>
           </div>
           <div className="interaction-index">
             <div className="interaction-list" aria-label="Supported interaction families">
@@ -183,7 +183,7 @@ export default function Landing() {
               <p className="mode-label">Selected family</p>
               <h3>{interactionFamilies[activeFamily].name}</h3>
               <p>{interactionFamilies[activeFamily].detail}</p>
-              <span>Available in the public demo</span>
+              <span>Supported by Lexora</span>
             </div>
           </div>
         </section>
@@ -216,12 +216,12 @@ export default function Landing() {
             </div>
           </div>
           <div className="engineering-proof">
-            <article><span>PRODUCTION</span><h3>External Vision only</h3>
-              <p>No PaddleOCR, local model, or CPU-heavy fallback in the production image.</p></article>
+            <article><span>PUBLIC RUNTIME</span><h3>No AI service or credential</h3>
+              <p>The deployed demo serves frozen validated analysis and makes zero provider calls.</p></article>
             <article><span>TRUST</span><h3>Fail-closed correction</h3>
               <p>Ambiguous and unmapped answers remain neutral instead of becoming false authority.</p></article>
             <article><span>PUBLIC DEMO</span><h3>Zero inference spend</h3>
-              <p>Pre-analyzed synthetic content blocks anonymous upload, processing, and extraction.</p></article>
+              <p>Real MiMo output from synthetic content blocks anonymous upload, processing, and extraction.</p></article>
           </div>
         </section>
 
@@ -261,7 +261,7 @@ export default function Landing() {
           <BookOpen size={38} aria-hidden="true" />
           <p className="landing-kicker"><span>08</span> See the system work</p>
           <h2 id="final-title">From source page to deliberate practice.</h2>
-          <p>Explore all six interaction families in a bounded, public-safe workbook.</p>
+          <p>Explore real provider-generated interactions in a bounded, public-safe workbook.</p>
           <div className="hero-actions">
             <a className="landing-button landing-button-primary" href="/demo">
               Open the demo <Play size={16} fill="currentColor" aria-hidden="true" /></a>

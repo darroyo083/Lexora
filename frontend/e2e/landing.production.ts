@@ -8,7 +8,7 @@ test('landing explains the product, loads real evidence, and provides tactile ke
     level: 1,
     name: /Scanned workbooks.*Structured practice/i,
   })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Try the curated demo' }))
+  await expect(page.getByRole('link', { name: 'Try the real precomputed demo' }))
     .toHaveAttribute('href', '/demo');
   await expect(page.getByRole('link', { name: 'View source' }))
     .toHaveAttribute('href', 'https://github.com/darroyo083/Lexora');
@@ -17,7 +17,7 @@ test('landing explains the product, loads real evidence, and provides tactile ke
   await expect(evidence).toBeVisible();
   expect(await evidence.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1440);
 
-  const primary = page.getByRole('link', { name: 'Try the curated demo' });
+  const primary = page.getByRole('link', { name: 'Try the real precomputed demo' });
   await primary.hover();
   await expect(primary).toHaveCSS('transform', /matrix\(1, 0, 0, 1, 0, -3\)/);
 
@@ -42,7 +42,7 @@ test('landing stays complete without hover at a touch viewport', async ({ page }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
-  await expect(page.getByRole('link', { name: 'Try the curated demo' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Try the real precomputed demo' })).toBeVisible();
   await page.goto('/#interactions');
   await expect(page.getByRole('button', { name: /01 FillBlank/i })).toBeVisible();
   await expect(page.getByText(/Typed responses mapped to source-backed blank regions/i))
@@ -63,7 +63,7 @@ test('keeps essential presentation complete across release viewports', async ({ 
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Try the curated demo' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Try the real precomputed demo' })).toBeVisible();
     await page.locator('#video').scrollIntoViewIfNeeded();
     await expect(page.getByLabel('Lexora product demo video, 66 seconds')).toBeVisible();
     await page.locator('footer').scrollIntoViewIfNeeded();

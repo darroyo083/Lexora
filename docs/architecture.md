@@ -1,6 +1,6 @@
 # Lexora Architecture
 
-Lexora is a four-service Docker Compose system with one persisted source pipeline and two reader projections. Interactive Mode converts an analyzed page into a native lesson. Classic Mode preserves the PDF and geometry-aligned overlays. They share answers and correction; neither duplicates analysis nor invents source content. Production analysis is external Vision only; the local OCR provider is a separate development compatibility path.
+Lexora has a three-service public topology and a four-service local/private analysis topology. Interactive Mode converts a persisted page analysis into a native lesson. Classic Mode preserves the PDF and geometry-aligned overlays. They share answers and correction; neither duplicates inference nor invents source content.
 
 ## Runtime Topology
 
@@ -8,14 +8,23 @@ Lexora is a four-service Docker Compose system with one persisted source pipelin
 flowchart LR
     Browser[React Interactive + lazy Classic PDF.js] -->|REST /api| Backend[Spring Boot]
     Backend -->|JDBC| Postgres[(PostgreSQL 18)]
-    Backend -->|shared storage| Storage[(lexora_storage)]
-    Backend -->|HTTP/1.1 internal API| AI[FastAPI]
-    AI -->|read bounded raster| Storage
-    AI --> Vision[External Vision provider<br/>production]
-    AI -. development only .-> Local[PaddleOCR + OpenCV]
+    Backend -->|read only| Frozen[Frozen PDF + real MiMo PageAnalysis]
 ```
 
-Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring Boot and FastAPI share the `lexora_storage` volume so the internal analysis request can pass an absolute raster path without copying image bytes over HTTP.
+Public Compose runs `frontend`, `backend`, and `postgres`. The backend initializes one fixed demo book from committed resources. No AI container, provider credential, upload action, OCR, or outbound inference is present in this topology.
+
+The local/private topology adds the analysis boundary:
+
+```mermaid
+flowchart LR
+    Owner[Owner on localhost] -->|upload/process| Backend[Spring Boot]
+    Backend -->|shared raster path| AI[FastAPI]
+    AI --> Vision[OpenCode Go<br/>MiMo V2.5]
+    AI -. optional development provider .-> Local[PaddleOCR + OpenCV]
+    Backend --> Postgres[(PostgreSQL 18)]
+```
+
+Spring Boot and FastAPI share `lexora_storage` only in this private workflow, so the internal request can pass an absolute raster path without copying image bytes over HTTP.
 
 ## Responsibilities
 
@@ -42,7 +51,7 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 ### Spring Boot Backend
 
 - Validates and stores uploaded PDFs under UUID-based keys.
-- Reads PDF page count and rasterizes a selected page at 300 DPI with PDFBox.
+- Reads PDF page count and rasterizes a selected page at a configured 96-300 DPI with PDFBox (160 DPI by default in Compose).
 - Atomically claims an unprocessed or `FAILED` page before work begins. A user-requested analysis update may also claim `READY`.
 - Persists observable page stages before each real orchestration step.
 - Calls separate FastAPI OCR and interaction-detection operations over HTTP/1.1 and stores only the final analysis as PostgreSQL JSONB.
@@ -53,7 +62,7 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 
 ### FastAPI AI Service
 
-The AI service selects one `AnalysisProvider` at startup. Production Compose pins the concrete OpenCode Go Vision provider (MiMo V2.5) through its official OpenAI-compatible HTTP API and fails startup when its credential is unavailable. That provider validates file size/type, sends one bounded page image, requests structured JSON output, validates the complete `PageAnalysis`, and redacts upstream response bodies from application errors. Its production image contains no local OCR dependencies or fallback.
+The AI service exists only in local/private and development Compose. It selects one `AnalysisProvider` at startup. Private OpenCode Go mode uses MiMo V2.5 through the provider's OpenAI-compatible HTTP API and fails startup when its local credential is unavailable. The provider validates file size/type, sends one bounded page image, requests structured JSON output, validates the complete `PageAnalysis`, normalizes same-row choice markers into semantic questions, and redacts upstream response bodies from application errors. Its lightweight image contains no local OCR dependencies or fallback.
 
 The optional `local-ocr` development provider:
 

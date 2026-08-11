@@ -1,95 +1,131 @@
-# Public release runbook
+# Public precomputed demo and private AI runbook
 
-This runbook describes the safe handoff from the repository release candidate to a future public deployment. It does not authorize or perform deployment, DNS, TLS, account, secret, or infrastructure changes.
+Lexora has two deliberately separate runtime modes. The public portfolio serves a frozen real MiMo dataset with no inference capability. The local/private runtime keeps upload and real OpenCode Go processing available to the owner from the same repository.
 
-## Runtime modes
+## Choose the runtime
 
-| Mode | Provider | Upload/process surface | Intended use |
-|---|---|---:|---|
-| Development Compose | `local-ocr` | Available for local private work | OCR compatibility and product development |
-| Production Compose | `opencode-go` | Curated demo is read-only | Public portfolio runtime and deployment smoke |
+| Runtime | Services | Provider credential | Upload/process | Default exposure |
+|---|---|---:|---:|---|
+| Public demo | `frontend`, `backend`, `postgres` | Not present | Blocked | `127.0.0.1:8088` |
+| Local/private AI | Public services plus `ai-service` | Required locally | Enabled | Loopback-only ports |
+| Local OCR development | Four development services | Not required | Enabled | Loopback-only ports |
 
-`compose.production.yml` is the production source of truth. Its AI image contains the provider client and image/contract code only; it does not contain PaddleOCR, PaddlePaddle, OpenCV, local OCR modules, model caches, or a CPU fallback.
+The public mode is NOT a fake fixture: its committed `PageAnalysis` files are the normalized, validated results of a bounded real OpenCode Go / MiMo V2.5 run over the exact committed PDF. Runtime inference is unnecessary because that work has already happened once.
 
-## Required production configuration
-
-| Variable | Required | Purpose |
-|---|---:|---|
-| `POSTGRES_PASSWORD` | Yes | Database credential; choose a strong external value |
-| `OPENCODE_GO_API_KEY` | Yes | Authorized server-side OpenCode Go credential |
-| `OPENCODE_GO_MODEL` | No | Defaults to `mimo-v2.5` |
-| `OPENCODE_GO_BASE_URL` | No | Defaults to the OpenCode Go chat completions endpoint |
-| `LEXORA_HTTP_PORT` | No | Loopback port, default `8088` |
-| `LEXORA_BIND_ADDRESS` | No | Default `127.0.0.1`; changing this is a deliberate deployment action |
-| `LEXORA_PROVIDER_TIMEOUT_SECONDS` | No | Provider deadline, default `90` |
-| `LEXORA_MAX_IMAGE_BYTES` | No | Provider image limit, default 10 MiB |
-
-Production Compose pins `LEXORA_ANALYSIS_PROVIDER=opencode-go`, so a development `.env` with `local-ocr` can never change the production provider. Never place real values in `.env.example`, Compose files, screenshots, logs, test fixtures, shell history shared in reports, or Git.
-
-## Local production proof
+## Public demo
 
 ```powershell
 $env:POSTGRES_PASSWORD = '<strong-random-secret>'
-$env:OPENCODE_GO_API_KEY = '<authorized-provider-key>'
-$env:LEXORA_HTTP_PORT = '8088'
-docker compose -f compose.production.yml up -d --build --wait
-docker compose -f compose.production.yml ps
+$env:LEXORA_HTTP_PORT = '8088' # optional
+docker compose -p lexora-public -f compose.production.yml up -d --build --wait
 ```
 
-Expected checks:
+Open `http://127.0.0.1:8088` or `http://127.0.0.1:8088/demo`.
 
-- `GET /health` reaches the Nginx health endpoint;
-- `GET /api/public-demo` reports `curated-read-only` and `analysisTriggering: false`;
-- `GET /api/books` contains only the synthetic demo book;
-- demo book/page/source reads work;
-- upload, process, delete, correction mutation, and non-demo book reads are blocked;
-- landing, `/demo`, Classic Mode, and Interactive Mode work through the published Nginx port;
-- AI-service logs show no provider request when browsing the curated demo.
+Expected boundary:
 
-The reverse proxy must terminate real TLS, preserve forwarded headers, enforce the intended host/domain, and keep backend, AI, database, and storage private. Domain, DNS, certificates, authentication decisions, and VPS changes remain outside this repository task.
+- `compose.production.yml` contains no `ai-service` and no OpenCode Go environment variable;
+- `GET /api/public-demo` reports `precomputed-real-read-only`, `opencode-go`, `mimo-v2.5`, and `analysisTriggering: false`;
+- Classic streams `demo/lexora-synthetic-workbook.pdf`;
+- Interactive reads the four committed `page-analysis-*.json` projections;
+- upload, processing, answer-key extraction, mutations, and non-demo UUIDs are rejected;
+- browsing never creates an outbound provider request.
 
-## Verification
-
-Run the regular suites from the README, then verify the built production images and stack. The opt-in private full-stack suite accepts configuration only through local environment variables:
+Stop only this isolated stack with:
 
 ```powershell
-$env:LEXORA_E2E_BASE_URL = 'http://127.0.0.1:5173'
-$env:LEXORA_E2E_BOOK_ID = '<local-profiled-book-id>'
-$env:LEXORA_E2E_RESOLVED_PAGE = '<resolved-page>'
-$env:LEXORA_E2E_CHOICE_PAGE = '<choice-page>'
-$env:LEXORA_E2E_GRID_PAGE = '<choice-grid-page>'
-$env:LEXORA_E2E_ORDERING_PAGE = '<ordering-page>'
-$env:LEXORA_E2E_MATCHING_PAGE = '<matching-page>'
-$env:LEXORA_E2E_FREE_TEXT_PAGE = '<free-text-page>'
-$env:LEXORA_E2E_UNSUPPORTED_PAGE = '<unsupported-page>'
-cd frontend
-npm run test:e2e:full-stack
+docker compose -p lexora-public -f compose.production.yml down
 ```
 
-Do not paste those values into tracked configuration or CI.
+Do not add `-v`; the database and storage volumes are intentionally preserved.
 
-## Provider smoke boundary
+## Local/private AI mode
 
-A real provider smoke is deliberately small: one external Vision request, one synthetic public-safe image, no private source, and no retained raw provider payload. Run it only when an already-authorized credential is available through the intended project environment. A missing credential is a predeployment validation item; it is not a reason to weaken startup validation or add a local OCR production fallback.
+Copy the example environment once, then add the authorized key only to the ignored local `.env`:
 
-## Public asset inventory
+```powershell
+Copy-Item .env.example .env
+# Edit .env locally: OPENCODE_GO_API_KEY=<authorized key>
+$env:LEXORA_ANALYSIS_PROVIDER = 'opencode-go'
+$env:LEXORA_AI_DOCKER_TARGET = 'production'
+$env:LEXORA_PROVIDER_TIMEOUT_SECONDS = '240'
+docker compose -p lexora-private -f docker-compose.yml up -d --build --wait
+```
 
-- `frontend/public/release/lexora-interactive.webp`
-- `frontend/public/release/lexora-classic.webp`
-- `frontend/public/release/lexora-mobile.webp`
-- `frontend/public/release/lexora-landing.webp`
-- `frontend/public/release/lexora-social.png`
-- `frontend/public/release/lexora-demo-poster.png`
-- `frontend/public/release/lexora-demo.mp4`
-- `video/public/evidence/*.webp`
+Open `http://127.0.0.1:5173`. The exact workflow is:
 
-These assets come from the synthetic curated demo. Temporary Playwright results, Remotion review frames, private workbook media, OCR/answer-key dumps, and raw provider responses are not release assets.
+```text
+owner PDF upload
+  -> PDFBox rasterization (160 DPI default)
+  -> private FastAPI service
+  -> OpenCode Go / MiMo V2.5
+  -> strict PageAnalysis validation and choice normalization
+  -> PostgreSQL persistence
+  -> Interactive or Classic reader
+```
 
-## Go-live preflight
+Required environment:
 
-- Use real production secrets outside Git.
-- Run the bounded real-provider smoke with synthetic input.
-- Verify the exact deployed commit and green CI.
-- Configure the owner-approved domain, DNS, TLS, reverse proxy, and authentication/abuse controls.
-- Re-run landing, demo, Classic, Interactive, health, security-header, and mutation-blocking smoke tests through the real public URL.
-- Confirm logs and observability do not retain private page or provider payload content.
+| Variable | Requirement |
+|---|---|
+| `OPENCODE_GO_API_KEY` | Required; local `.env` or process environment only |
+| `LEXORA_ANALYSIS_PROVIDER` | `opencode-go` |
+| `LEXORA_AI_DOCKER_TARGET` | `production` avoids installing local OCR dependencies |
+| `OPENCODE_GO_MODEL` | Optional; defaults to `mimo-v2.5` |
+| `OPENCODE_GO_BASE_URL` | Optional; defaults to the OpenCode Go chat-completions endpoint |
+| `LEXORA_PROVIDER_TIMEOUT_SECONDS` | Optional; `240` is recommended for the bounded Vision request |
+
+This mode requires Internet access and is therefore called **local/private AI runtime**, not offline mode. Never publish its frontend, backend, AI, or database ports.
+
+## Frozen dataset and provenance
+
+| Artifact | Purpose |
+|---|---|
+| `backend/src/main/resources/demo/lexora-synthetic-workbook.pdf` | Original four-page public source |
+| `backend/src/main/resources/demo/page-analysis-1.json` through `page-analysis-4.json` | Validated normalized MiMo output |
+| `backend/src/main/resources/demo/provenance.json` | Provider, model, endpoint, schema, source SHA-256, accepted timestamps, and bounded attempt count |
+| `backend/src/main/resources/demo/answer-key.json` | Public correction authority for the synthetic exercises |
+
+`scripts/freeze-public-demo-analysis.py` performs no inference. It only reads already persisted `READY` pages from a private run, verifies provider/schema metadata, applies the same deterministic same-row choice normalization as the live provider, and writes the safe fixtures. Raw provider envelopes, authorization headers, and credentials are never stored.
+
+## Security verification
+
+Verify the public stack through its published Nginx port:
+
+- allowed: landing assets, public metadata, demo book, source PDF, demo pages, correction reads;
+- blocked: upload, page processing/reanalysis, answer-key extraction, deletion/mutation, non-demo UUIDs, encoded non-demo paths, and method override attempts;
+- malformed UUIDs must produce a client error without exposing book data;
+- `docker compose ... config` and container inspection must show no `OPENCODE_GO_API_KEY` in the public service environment;
+- the public project must contain exactly three services and no AI container.
+
+Because anonymous inference does not exist, CAPTCHA or Turnstile is unnecessary. Normal Nginx request limits and security headers remain.
+
+## Verification commands
+
+```powershell
+# AI service (light suite, no PaddleOCR)
+cd ai-service
+python -m pytest --ignore=tests/test_ocr.py
+
+# Backend
+cd ../backend
+./mvnw.cmd test
+
+# Frontend
+cd ../frontend
+npm ci
+npm test -- --run
+npm run build
+npm run test:e2e
+npm run test:e2e:production
+
+# Repository secret scan
+cd ..
+gitleaks git --redact
+```
+
+Run production Docker and live public-boundary/browser proofs with the isolated `lexora-public` project before pushing. Do not use destructive volume cleanup to obtain a clean test.
+
+## Go-live boundary
+
+Repository completion does not deploy a VPS or change DNS/TLS. A future deployment should use the exact green commit, a strong PostgreSQL password outside Git, the loopback-bound Compose stack behind the approved reverse proxy, and another read-only smoke through the real public URL.

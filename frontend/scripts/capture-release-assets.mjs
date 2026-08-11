@@ -25,7 +25,11 @@ try {
     const response = await fetch('/api/public-demo');
     return response.json();
   });
-  if (boundary.mode !== 'curated-read-only' || boundary.analysisTriggering !== false) {
+  if (boundary.mode !== 'precomputed-real-read-only'
+    || boundary.analysisTriggering !== false
+    || boundary.analysisOrigin !== 'precomputed-real-provider'
+    || boundary.provider !== 'opencode-go'
+    || boundary.model !== 'mimo-v2.5') {
     throw new Error('Release captures require the curated read-only public demo');
   }
 

@@ -18,8 +18,8 @@ source-derived acceptance data.
 
 ## Public portfolio release
 
-- External Vision provider boundary for production; no local OCR runtime or
-  model downloads in the production AI image.
+- Real OpenCode Go / MiMo analysis in the local/private runtime; the public
+  production topology contains no AI service, credential, OCR, or model download.
 - Read-only synthetic demo initialized server-side with precomputed analysis.
 - No anonymous upload, processing, extraction, or provider-spend path.
 - Public landing, real product evidence, reproducible Remotion film, social

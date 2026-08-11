@@ -20,10 +20,10 @@ services:
       target: production
     restart: unless-stopped
     environment:
-      LEXORA_ANALYSIS_PROVIDER: ${LEXORA_ANALYSIS_PROVIDER:-openai}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY for production}
-      OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gpt-5.4-mini}
-      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-https://api.openai.com/v1/responses}
+      LEXORA_ANALYSIS_PROVIDER: opencode-go
+      OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:?Set OPENCODE_GO_API_KEY for production}
+      OPENCODE_GO_MODEL: ${OPENCODE_GO_MODEL:-mimo-v2.5}
+      OPENCODE_GO_BASE_URL: ${OPENCODE_GO_BASE_URL:-https://opencode.ai/zen/go/v1/chat/completions}
       LEXORA_PROVIDER_TIMEOUT_SECONDS: ${LEXORA_PROVIDER_TIMEOUT_SECONDS:-90}
       LEXORA_MAX_IMAGE_BYTES: ${LEXORA_MAX_IMAGE_BYTES:-10485760}
     volumes:

@@ -7,5 +7,5 @@
     {"id":"theory-example","text":"Example: Jeden Morgen lerne ich zehn Minuten Deutsch.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.44,"width":0.7,"height":0.035}}
   ],
   "exerciseBlanks":[],"blankDetection":null,"choiceGroups":[],"choiceTargets":[],"choiceDetection":null,"choiceGrids":[],"choiceGridDetection":null,"sentenceOrderings":[],"sentenceOrderingDetection":null,"matchingInteractions":[],"matchingDetection":null,"freeTextInteractions":[],"freeTextDetection":null,
-  "processor":{"engine":"openai-responses","engineVersion":"v1","model":"curated-provider-result","language":"de","parameters":{"curatedDemo":true},"processedAt":"2026-08-10T12:00:00Z","durationMs":0}
+  "processor":{"engine":"opencode-go-vision","engineVersion":"v1","model":"curated-provider-result","language":"de","parameters":{"curatedDemo":true},"processedAt":"2026-08-10T12:00:00Z","durationMs":0}
 }

@@ -42,5 +42,5 @@
     {"id":"free-1","kind":"free-text","bbox":{"x":0.09,"y":0.85,"width":0.7,"height":0.09},"detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["free-prompt"],"responseLines":[{"id":"free-line-1","bbox":{"x":0.1,"y":0.88,"width":0.66,"height":0.008}},{"id":"free-line-2","bbox":{"x":0.1,"y":0.91,"width":0.66,"height":0.008}}]}
   ],
   "freeTextDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
-  "processor": {"engine":"openai-responses","engineVersion":"v1","model":"curated-provider-result","language":"de","parameters":{"curatedDemo":true},"processedAt":"2026-08-10T12:00:00Z","durationMs":0}
+  "processor": {"engine":"opencode-go-vision","engineVersion":"v1","model":"curated-provider-result","language":"de","parameters":{"curatedDemo":true},"processedAt":"2026-08-10T12:00:00Z","durationMs":0}
 }

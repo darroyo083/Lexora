@@ -1,9 +1,23 @@
+"""External OpenCode Go Vision provider for production page analysis.
+
+OpenCode Go (https://opencode.ai/zen/go) exposes OpenAI-compatible
+``/v1/chat/completions`` endpoints. MiMo-V2.5 is served through the
+``@ai-sdk/openai-compatible`` format documented at https://opencode.ai/docs/go:
+standard ``image_url`` content parts for images and ``json_object``
+response format for structured output. Authentication is a server-side
+Bearer credential issued from the OpenCode console.
+
+The provider deliberately does not depend on the OpenCode CLI: Lexora
+production calls the OpenCode Go HTTP API directly.
+"""
+
 import base64
 import hashlib
 import json
 import logging
 import mimetypes
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -22,20 +36,21 @@ from app.schemas.page_analysis import PageAnalysis, ProcessorMetadata
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ENDPOINT = "https://api.openai.com/v1/responses"
-DEFAULT_MODEL = "gpt-5.4-mini"
+DEFAULT_ENDPOINT = "https://opencode.ai/zen/go/v1/chat/completions"
+DEFAULT_MODEL = "mimo-v2.5"
 DEFAULT_TIMEOUT_SECONDS = 90
 DEFAULT_MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 SYSTEM_INSTRUCTIONS = """You analyze one language-workbook page for Lexora.
-Return only the supplied JSON schema. Preserve source text and normalized geometry.
+Return only valid JSON matching the supplied JSON Schema. Preserve source text and normalized geometry.
 Coordinates are fractions of the image width and height in the range 0 to 1.
 Detect only evidence visible on this page. Never invent theory, prompts, choices,
 exercise structure, answers, or answer-key content. If an interaction is uncertain,
 omit it. Empty arrays are correct when evidence is insufficient. Nearby text IDs must
 refer to returned text spans. The page number and pixel dimensions must match the
-request exactly. Use vision-structured-v1 for every detectionMethod field.
-"""
+request exactly. Use vision-structured-v1 for every detectionMethod field."""
+
+_CODE_FENCE_RE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
 
 
 def _strict_schema() -> dict[str, Any]:
@@ -61,25 +76,31 @@ def _strict_schema() -> dict[str, Any]:
     return schema
 
 
-def _extract_output_text(response: dict[str, Any]) -> str:
-    if response.get("status") not in (None, "completed"):
-        raise AnalysisProviderError("Vision provider returned an incomplete response")
-
-    for output in response.get("output", []):
-        if output.get("type") != "message":
-            continue
-        for content in output.get("content", []):
-            if content.get("type") == "refusal":
-                raise AnalysisProviderError("Vision provider refused the page analysis")
-            if content.get("type") == "output_text" and isinstance(content.get("text"), str):
-                return content["text"]
-    raise AnalysisProviderError("Vision provider returned no structured page analysis")
+def _strip_code_fence(text: str) -> str:
+    match = _CODE_FENCE_RE.match(text.strip())
+    return match.group(1) if match else text.strip()
 
 
-class OpenAiVisionProvider:
-    """Concrete OpenAI Responses API provider for server-side page analysis."""
+def _extract_message_text(response: dict[str, Any]) -> str:
+    choices = response.get("choices") or []
+    if not choices:
+        raise AnalysisProviderError("Vision provider returned no completion")
+    choice = choices[0]
+    if choice.get("finish_reason") in ("length", "content_filter"):
+        raise AnalysisProviderError("Vision provider output was truncated or filtered")
+    message = choice.get("message") or {}
+    if message.get("refusal"):
+        raise AnalysisProviderError("Vision provider refused the page analysis")
+    content = message.get("content")
+    if not isinstance(content, str) or not content.strip():
+        raise AnalysisProviderError("Vision provider returned no structured page analysis")
+    return content
 
-    name = "openai"
+
+class OpenCodeGoVisionProvider:
+    """Concrete OpenCode Go chat/completions provider for server-side analysis."""
+
+    name = "opencode-go"
 
     def __init__(
         self,
@@ -91,9 +112,9 @@ class OpenAiVisionProvider:
         max_image_bytes: int | None = None,
         sender: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     ) -> None:
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
-        self.model = model or os.getenv("OPENAI_VISION_MODEL", DEFAULT_MODEL)
-        self.endpoint = endpoint or os.getenv("OPENAI_API_BASE_URL", DEFAULT_ENDPOINT)
+        self.api_key = api_key or os.getenv("OPENCODE_GO_API_KEY", "")
+        self.model = model or os.getenv("OPENCODE_GO_MODEL", DEFAULT_MODEL)
+        self.endpoint = endpoint or os.getenv("OPENCODE_GO_BASE_URL", DEFAULT_ENDPOINT)
         self.timeout_seconds = timeout_seconds or int(
             os.getenv("LEXORA_PROVIDER_TIMEOUT_SECONDS", str(DEFAULT_TIMEOUT_SECONDS))
         )
@@ -102,9 +123,9 @@ class OpenAiVisionProvider:
         )
         self._sender = sender or self._send
         if not self.api_key:
-            raise AnalysisProviderError("OPENAI_API_KEY is required for the OpenAI provider")
+            raise AnalysisProviderError("OPENCODE_GO_API_KEY is required for the OpenCode Go provider")
         if not self.endpoint.startswith("https://"):
-            raise AnalysisProviderError("OpenAI provider endpoint must use HTTPS")
+            raise AnalysisProviderError("OpenCode Go provider endpoint must use HTTPS")
 
     def analyze_page(
         self,
@@ -141,7 +162,7 @@ class OpenAiVisionProvider:
         started = time.monotonic()
         response = self._sender(payload)
         try:
-            raw = json.loads(_extract_output_text(response))
+            raw = json.loads(_strip_code_fence(_extract_message_text(response)))
             analysis = PageAnalysis.model_validate(raw)
         except (json.JSONDecodeError, ValidationError, TypeError) as error:
             raise AnalysisProviderError(
@@ -159,7 +180,7 @@ class OpenAiVisionProvider:
         return analysis.model_copy(
             update={
                 "processor": ProcessorMetadata(
-                    engine="openai-responses",
+                    engine="opencode-go-vision",
                     engineVersion="v1",
                     model=self.model,
                     language=analysis.language,
@@ -189,31 +210,33 @@ class OpenAiVisionProvider:
     ) -> dict[str, Any]:
         return {
             "model": self.model,
-            "store": False,
-            "instructions": SYSTEM_INSTRUCTIONS,
-            "input": [{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": (
-                            f"Analyze source page {page_number}. "
-                            f"The raster is exactly {width}x{height} pixels."
-                        ),
-                    },
-                    {"type": "input_image", "image_url": image_url, "detail": "auto"},
-                ],
-            }],
-            "text": {
-                "format": {
-                    "type": "json_schema",
-                    "name": "lexora_page_analysis",
-                    "strict": True,
-                    "schema": _strict_schema(),
-                }
-            },
-            "max_output_tokens": 16000,
-            "safety_identifier": hashlib.sha256(book_id.encode("utf-8")).hexdigest()[:32],
+            "temperature": 0,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        SYSTEM_INSTRUCTIONS
+                        + "\n\nJSON Schema:\n"
+                        + json.dumps(_strict_schema(), separators=(",", ":"))
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                f"Analyze source page {page_number}. "
+                                f"The raster is exactly {width}x{height} pixels."
+                            ),
+                        },
+                        {"type": "image_url", "image_url": {"url": image_url, "detail": "auto"}},
+                    ],
+                },
+            ],
+            "max_tokens": 16000,
+            "user": hashlib.sha256(book_id.encode("utf-8")).hexdigest()[:32],
         }
 
     def _send(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -238,7 +261,7 @@ class OpenAiVisionProvider:
                 if retryable and attempt == 0:
                     time.sleep(0.5)
                     continue
-                logger.warning("OpenAI provider request failed status=%s", error.code)
+                logger.warning("OpenCode Go provider request failed status=%s", error.code)
                 raise AnalysisProviderError("Vision provider request failed") from error
             except (TimeoutError, urllib.error.URLError, json.JSONDecodeError) as error:
                 if attempt == 0:

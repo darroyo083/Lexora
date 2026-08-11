@@ -3,7 +3,7 @@ import os
 from functools import lru_cache
 
 from app.providers.base import AnalysisProvider, AnalysisProviderError
-from app.providers.openai_vision import OpenAiVisionProvider
+from app.providers.opencode_go_vision import OpenCodeGoVisionProvider
 
 
 @lru_cache(maxsize=1)
@@ -17,8 +17,8 @@ def get_analysis_provider() -> AnalysisProvider:
         from app.providers.local_ocr import LocalOcrProvider
 
         return LocalOcrProvider()
-    if provider == "openai":
-        return OpenAiVisionProvider()
+    if provider == "opencode-go":
+        return OpenCodeGoVisionProvider()
     raise AnalysisProviderError(f"Unsupported analysis provider: {provider}")
 
 

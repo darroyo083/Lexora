@@ -984,7 +984,7 @@ export default function App() {
         (s) => s.interactionKind === 'matching' && s.ordinal === index,
       );
       const entry = slot?.resolution === 'RESOLVED' ? slot.entry : undefined;
-      if (entry) pairs[matching.id] = parseMatchingPairsFromEntry(entry);
+      if (entry) pairs[matching.id] = parseMatchingPairsFromEntry(entry, matching);
     });
     return pairs;
   }, [correctionSlots, interaction.matchings]);

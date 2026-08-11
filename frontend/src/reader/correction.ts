@@ -3,6 +3,8 @@ import type {
   ChoiceGrid,
   ChoiceGridRow,
   ChoiceGroup,
+  MatchingInteraction,
+  MatchingItem,
 } from '../reader/types';
 import { parseOrderedAnswer } from './ordering';
 import { parseMatchingAnswer } from './matching';
@@ -41,6 +43,7 @@ export interface OrderingInput {
 export interface MatchingInput {
   learnerValue: string | undefined;
   entry: AnswerKeyEntry | undefined;
+  matching: MatchingInteraction;
 }
 
 export function isGradable(interactionKind: string): boolean {
@@ -281,7 +284,7 @@ export function compareOrdering(input: OrderingInput): CorrectionResult {
 }
 
 export function compareMatching(input: MatchingInput): CorrectionResult {
-  const { learnerValue, entry } = input;
+  const { learnerValue, entry, matching } = input;
 
   if (!entry) {
     return {
@@ -297,7 +300,11 @@ export function compareMatching(input: MatchingInput): CorrectionResult {
     return { verdict: CorrectionVerdict.UNANSWERED, resolution: AnswerResolutionStatus.RESOLVED };
   }
 
-  const expectedPairs = parseMatchingPairsFromEntry(entry);
+  const expected = resolveMatchingPairs(entry, matching);
+  if (!expected.complete || expected.pairs.length === 0) {
+    return { verdict: undefined, resolution: AnswerResolutionStatus.AMBIGUOUS };
+  }
+  const expectedPairs = expected.pairs;
   const totalPairs = expectedPairs.length;
 
   let correctCount = 0;
@@ -324,15 +331,61 @@ export function compareMatching(input: MatchingInput): CorrectionResult {
 
 export function parseMatchingPairsFromEntry(
   entry: AnswerKeyEntry,
+  matching: MatchingInteraction,
 ): Array<{ left: string; right: string }> {
-  const pairs: Array<{ left: string; right: string }> = [];
-  for (const segment of entry.expectedValue.split(',')) {
-    const parts = segment.split('-').map((s) => s.trim()).filter(Boolean);
-    if (parts.length >= 2) {
-      pairs.push({ left: parts[0], right: parts[1] });
-    }
+  return resolveMatchingPairs(entry, matching).pairs;
+}
+
+function matchingSourcePairs(entry: AnswerKeyEntry): Array<{ left: string; right: string }> {
+  if (entry.typedPayload?.kind === 'matching') {
+    return entry.typedPayload.pairs.map((pair) => ({
+      left: pair.leftLabel,
+      right: pair.rightLabel,
+    }));
   }
-  return pairs;
+  return entry.expectedValue
+    .split(/[;,]/)
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((segment) => {
+      const delimiter = segment.includes('=') ? '=' : segment.includes('->') ? '->' : '-';
+      const [left, right] = segment.split(delimiter, 2).map((part) => part.trim());
+      return { left, right };
+    })
+    .filter((pair) => Boolean(pair.left && pair.right));
+}
+
+function resolveMatchingItem(value: string, items: MatchingItem[]): string | null {
+  const byId = items.filter((item) => item.id === value);
+  if (byId.length === 1) return byId[0].id;
+  const normalized = normalizeForComparison(value, false);
+  const byLabelOrText = items.filter((item) => (
+    normalizeForComparison(item.label, false) === normalized
+    || normalizeForComparison(item.text, false) === normalized
+  ));
+  return byLabelOrText.length === 1 ? byLabelOrText[0].id : null;
+}
+
+function resolveMatchingPairs(
+  entry: AnswerKeyEntry,
+  matching: MatchingInteraction,
+): { pairs: Array<{ left: string; right: string }>; complete: boolean } {
+  const source = matchingSourcePairs(entry);
+  const pairs: Array<{ left: string; right: string }> = [];
+  for (const pair of source) {
+    const left = resolveMatchingItem(pair.left, matching.leftItems);
+    const right = resolveMatchingItem(pair.right, matching.rightItems);
+    if (!left || !right) return { pairs, complete: false };
+    pairs.push({ left, right });
+  }
+  const uniqueLeft = new Set(pairs.map((pair) => pair.left));
+  const uniqueRight = new Set(pairs.map((pair) => pair.right));
+  return {
+    pairs,
+    complete: pairs.length === source.length
+      && uniqueLeft.size === pairs.length
+      && uniqueRight.size === pairs.length,
+  };
 }
 
 export function checkFreeText(hasReference: boolean): CorrectionResult {
@@ -377,7 +430,7 @@ export interface CorrectionMapInput {
   }>;
   matchings: Array<{
     id: string;
-    matching: { kind: string };
+    matching: MatchingInteraction;
     learnerValue: string | undefined;
     entry: AnswerKeyEntry | undefined;
     sourceResolution?: AnswerResolutionStatus;
@@ -469,6 +522,7 @@ export function computeCorrectionMap(
     const result = preserveSourceResolution(matching.sourceResolution, () => compareMatching({
       learnerValue: matching.learnerValue,
       entry: matching.entry,
+      matching: matching.matching,
     }));
     verdictByItem[matching.id] = result.verdict;
     resolutionByItem[matching.id] = result.resolution;

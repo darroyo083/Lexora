@@ -81,6 +81,42 @@ export interface AnswerKey {
   entries: AnswerKeyEntry[];
 }
 
+function normalizeTypedPayload(payload: unknown): TypedPayload | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const value = payload as Record<string, unknown>;
+  if (value.type === 'Text' && typeof value.value === 'string') {
+    return {
+      kind: 'text',
+      value: value.value,
+      alternatives: Array.isArray(value.alternatives)
+        ? value.alternatives.filter((item): item is string => typeof item === 'string')
+        : [],
+    };
+  }
+  if (value.type === 'Matching' && Array.isArray(value.pairs)) {
+    const pairs = value.pairs.filter((pair): pair is { leftLabel: string; rightLabel: string } => (
+      Boolean(pair)
+      && typeof pair === 'object'
+      && typeof (pair as Record<string, unknown>).leftLabel === 'string'
+      && typeof (pair as Record<string, unknown>).rightLabel === 'string'
+    ));
+    return { kind: 'matching', pairs };
+  }
+  if (value.type === 'Reference' && typeof value.modelText === 'string') {
+    return {
+      kind: 'reference',
+      modelText: value.modelText,
+      sourceHint: typeof value.sourceHint === 'string' ? value.sourceHint : '',
+    };
+  }
+  if ('kind' in value) return payload as TypedPayload;
+  return null;
+}
+
+function normalizeEntry(entry: AnswerKeyEntry): AnswerKeyEntry {
+  return { ...entry, typedPayload: normalizeTypedPayload(entry.typedPayload) };
+}
+
 export async function fetchAnswerKey(
   bookId: string,
   signal?: AbortSignal,
@@ -91,7 +127,8 @@ export async function fetchAnswerKey(
     error.status = res.status;
     throw error;
   }
-  return res.json();
+  const answerKey = await res.json() as AnswerKey;
+  return { ...answerKey, entries: answerKey.entries.map(normalizeEntry) };
 }
 
 export async function extractAnswerKey(
@@ -105,7 +142,8 @@ export async function extractAnswerKey(
     signal,
   });
   if (!res.ok) throw new Error(`Answer key extraction failed: ${res.status}`);
-  return res.json();
+  const answerKey = await res.json() as AnswerKey;
+  return { ...answerKey, entries: answerKey.entries.map(normalizeEntry) };
 }
 
 export async function fetchPageCorrection(
@@ -118,5 +156,12 @@ export async function fetchPageCorrection(
     { signal },
   );
   if (!res.ok) throw new Error(`Correction resolution failed: ${res.status}`);
-  return res.json();
+  const correction = await res.json() as PageCorrectionResolution;
+  return {
+    ...correction,
+    slots: correction.slots.map((slot) => ({
+      ...slot,
+      entry: slot.entry ? normalizeEntry(slot.entry) : null,
+    })),
+  };
 }

@@ -12,7 +12,7 @@ import {
 } from '../correction';
 import { CorrectionVerdict, AnswerResolutionStatus } from '../../state/correction';
 import type { AnswerKeyEntry } from '../../api/correction';
-import type { ChoiceGroup, ChoiceGridRow } from '../types';
+import type { ChoiceGroup, ChoiceGridRow, MatchingInteraction } from '../types';
 
 function makeEntry(overrides: Partial<AnswerKeyEntry> = {}): AnswerKeyEntry {
   return {
@@ -37,6 +37,24 @@ const CHOICE_GROUP: ChoiceGroup = {
     { id: 'opt-a', label: 'A' },
     { id: 'opt-b', label: 'B' },
     { id: 'opt-c', label: 'C' },
+  ],
+};
+
+const MATCHING: MatchingInteraction = {
+  id: 'matching-1',
+  kind: 'matching',
+  bbox: { x: 0.1, y: 0.2, width: 0.8, height: 0.4 },
+  detectionMethod: 'vision-structured-v1',
+  candidateScore: 0.99,
+  cardinality: 'one-to-one',
+  nearbyTextSpanIds: [],
+  leftItems: [
+    { id: 'left-bakery', label: '1', text: 'die Bäckerei', bbox: { x: 0.1, y: 0.2, width: 0.2, height: 0.05 }, anchorBbox: null, nearbyTextSpanIds: [] },
+    { id: 'left-library', label: '2', text: 'die Bibliothek', bbox: { x: 0.1, y: 0.3, width: 0.2, height: 0.05 }, anchorBbox: null, nearbyTextSpanIds: [] },
+  ],
+  rightItems: [
+    { id: 'right-books', label: 'A', text: 'Bücher', bbox: { x: 0.7, y: 0.2, width: 0.2, height: 0.05 }, anchorBbox: null, nearbyTextSpanIds: [] },
+    { id: 'right-bread', label: 'B', text: 'Brot', bbox: { x: 0.7, y: 0.3, width: 0.2, height: 0.05 }, anchorBbox: null, nearbyTextSpanIds: [] },
   ],
 };
 
@@ -270,30 +288,64 @@ describe('compareOrdering', () => {
 
 describe('compareMatching', () => {
   it('returns CORRECT when all pairs match', () => {
-    const entry = makeEntry({ expectedValue: 'A-1,B-2,C-3', interactionKind: 'matching' });
-    const pairs = JSON.stringify({ A: '1', B: '2', C: '3' });
-    const result = compareMatching({ learnerValue: pairs, entry });
+    const entry = makeEntry({
+      expectedValue: 'die Bäckerei=Brot;die Bibliothek=Bücher',
+      interactionKind: 'matching',
+      typedPayload: { kind: 'matching', pairs: [
+        { leftLabel: 'die Bäckerei', rightLabel: 'Brot' },
+        { leftLabel: 'die Bibliothek', rightLabel: 'Bücher' },
+      ] },
+    });
+    const pairs = JSON.stringify({ 'left-library': 'right-books', 'left-bakery': 'right-bread' });
+    const result = compareMatching({ learnerValue: pairs, entry, matching: MATCHING });
     expect(result.verdict).toBe(CorrectionVerdict.CORRECT);
   });
 
   it('returns PARTIALLY_CORRECT when some pairs correct', () => {
-    const entry = makeEntry({ expectedValue: 'A-1,B-2,C-3', interactionKind: 'matching' });
-    const pairs = JSON.stringify({ A: '1', B: '3', C: '2' });
-    const result = compareMatching({ learnerValue: pairs, entry });
+    const entry = makeEntry({ expectedValue: '1-B,2-A', interactionKind: 'matching' });
+    const pairs = JSON.stringify({ 'left-bakery': 'right-bread', 'left-library': 'right-bread' });
+    const result = compareMatching({ learnerValue: pairs, entry, matching: MATCHING });
     expect(result.verdict).toBe(CorrectionVerdict.PARTIALLY_CORRECT);
-    expect(result.details).toEqual({ correctCount: 1, totalCount: 3 });
+    expect(result.details).toEqual({ correctCount: 1, totalCount: 2 });
   });
 
   it('returns UNANSWERED when no pairs formed', () => {
-    const entry = makeEntry({ expectedValue: 'A-1,B-2', interactionKind: 'matching' });
-    const result = compareMatching({ learnerValue: '', entry });
+    const entry = makeEntry({ expectedValue: '1-B,2-A', interactionKind: 'matching' });
+    const result = compareMatching({ learnerValue: '', entry, matching: MATCHING });
     expect(result.verdict).toBe(CorrectionVerdict.UNANSWERED);
   });
 
   it('returns UNMAPPED with no verdict when no entry', () => {
-    const result = compareMatching({ learnerValue: JSON.stringify({ A: '1' }), entry: undefined });
+    const result = compareMatching({ learnerValue: JSON.stringify({ A: '1' }), entry: undefined, matching: MATCHING });
     expect(result.verdict).toBeUndefined();
     expect(result.resolution).toBe(AnswerResolutionStatus.UNMAPPED);
+  });
+
+  it('keeps correction stable after retrying with the same equivalent mapping', () => {
+    const entry = makeEntry({ expectedValue: '1-B,2-A', interactionKind: 'matching' });
+    const first = compareMatching({
+      learnerValue: JSON.stringify({ 'left-bakery': 'right-bread', 'left-library': 'right-books' }),
+      entry,
+      matching: MATCHING,
+    });
+    const retry = compareMatching({
+      learnerValue: JSON.stringify({ 'left-library': 'right-books', 'left-bakery': 'right-bread' }),
+      entry,
+      matching: MATCHING,
+    });
+    expect(first.verdict).toBe(CorrectionVerdict.CORRECT);
+    expect(retry).toEqual(first);
+  });
+
+  it('fails closed when an expected label cannot be resolved uniquely', () => {
+    const entry = makeEntry({ expectedValue: 'unknown-B', interactionKind: 'matching' });
+    const result = compareMatching({
+      learnerValue: JSON.stringify({ 'left-bakery': 'right-bread' }),
+      entry,
+      matching: MATCHING,
+    });
+    expect(result.verdict).toBeUndefined();
+    expect(result.resolution).toBe(AnswerResolutionStatus.AMBIGUOUS);
   });
 });
 

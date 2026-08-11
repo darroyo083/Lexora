@@ -31,6 +31,7 @@ from PIL import Image
 from pydantic import ValidationError
 
 from app.providers.base import AnalysisProviderError
+from app.providers.choice_normalization import normalize_choice_targets
 from app.schemas.page_analysis import PageAnalysis, ProcessorMetadata
 
 
@@ -176,6 +177,7 @@ class OpenCodeGoVisionProvider:
         ):
             raise AnalysisProviderError("Vision provider output does not match the source page")
 
+        analysis = normalize_choice_targets(analysis)
         elapsed_ms = int((time.monotonic() - started) * 1000)
         return analysis.model_copy(
             update={

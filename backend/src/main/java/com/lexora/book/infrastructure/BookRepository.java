@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public interface BookRepository {
     Book save(Book book);
+    Book upsert(Book book);
     Optional<Book> findById(UUID id);
     List<Book> findAll();
     void attachBookProfile(UUID bookId, UUID profileId);

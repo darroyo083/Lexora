@@ -96,6 +96,38 @@ class PublicDemoAccessFilterTest {
         verifyNoInteractions(chain);
     }
 
+    @Test
+    void publicModeRejectsMethodOverrideAttemptsEvenWhenTransportMethodIsGet()
+        throws Exception {
+        var request = request(
+            "GET",
+            "/api/books/" + PublicDemoConstants.BOOK_ID + "/pages/1"
+        );
+        request.addHeader("X-HTTP-Method-Override", "DELETE");
+        var response = new MockHttpServletResponse();
+        var chain = mock(FilterChain.class);
+
+        new PublicDemoAccessFilter(true).doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(response.getContentAsString()).contains("PUBLIC_DEMO_READ_ONLY");
+        verifyNoInteractions(chain);
+    }
+
+    @Test
+    void publicModeRejectsMalformedBookIdsBeforeControllerBinding()
+        throws Exception {
+        var request = request("GET", "/api/books/not-a-uuid/pages/1");
+        var response = new MockHttpServletResponse();
+        var chain = mock(FilterChain.class);
+
+        new PublicDemoAccessFilter(true).doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(404);
+        assertThat(response.getContentAsString()).contains("DEMO_BOOK_NOT_FOUND");
+        verifyNoInteractions(chain);
+    }
+
     private static MockHttpServletRequest request(String method, String uri) {
         var request = new MockHttpServletRequest(method, uri);
         request.setRequestURI(uri);

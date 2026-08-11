@@ -1,46 +1,656 @@
 {
   "schemaVersion": "0.2.0",
   "pageNumber": 1,
-  "width": 1224,
-  "height": 1584,
+  "width": 1322,
+  "height": 1870,
   "language": "de",
   "textSpans": [
-    {"id":"title","text":"A deliberate daily practice","confidence":1.0,"confidenceScope":"page","parentLineId":null,"bbox":{"x":0.09,"y":0.06,"width":0.58,"height":0.04}},
-    {"id":"intro","text":"Small routines make language practice easier to repeat.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.12,"width":0.62,"height":0.025}},
-    {"id":"fill-prompt","text":"Complete: Jeden Morgen ___ ich Deutsch.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.22,"width":0.58,"height":0.025}},
-    {"id":"choice-prompt","text":"Choose the greeting used in the morning.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.33,"width":0.58,"height":0.025}},
-    {"id":"grid-prompt","text":"Choose the article for Kaffee.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.44,"width":0.5,"height":0.025}},
-    {"id":"order-prompt","text":"Put the sentence in order.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.55,"width":0.45,"height":0.025}},
-    {"id":"match-prompt","text":"Match each German word with its English meaning.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.67,"width":0.68,"height":0.025}},
-    {"id":"free-prompt","text":"Write one sentence about your study routine.","confidence":1.0,"confidenceScope":"line","parentLineId":null,"bbox":{"x":0.09,"y":0.82,"width":0.62,"height":0.025}}
+    {
+      "id": "ts-01",
+      "text": "LEXORA / DEUTSCH A1-A2",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.07,
+        "y": 0.04,
+        "width": 0.16,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-02",
+      "text": "01",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.91,
+        "y": 0.04,
+        "width": 0.02,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-03",
+      "text": "UNIT 1",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.07,
+        "y": 0.065,
+        "width": 0.05,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-04",
+      "text": "Mein Morgen",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.07,
+        "y": 0.085,
+        "width": 0.22,
+        "height": 0.04
+      }
+    },
+    {
+      "id": "ts-05",
+      "text": "Build a small morning routine with familiar verbs and time phrases.",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.07,
+        "y": 0.125,
+        "width": 0.6,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-06",
+      "text": "1 Lücken ergänzen",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.07,
+        "y": 0.2,
+        "width": 0.2,
+        "height": 0.02
+      }
+    },
+    {
+      "id": "ts-07",
+      "text": "Complete each sentence with the verb in brackets.",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.14,
+        "y": 0.225,
+        "width": 0.4,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-08",
+      "text": "a) Jeden Morgen",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.1,
+        "y": 0.255,
+        "width": 0.12,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-09",
+      "text": "ich um sieben Uhr auf.",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.42,
+        "y": 0.255,
+        "width": 0.16,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-10",
+      "text": "(aufstehen)",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.82,
+        "y": 0.255,
+        "width": 0.08,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-11",
+      "text": "b) Danach",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.1,
+        "y": 0.305,
+        "width": 0.07,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-12",
+      "text": "ich Tee in der Küche.",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.42,
+        "y": 0.305,
+        "width": 0.18,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-13",
+      "text": "(trinken)",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.82,
+        "y": 0.305,
+        "width": 0.06,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-14",
+      "text": "c) Um acht Uhr",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.1,
+        "y": 0.355,
+        "width": 0.1,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-15",
+      "text": "ich mit dem Fahrrad zur Arbeit.",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.42,
+        "y": 0.355,
+        "width": 0.25,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-16",
+      "text": "(fahren)",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.82,
+        "y": 0.355,
+        "width": 0.06,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-17",
+      "text": "2 Die passende Antwort",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.07,
+        "y": 0.44,
+        "width": 0.25,
+        "height": 0.02
+      }
+    },
+    {
+      "id": "ts-18",
+      "text": "Choose one answer for each question.",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.14,
+        "y": 0.465,
+        "width": 0.3,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-19",
+      "text": "Wann stehst du auf?",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.1,
+        "y": 0.495,
+        "width": 0.18,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-20",
+      "text": "Um sieben Uhr",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.1,
+        "y": 0.525,
+        "width": 0.1,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-21",
+      "text": "Im Park",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.33,
+        "y": 0.525,
+        "width": 0.07,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-22",
+      "text": "Mit Anna",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.55,
+        "y": 0.525,
+        "width": 0.08,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-23",
+      "text": "Was trinkst du morgens?",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.1,
+        "y": 0.575,
+        "width": 0.2,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-24",
+      "text": "Einen Tee",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.1,
+        "y": 0.605,
+        "width": 0.08,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-25",
+      "text": "Nach Berlin",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.33,
+        "y": 0.605,
+        "width": 0.08,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-26",
+      "text": "Sehr langsam",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.55,
+        "y": 0.605,
+        "width": 0.09,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-27",
+      "text": "3 Kurz schreiben",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.07,
+        "y": 0.685,
+        "width": 0.17,
+        "height": 0.02
+      }
+    },
+    {
+      "id": "ts-28",
+      "text": "Write two sentences about your own morning.",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.14,
+        "y": 0.71,
+        "width": 0.35,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-29",
+      "text": "Am Morgen ...",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.1,
+        "y": 0.74,
+        "width": 0.08,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-30",
+      "text": "Synthetic demo material created for Lexora",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.07,
+        "y": 0.97,
+        "width": 0.2,
+        "height": 0.01
+      }
+    },
+    {
+      "id": "ts-31",
+      "text": "lexora.dev",
+      "confidence": 0.99,
+      "confidenceScope": "page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.86,
+        "y": 0.97,
+        "width": 0.07,
+        "height": 0.01
+      }
+    }
   ],
   "exerciseBlanks": [
-    {"id":"blank-1","kind":"fill-in-line","lineBbox":{"x":0.29,"y":0.245,"width":0.16,"height":0.008},"interactionBbox":{"x":0.28,"y":0.225,"width":0.18,"height":0.04},"detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["fill-prompt"]}
+    {
+      "id": "ex-bl-01",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.26,
+        "y": 0.255,
+        "width": 0.14,
+        "height": 0.002
+      },
+      "interactionBbox": {
+        "x": 0.25,
+        "y": 0.245,
+        "width": 0.16,
+        "height": 0.025
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": [
+        "ts-08",
+        "ts-09"
+      ]
+    },
+    {
+      "id": "ex-bl-02",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.21,
+        "y": 0.305,
+        "width": 0.18,
+        "height": 0.002
+      },
+      "interactionBbox": {
+        "x": 0.2,
+        "y": 0.295,
+        "width": 0.2,
+        "height": 0.025
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": [
+        "ts-11",
+        "ts-12"
+      ]
+    },
+    {
+      "id": "ex-bl-03",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.24,
+        "y": 0.355,
+        "width": 0.16,
+        "height": 0.002
+      },
+      "interactionBbox": {
+        "x": 0.23,
+        "y": 0.345,
+        "width": 0.18,
+        "height": 0.025
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": [
+        "ts-14",
+        "ts-15"
+      ]
+    }
   ],
-  "blankDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"durationMs":0},
+  "blankDetection": {
+    "detectionMethod": "vision-structured-v1",
+    "rawCandidateCount": 3,
+    "acceptedCount": 3,
+    "durationMs": 50
+  },
   "choiceGroups": [
-    {"id":"greetings","options":[{"id":"morning","label":"Guten Morgen"},{"id":"night","label":"Gute Nacht"}]},
-    {"id":"articles","options":[{"id":"der","label":"der"},{"id":"die","label":"die"},{"id":"das","label":"das"}]}
+    {
+      "id": "cg-01",
+      "options": [
+        {
+          "id": "opt-01",
+          "label": "Um sieben Uhr"
+        },
+        {
+          "id": "opt-02",
+          "label": "Im Park"
+        },
+        {
+          "id": "opt-03",
+          "label": "Mit Anna"
+        }
+      ]
+    },
+    {
+      "id": "cg-02",
+      "options": [
+        {
+          "id": "opt-04",
+          "label": "Einen Tee"
+        },
+        {
+          "id": "opt-05",
+          "label": "Nach Berlin"
+        },
+        {
+          "id": "opt-06",
+          "label": "Sehr langsam"
+        }
+      ]
+    }
   ],
   "choiceTargets": [
-    {"id":"choice-1","kind":"choice","targetBbox":{"x":0.09,"y":0.365,"width":0.5,"height":0.045},"interactionBbox":{"x":0.08,"y":0.355,"width":0.58,"height":0.065},"optionGroupId":"greetings","detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["choice-prompt"]}
+    {
+      "id": "ct-01",
+      "kind": "choice",
+      "targetBbox": {
+        "x": 0.08,
+        "y": 0.52,
+        "width": 0.465,
+        "height": 0.015000000000000013
+      },
+      "interactionBbox": {
+        "x": 0.08,
+        "y": 0.515,
+        "width": 0.55,
+        "height": 0.025000000000000022
+      },
+      "optionGroupId": "cg-01",
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": [
+        "ts-20",
+        "ts-21",
+        "ts-22"
+      ]
+    },
+    {
+      "id": "ct-04",
+      "kind": "choice",
+      "targetBbox": {
+        "x": 0.08,
+        "y": 0.6,
+        "width": 0.465,
+        "height": 0.015000000000000013
+      },
+      "interactionBbox": {
+        "x": 0.08,
+        "y": 0.595,
+        "width": 0.56,
+        "height": 0.025000000000000022
+      },
+      "optionGroupId": "cg-02",
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": [
+        "ts-24",
+        "ts-25",
+        "ts-26"
+      ]
+    }
   ],
-  "choiceDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
-  "choiceGrids": [
-    {"id":"grid-1","kind":"choice-grid","gridBbox":{"x":0.09,"y":0.475,"width":0.62,"height":0.055},"optionGroupId":"articles","detectionMethod":"vision-structured-v1","candidateScore":1.0,"rows":[{"id":"coffee-row","rowBbox":{"x":0.09,"y":0.475,"width":0.62,"height":0.055},"promptBbox":{"x":0.09,"y":0.475,"width":0.22,"height":0.04},"nearbyTextSpanIds":["grid-prompt"],"cells":[{"id":"coffee-der","optionId":"der","cellBbox":{"x":0.35,"y":0.475,"width":0.08,"height":0.04},"interactionBbox":{"x":0.34,"y":0.468,"width":0.1,"height":0.055}},{"id":"coffee-die","optionId":"die","cellBbox":{"x":0.46,"y":0.475,"width":0.08,"height":0.04},"interactionBbox":{"x":0.45,"y":0.468,"width":0.1,"height":0.055}},{"id":"coffee-das","optionId":"das","cellBbox":{"x":0.57,"y":0.475,"width":0.08,"height":0.04},"interactionBbox":{"x":0.56,"y":0.468,"width":0.1,"height":0.055}}]}]}
-  ],
-  "choiceGridDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
-  "sentenceOrderings": [
-    {"id":"ordering-1","kind":"sentence-ordering","bbox":{"x":0.09,"y":0.59,"width":0.65,"height":0.06},"exerciseId":"daily-order","promptIndex":1,"detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["order-prompt"],"items":[{"id":"word-1","text":"Ich","bbox":{"x":0.1,"y":0.6,"width":0.08,"height":0.03},"originalIndex":1},{"id":"word-2","text":"lerne","bbox":{"x":0.2,"y":0.6,"width":0.1,"height":0.03},"originalIndex":2},{"id":"word-3","text":"jeden","bbox":{"x":0.32,"y":0.6,"width":0.1,"height":0.03},"originalIndex":3},{"id":"word-4","text":"Tag","bbox":{"x":0.44,"y":0.6,"width":0.08,"height":0.03},"originalIndex":4}]}
-  ],
-  "sentenceOrderingDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
-  "matchingInteractions": [
-    {"id":"matching-1","kind":"matching","bbox":{"x":0.09,"y":0.7,"width":0.7,"height":0.1},"detectionMethod":"vision-structured-v1","candidateScore":1.0,"cardinality":"one-to-one","nearbyTextSpanIds":["match-prompt"],"leftItems":[{"id":"left-learn","label":"1","text":"lernen","bbox":{"x":0.1,"y":0.72,"width":0.18,"height":0.03},"anchorBbox":null,"nearbyTextSpanIds":[]},{"id":"left-book","label":"2","text":"Buch","bbox":{"x":0.1,"y":0.76,"width":0.18,"height":0.03},"anchorBbox":null,"nearbyTextSpanIds":[]}],"rightItems":[{"id":"right-study","label":"A","text":"study","bbox":{"x":0.48,"y":0.72,"width":0.18,"height":0.03},"anchorBbox":null,"nearbyTextSpanIds":[]},{"id":"right-book","label":"B","text":"book","bbox":{"x":0.48,"y":0.76,"width":0.18,"height":0.03},"anchorBbox":null,"nearbyTextSpanIds":[]}]}
-  ],
-  "matchingDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
+  "choiceDetection": {
+    "detectionMethod": "vision-structured-v1",
+    "rawCandidateCount": 6,
+    "acceptedCount": 2,
+    "groupCount": 2,
+    "durationMs": 50
+  },
+  "choiceGrids": [],
+  "choiceGridDetection": null,
+  "sentenceOrderings": [],
+  "sentenceOrderingDetection": null,
+  "matchingInteractions": [],
+  "matchingDetection": null,
   "freeTextInteractions": [
-    {"id":"free-1","kind":"free-text","bbox":{"x":0.09,"y":0.85,"width":0.7,"height":0.09},"detectionMethod":"vision-structured-v1","candidateScore":1.0,"nearbyTextSpanIds":["free-prompt"],"responseLines":[{"id":"free-line-1","bbox":{"x":0.1,"y":0.88,"width":0.66,"height":0.008}},{"id":"free-line-2","bbox":{"x":0.1,"y":0.91,"width":0.66,"height":0.008}}]}
+    {
+      "id": "ft-01",
+      "kind": "free-text",
+      "bbox": {
+        "x": 0.1,
+        "y": 0.77,
+        "width": 0.75,
+        "height": 0.08
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.9,
+      "nearbyTextSpanIds": [
+        "ts-29"
+      ],
+      "responseLines": [
+        {
+          "id": "rtl-01",
+          "bbox": {
+            "x": 0.1,
+            "y": 0.775,
+            "width": 0.75,
+            "height": 0.015
+          }
+        },
+        {
+          "id": "rtl-02",
+          "bbox": {
+            "x": 0.1,
+            "y": 0.795,
+            "width": 0.75,
+            "height": 0.015
+          }
+        },
+        {
+          "id": "rtl-03",
+          "bbox": {
+            "x": 0.1,
+            "y": 0.815,
+            "width": 0.75,
+            "height": 0.015
+          }
+        },
+        {
+          "id": "rtl-04",
+          "bbox": {
+            "x": 0.1,
+            "y": 0.835,
+            "width": 0.75,
+            "height": 0.015
+          }
+        }
+      ]
+    }
   ],
-  "freeTextDetection": {"detectionMethod":"vision-structured-v1","rawCandidateCount":1,"acceptedCount":1,"groupCount":1,"durationMs":0},
-  "processor": {"engine":"opencode-go-vision","engineVersion":"v1","model":"curated-provider-result","language":"de","parameters":{"curatedDemo":true},"processedAt":"2026-08-10T12:00:00Z","durationMs":0}
+  "freeTextDetection": {
+    "detectionMethod": "vision-structured-v1",
+    "rawCandidateCount": 1,
+    "acceptedCount": 1,
+    "groupCount": 1,
+    "durationMs": 50
+  },
+  "processor": {
+    "engine": "opencode-go-vision",
+    "engineVersion": "v1",
+    "model": "mimo-v2.5",
+    "language": "de",
+    "parameters": {},
+    "processedAt": "2026-08-11T18:10:23.332348Z",
+    "durationMs": 160329
+  }
 }

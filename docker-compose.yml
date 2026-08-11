@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-lexora}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lexora_dev}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${LEXORA_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
@@ -25,8 +25,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-lexora_dev}
       AI_SERVICE_BASE_URL: http://ai-service:8000
       LEXORA_STORAGE_PATH: /app/storage
+      LEXORA_RASTER_DPI: ${LEXORA_RASTER_DPI:-160}
+      LEXORA_PUBLIC_DEMO_ENABLED: "false"
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${LEXORA_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8080}:8080"
     volumes:
       - ./backend/src:/app/src
       - backend_m2:/root/.m2
@@ -46,15 +48,20 @@ services:
   ai-service:
     build:
       context: ./ai-service
-      target: local-runtime
+      target: ${LEXORA_AI_DOCKER_TARGET:-local-runtime}
     ports:
-      - "${AI_SERVICE_PORT:-8000}:8000"
+      - "${LEXORA_BIND_ADDRESS:-127.0.0.1}:${AI_SERVICE_PORT:-8000}:8000"
     volumes:
       - ./ai-service/app:/app/app
       - ai_models:/root/.paddlex
       - lexora_storage:/app/storage
     environment:
-      LEXORA_ANALYSIS_PROVIDER: local-ocr
+      LEXORA_ANALYSIS_PROVIDER: ${LEXORA_ANALYSIS_PROVIDER:-local-ocr}
+      OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:-}
+      OPENCODE_GO_MODEL: ${OPENCODE_GO_MODEL:-mimo-v2.5}
+      OPENCODE_GO_BASE_URL: ${OPENCODE_GO_BASE_URL:-https://opencode.ai/zen/go/v1/chat/completions}
+      LEXORA_PROVIDER_TIMEOUT_SECONDS: ${LEXORA_PROVIDER_TIMEOUT_SECONDS:-90}
+      LEXORA_MAX_IMAGE_BYTES: ${LEXORA_MAX_IMAGE_BYTES:-10485760}
       PADDLE_PDX_MODEL_SOURCE: BOS
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -75,7 +82,7 @@ services:
     environment:
       VITE_BACKEND_PROXY_TARGET: http://backend:8080
     ports:
-      - "${FRONTEND_PORT:-5173}:5173"
+      - "${LEXORA_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-5173}:5173"
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/index.html:/app/index.html

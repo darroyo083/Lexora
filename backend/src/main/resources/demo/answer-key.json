@@ -1,8 +1,666 @@
 [
-  {"pageNumber":1,"exerciseNumber":"1","interactionKind":"FillBlank","ordinal":0,"expectedValue":"lerne","alternatives":[],"caseSensitive":false,"punctuationRequired":false,"normalizationMode":"strict","rawSolutionText":"lerne","confidence":1.0,"mappingWarnings":[],"typedPayload":{"type":"Text","value":"lerne","alternatives":[]},"unitNumber":1,"subExerciseMarker":"a","items":["lerne"]},
-  {"pageNumber":1,"exerciseNumber":"2","interactionKind":"Choice","ordinal":0,"expectedValue":"Guten Morgen","alternatives":[],"caseSensitive":false,"punctuationRequired":false,"normalizationMode":"strict","rawSolutionText":"Guten Morgen","confidence":1.0,"mappingWarnings":[],"typedPayload":{"type":"Text","value":"Guten Morgen","alternatives":[]},"unitNumber":1,"subExerciseMarker":"b","items":["Guten Morgen"]},
-  {"pageNumber":1,"exerciseNumber":"3","interactionKind":"ChoiceGrid","ordinal":0,"expectedValue":"der","alternatives":[],"caseSensitive":false,"punctuationRequired":false,"normalizationMode":"strict","rawSolutionText":"der","confidence":1.0,"mappingWarnings":[],"typedPayload":{"type":"Text","value":"der","alternatives":[]},"unitNumber":1,"subExerciseMarker":"c","items":["der"]},
-  {"pageNumber":1,"exerciseNumber":"4","interactionKind":"SentenceOrdering","ordinal":0,"expectedValue":"Ich lerne jeden Tag","alternatives":[],"caseSensitive":false,"punctuationRequired":false,"normalizationMode":"strict","rawSolutionText":"Ich lerne jeden Tag","confidence":1.0,"mappingWarnings":[],"typedPayload":{"type":"Text","value":"Ich lerne jeden Tag","alternatives":[]},"unitNumber":1,"subExerciseMarker":"d","items":["Ich lerne jeden Tag"]},
-  {"pageNumber":1,"exerciseNumber":"5","interactionKind":"Matching","ordinal":0,"expectedValue":"lernen=study;Buch=book","alternatives":[],"caseSensitive":false,"punctuationRequired":false,"normalizationMode":"strict","rawSolutionText":"lernen=study; Buch=book","confidence":1.0,"mappingWarnings":[],"typedPayload":{"type":"Matching","pairs":[{"leftLabel":"lernen","rightLabel":"study"},{"leftLabel":"Buch","rightLabel":"book"}]},"unitNumber":1,"subExerciseMarker":"e","items":["lernen=study;Buch=book"]},
-  {"pageNumber":1,"exerciseNumber":"6","interactionKind":"FreeText","ordinal":0,"expectedValue":"Ich lerne jeden Morgen Deutsch.","alternatives":[],"caseSensitive":false,"punctuationRequired":false,"normalizationMode":"strict","rawSolutionText":"Example response","confidence":1.0,"mappingWarnings":[],"typedPayload":{"type":"Reference","modelText":"Ich lerne jeden Morgen Deutsch.","sourceHint":"Public demo example"},"unitNumber":1,"subExerciseMarker":"f","items":["Ich lerne jeden Morgen Deutsch."]}
+  {
+    "pageNumber": 1,
+    "exerciseNumber": "1",
+    "interactionKind": "FillBlank",
+    "ordinal": 0,
+    "expectedValue": "stehe",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "stehe",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "stehe",
+      "alternatives": []
+    },
+    "unitNumber": 1,
+    "subExerciseMarker": "a",
+    "items": [
+      "stehe"
+    ]
+  },
+  {
+    "pageNumber": 1,
+    "exerciseNumber": "1",
+    "interactionKind": "FillBlank",
+    "ordinal": 1,
+    "expectedValue": "trinke",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "trinke",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "trinke",
+      "alternatives": []
+    },
+    "unitNumber": 1,
+    "subExerciseMarker": "b",
+    "items": [
+      "trinke"
+    ]
+  },
+  {
+    "pageNumber": 1,
+    "exerciseNumber": "1",
+    "interactionKind": "FillBlank",
+    "ordinal": 2,
+    "expectedValue": "fahre",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "fahre",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "fahre",
+      "alternatives": []
+    },
+    "unitNumber": 1,
+    "subExerciseMarker": "c",
+    "items": [
+      "fahre"
+    ]
+  },
+  {
+    "pageNumber": 1,
+    "exerciseNumber": "2",
+    "interactionKind": "Choice",
+    "ordinal": 0,
+    "expectedValue": "Um sieben Uhr",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "Um sieben Uhr",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "Um sieben Uhr",
+      "alternatives": []
+    },
+    "unitNumber": 1,
+    "subExerciseMarker": "a",
+    "items": [
+      "Um sieben Uhr"
+    ]
+  },
+  {
+    "pageNumber": 1,
+    "exerciseNumber": "2",
+    "interactionKind": "Choice",
+    "ordinal": 1,
+    "expectedValue": "Einen Tee",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "Einen Tee",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "Einen Tee",
+      "alternatives": []
+    },
+    "unitNumber": 1,
+    "subExerciseMarker": "b",
+    "items": [
+      "Einen Tee"
+    ]
+  },
+  {
+    "pageNumber": 1,
+    "exerciseNumber": "3",
+    "interactionKind": "FreeText",
+    "ordinal": 0,
+    "expectedValue": "Am Morgen trinke ich Tee und lerne zehn Minuten Deutsch.",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "Example response written for the Lexora demo",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Reference",
+      "modelText": "Am Morgen trinke ich Tee und lerne zehn Minuten Deutsch.",
+      "sourceHint": "Lexora synthetic workbook"
+    },
+    "unitNumber": 1,
+    "subExerciseMarker": "a",
+    "items": [
+      "Am Morgen trinke ich Tee und lerne zehn Minuten Deutsch."
+    ]
+  },
+  {
+    "pageNumber": 2,
+    "exerciseNumber": "6",
+    "interactionKind": "FillBlank",
+    "ordinal": 0,
+    "expectedValue": "Bibliothek",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "Bibliothek",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "Bibliothek",
+      "alternatives": []
+    },
+    "unitNumber": 2,
+    "subExerciseMarker": "a",
+    "items": [
+      "Bibliothek"
+    ]
+  },
+  {
+    "pageNumber": 2,
+    "exerciseNumber": "4",
+    "interactionKind": "Choice",
+    "ordinal": 0,
+    "expectedValue": "der",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "der",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "der",
+      "alternatives": []
+    },
+    "unitNumber": 2,
+    "subExerciseMarker": "a",
+    "items": [
+      "der"
+    ]
+  },
+  {
+    "pageNumber": 2,
+    "exerciseNumber": "4",
+    "interactionKind": "Choice",
+    "ordinal": 1,
+    "expectedValue": "die",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "die",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "die",
+      "alternatives": []
+    },
+    "unitNumber": 2,
+    "subExerciseMarker": "b",
+    "items": [
+      "die"
+    ]
+  },
+  {
+    "pageNumber": 2,
+    "exerciseNumber": "4",
+    "interactionKind": "Choice",
+    "ordinal": 2,
+    "expectedValue": "das",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "das",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "das",
+      "alternatives": []
+    },
+    "unitNumber": 2,
+    "subExerciseMarker": "c",
+    "items": [
+      "das"
+    ]
+  },
+  {
+    "pageNumber": 2,
+    "exerciseNumber": "4",
+    "interactionKind": "Choice",
+    "ordinal": 3,
+    "expectedValue": "der",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "der",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "der",
+      "alternatives": []
+    },
+    "unitNumber": 2,
+    "subExerciseMarker": "d",
+    "items": [
+      "der"
+    ]
+  },
+  {
+    "pageNumber": 2,
+    "exerciseNumber": "5",
+    "interactionKind": "Matching",
+    "ordinal": 0,
+    "expectedValue": "1=C;2=D;3=B;4=A",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "die Bäckerei=Brot; die Bibliothek=Bücher; der Bahnhof=Züge; die Apotheke=Medikamente",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Matching",
+      "pairs": [
+        {
+          "leftLabel": "die Bäckerei",
+          "rightLabel": "Brot"
+        },
+        {
+          "leftLabel": "die Bibliothek",
+          "rightLabel": "Bücher"
+        },
+        {
+          "leftLabel": "der Bahnhof",
+          "rightLabel": "Züge"
+        },
+        {
+          "leftLabel": "die Apotheke",
+          "rightLabel": "Medikamente"
+        }
+      ]
+    },
+    "unitNumber": 2,
+    "subExerciseMarker": "a",
+    "items": [
+      "1=C;2=D;3=B;4=A"
+    ]
+  },
+  {
+    "pageNumber": 3,
+    "exerciseNumber": "9",
+    "interactionKind": "FillBlank",
+    "ordinal": 0,
+    "expectedValue": "Samstag",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "Samstag",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "Samstag",
+      "alternatives": []
+    },
+    "unitNumber": 3,
+    "subExerciseMarker": "a",
+    "items": [
+      "Samstag"
+    ]
+  },
+  {
+    "pageNumber": 3,
+    "exerciseNumber": "9",
+    "interactionKind": "FillBlank",
+    "ordinal": 1,
+    "expectedValue": "15 Uhr",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "15 Uhr",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "15 Uhr",
+      "alternatives": []
+    },
+    "unitNumber": 3,
+    "subExerciseMarker": "b",
+    "items": [
+      "15 Uhr"
+    ]
+  },
+  {
+    "pageNumber": 3,
+    "exerciseNumber": "9",
+    "interactionKind": "FillBlank",
+    "ordinal": 2,
+    "expectedValue": "vor dem Kino",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "vor dem Kino",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "vor dem Kino",
+      "alternatives": []
+    },
+    "unitNumber": 3,
+    "subExerciseMarker": "c",
+    "items": [
+      "vor dem Kino"
+    ]
+  },
+  {
+    "pageNumber": 3,
+    "exerciseNumber": "8",
+    "interactionKind": "Choice",
+    "ordinal": 0,
+    "expectedValue": "Ja, gern!",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "Ja, gern!",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "Ja, gern!",
+      "alternatives": []
+    },
+    "unitNumber": 3,
+    "subExerciseMarker": "a",
+    "items": [
+      "Ja, gern!"
+    ]
+  },
+  {
+    "pageNumber": 3,
+    "exerciseNumber": "8",
+    "interactionKind": "Choice",
+    "ordinal": 1,
+    "expectedValue": "Vor dem Kino.",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "Vor dem Kino.",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "Vor dem Kino.",
+      "alternatives": []
+    },
+    "unitNumber": 3,
+    "subExerciseMarker": "b",
+    "items": [
+      "Vor dem Kino."
+    ]
+  },
+  {
+    "pageNumber": 3,
+    "exerciseNumber": "7",
+    "interactionKind": "SentenceOrdering",
+    "ordinal": 0,
+    "expectedValue": "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1",
+      "alternatives": []
+    },
+    "unitNumber": 3,
+    "subExerciseMarker": "a",
+    "items": [
+      "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1"
+    ]
+  },
+  {
+    "pageNumber": 3,
+    "exerciseNumber": "7",
+    "interactionKind": "SentenceOrdering",
+    "ordinal": 1,
+    "expectedValue": "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3",
+      "alternatives": []
+    },
+    "unitNumber": 3,
+    "subExerciseMarker": "b",
+    "items": [
+      "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3"
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "exerciseNumber": "10",
+    "interactionKind": "FillBlank",
+    "ordinal": 0,
+    "expectedValue": "arbeitest",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "arbeitest",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "arbeitest",
+      "alternatives": []
+    },
+    "unitNumber": 4,
+    "subExerciseMarker": "a",
+    "items": [
+      "arbeitest"
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "exerciseNumber": "10",
+    "interactionKind": "FillBlank",
+    "ordinal": 1,
+    "expectedValue": "arbeite",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "arbeite",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "arbeite",
+      "alternatives": []
+    },
+    "unitNumber": 4,
+    "subExerciseMarker": "b",
+    "items": [
+      "arbeite"
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "exerciseNumber": "10",
+    "interactionKind": "FillBlank",
+    "ordinal": 2,
+    "expectedValue": "treffen",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "treffen",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "treffen",
+      "alternatives": []
+    },
+    "unitNumber": 4,
+    "subExerciseMarker": "c",
+    "items": [
+      "treffen"
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "exerciseNumber": "12",
+    "interactionKind": "FillBlank",
+    "ordinal": 3,
+    "expectedValue": "zehn Minuten",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "zehn Minuten",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "zehn Minuten",
+      "alternatives": []
+    },
+    "unitNumber": 4,
+    "subExerciseMarker": "d",
+    "items": [
+      "zehn Minuten"
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "exerciseNumber": "12",
+    "interactionKind": "FillBlank",
+    "ordinal": 4,
+    "expectedValue": "neue Wörter",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "neue Wörter",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "neue Wörter",
+      "alternatives": []
+    },
+    "unitNumber": 4,
+    "subExerciseMarker": "e",
+    "items": [
+      "neue Wörter"
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "exerciseNumber": "12",
+    "interactionKind": "FillBlank",
+    "ordinal": 5,
+    "expectedValue": "am Samstag",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "am Samstag",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "am Samstag",
+      "alternatives": []
+    },
+    "unitNumber": 4,
+    "subExerciseMarker": "f",
+    "items": [
+      "am Samstag"
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "exerciseNumber": "11",
+    "interactionKind": "Choice",
+    "ordinal": 0,
+    "expectedValue": "falsch",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "falsch",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "falsch",
+      "alternatives": []
+    },
+    "unitNumber": 4,
+    "subExerciseMarker": "a",
+    "items": [
+      "falsch"
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "exerciseNumber": "11",
+    "interactionKind": "Choice",
+    "ordinal": 1,
+    "expectedValue": "richtig",
+    "alternatives": [],
+    "caseSensitive": false,
+    "punctuationRequired": false,
+    "normalizationMode": "strict",
+    "rawSolutionText": "richtig",
+    "confidence": 1.0,
+    "mappingWarnings": [],
+    "typedPayload": {
+      "type": "Text",
+      "value": "richtig",
+      "alternatives": []
+    },
+    "unitNumber": 4,
+    "subExerciseMarker": "b",
+    "items": [
+      "richtig"
+    ]
+  }
 ]

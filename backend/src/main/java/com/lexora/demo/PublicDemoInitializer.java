@@ -8,12 +8,6 @@ import com.lexora.correction.domain.AnswerKey;
 import com.lexora.correction.domain.AnswerKeyEntry;
 import com.lexora.correction.domain.ExtractionStatus;
 import com.lexora.correction.infrastructure.AnswerKeyRepository;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -24,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
@@ -58,36 +53,38 @@ public class PublicDemoInitializer implements ApplicationRunner {
         var pdfDirectory = storagePath.resolve("pdf");
         Files.createDirectories(pdfDirectory);
         var source = pdfDirectory.resolve(PublicDemoConstants.STORAGE_KEY);
-        writeSourcePdf(source);
-
-        if (books.findById(PublicDemoConstants.BOOK_ID).isEmpty()) {
-            books.save(new Book(
-                PublicDemoConstants.BOOK_ID,
-                "Lexora Public Demo",
-                "lexora-public-demo.pdf",
-                "application/pdf",
-                Files.size(source),
-                sha256(source),
-                3,
-                "de",
-                PublicDemoConstants.STORAGE_KEY,
-                ProcessingStatus.UPLOADED,
-                CREATED_AT,
-                CREATED_AT,
-                PublicDemoConstants.PROFILE_ID
-            ));
+        copySourcePdf(source);
+        if (!sha256(source).equals(PublicDemoConstants.SOURCE_SHA256)) {
+            throw new IllegalStateException("Public demo PDF does not match its provenance hash");
         }
 
-        for (int pageNumber = 1; pageNumber <= 3; pageNumber++) {
+        books.upsert(new Book(
+            PublicDemoConstants.BOOK_ID,
+            "Lexora Synthetic German Workbook",
+            "lexora-synthetic-workbook.pdf",
+            "application/pdf",
+            Files.size(source),
+            sha256(source),
+            PublicDemoConstants.PAGE_COUNT,
+            "de",
+            PublicDemoConstants.STORAGE_KEY,
+            ProcessingStatus.UPLOADED,
+            CREATED_AT,
+            CREATED_AT,
+            PublicDemoConstants.PROFILE_ID
+        ));
+
+        for (int pageNumber = 1; pageNumber <= PublicDemoConstants.PAGE_COUNT; pageNumber++) {
             var analysis = readResource("demo/page-analysis-" + pageNumber + ".json");
+            var validated = validateAnalysis(analysis, pageNumber);
             books.savePage(new BookPage(
                 java.util.UUID.nameUUIDFromBytes(
                     ("lexora-demo-page-" + pageNumber).getBytes(java.nio.charset.StandardCharsets.UTF_8)
                 ),
                 PublicDemoConstants.BOOK_ID,
                 pageNumber,
-                1224,
-                1584,
+                validated.width(),
+                validated.height(),
                 ProcessingStatus.READY,
                 analysis,
                 CREATED_AT,
@@ -113,51 +110,33 @@ public class PublicDemoInitializer implements ApplicationRunner {
         ));
     }
 
-    static void writeSourcePdf(Path target) throws IOException {
-        try (var document = new PDDocument()) {
-            addPage(document, "A deliberate daily practice", List.of(
-                "Small routines make language practice easier to repeat.",
-                "1. Complete: Jeden Morgen ___ ich Deutsch.",
-                "2. Choose the greeting used in the morning.",
-                "   Guten Morgen    Gute Nacht",
-                "3. Choose the article for Kaffee: der / die / das",
-                "4. Put in order: Ich / lerne / jeden / Tag",
-                "5. Match: lernen = study, Buch = book",
-                "6. Write one sentence about your study routine."
-            ));
-            addPage(document, "Why repetition works", List.of(
-                "A short routine lowers the effort needed to begin.",
-                "The same cue helps practice become familiar instead of accidental.",
-                "Keep the task small, check the result, and return tomorrow.",
-                "Consistency gives each new word another useful context.",
-                "Example: Jeden Morgen lerne ich zehn Minuten Deutsch."
-            ));
-            addPage(document, "A source-first fallback", List.of(
-                "Some pages should stay in their original form.",
-                "When structure is uncertain, Lexora does not invent an exercise.",
-                "Classic Mode keeps the public-safe source page available."
-            ));
-            document.save(target.toFile());
+    static void copySourcePdf(Path target) throws IOException {
+        try (var input = new ClassPathResource(
+            "demo/lexora-synthetic-workbook.pdf"
+        ).getInputStream()) {
+            Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
-    private static void addPage(PDDocument document, String title, List<String> lines)
-        throws IOException {
-        var page = new PDPage(PDRectangle.A4);
-        document.addPage(page);
-        try (var content = new PDPageContentStream(document, page)) {
-            content.beginText();
-            content.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 20);
-            content.newLineAtOffset(58, 770);
-            content.showText(title);
-            content.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
-            content.setLeading(34);
-            for (var line : lines) {
-                content.newLine();
-                content.showText(line);
-            }
-            content.endText();
+    private static com.lexora.documentanalysis.contract.PageAnalysis validateAnalysis(
+        String analysis,
+        int pageNumber
+    ) {
+        var parsed = JSON.readValue(
+            analysis,
+            com.lexora.documentanalysis.contract.PageAnalysis.class
+        );
+        if (!PublicDemoConstants.ANALYSIS_SCHEMA_VERSION.equals(parsed.schemaVersion())
+            || parsed.pageNumber() != pageNumber
+            || parsed.processor() == null
+            || !"opencode-go-vision".equals(parsed.processor().engine())
+            || !"mimo-v2.5".equals(parsed.processor().model())) {
+            throw new IllegalStateException(
+                "Public demo analysis failed real-provider provenance validation for page "
+                    + pageNumber
+            );
         }
+        return parsed;
     }
 
     private static String readResource(String name) throws IOException {

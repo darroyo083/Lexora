@@ -1,0 +1,36 @@
+{
+  "datasetVersion": "1.0.0",
+  "source": {
+    "path": "demo/lexora-synthetic-workbook.pdf",
+    "sha256": "1d5ddb54822d9bfd80840fd11412f25c51e2a7535b4a4677b93719545c729e9c",
+    "pageCount": 4,
+    "copyright": "Original synthetic demo material created for Lexora."
+  },
+  "analysis": {
+    "provider": "opencode-go",
+    "model": "mimo-v2.5",
+    "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+    "schemaVersion": "0.2.0",
+    "validatedPageAnalyses": 4,
+    "providerHttpAttempts": 6,
+    "acceptedProcessedAt": [
+      "2026-08-11T18:10:23.332348Z",
+      "2026-08-11T18:12:41.154699Z",
+      "2026-08-11T18:15:48.847214Z",
+      "2026-08-11T18:17:19.660587Z"
+    ],
+    "pipeline": [
+      "PDF upload",
+      "PDFBox rasterization at 160 DPI",
+      "OpenCode Go / MiMo V2.5",
+      "Pydantic PageAnalysis validation",
+      "Deterministic same-row choice-target normalization",
+      "Spring PageAnalysis projection"
+    ],
+    "attemptNotes": [
+      "Page 1 exceeded the initial 90-second client timeout and was retried once.",
+      "Page 3 returned one response that failed PageAnalysis validation and was refreshed once.",
+      "Only the four validated READY analyses are included in this dataset."
+    ]
+  }
+}

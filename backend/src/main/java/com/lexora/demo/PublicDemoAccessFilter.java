@@ -17,7 +17,10 @@ import java.util.regex.Pattern;
 public class PublicDemoAccessFilter extends OncePerRequestFilter {
 
     private static final Pattern BOOK_PATH = Pattern.compile(
-        "^/api/books/([0-9a-fA-F-]{36})(?:/.*)?$"
+        "^/api/books/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:/.*)?$"
+    );
+    private static final Pattern BOOK_RESOURCE_PATH = Pattern.compile(
+        "^/api/books/([^/]+)(?:/.*)?$"
     );
 
     private final boolean enabled;
@@ -39,12 +42,23 @@ public class PublicDemoAccessFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (hasMethodOverride(request)) {
+            reject(response, HttpServletResponse.SC_FORBIDDEN, "PUBLIC_DEMO_READ_ONLY");
+            return;
+        }
+
         if (!(request.getMethod().equals("GET") || request.getMethod().equals("HEAD"))) {
             reject(response, HttpServletResponse.SC_FORBIDDEN, "PUBLIC_DEMO_READ_ONLY");
             return;
         }
 
-        var matcher = BOOK_PATH.matcher(decodedPath(request));
+        var decodedPath = decodedPath(request);
+        var resourceMatcher = BOOK_RESOURCE_PATH.matcher(decodedPath);
+        var matcher = BOOK_PATH.matcher(decodedPath);
+        if (resourceMatcher.matches() && !matcher.matches()) {
+            reject(response, HttpServletResponse.SC_NOT_FOUND, "DEMO_BOOK_NOT_FOUND");
+            return;
+        }
         if (matcher.matches()
             && !matcher.group(1).equalsIgnoreCase(PublicDemoConstants.BOOK_ID.toString())) {
             reject(response, HttpServletResponse.SC_NOT_FOUND, "DEMO_BOOK_NOT_FOUND");
@@ -52,6 +66,16 @@ public class PublicDemoAccessFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static boolean hasMethodOverride(HttpServletRequest request) {
+        return hasText(request.getHeader("X-HTTP-Method-Override"))
+            || hasText(request.getHeader("X-Method-Override"))
+            || hasText(request.getParameter("_method"));
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     /**

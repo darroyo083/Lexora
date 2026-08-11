@@ -1,0 +1,673 @@
+{
+  "schemaVersion": "0.2.0",
+  "pageNumber": 4,
+  "width": 1322,
+  "height": 1870,
+  "language": "de",
+  "textSpans": [
+    {
+      "id": "ts001",
+      "text": "LEXORA / DEUTSCH A1-A2",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.071,
+        "y": 0.038,
+        "width": 0.167,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts002",
+      "text": "04",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.91,
+        "y": 0.038,
+        "width": 0.021,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts003",
+      "text": "UNIT 4",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.071,
+        "y": 0.065,
+        "width": 0.055,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts004",
+      "text": "Kleine Wiederholung",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.071,
+        "y": 0.088,
+        "width": 0.366,
+        "height": 0.045
+      }
+    },
+    {
+      "id": "ts005",
+      "text": "Review the language from the workbook in a final practical page.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.071,
+        "y": 0.13,
+        "width": 0.441,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts006",
+      "text": "10",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.097,
+        "y": 0.205,
+        "width": 0.019,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts007",
+      "text": "Verbformen",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.144,
+        "y": 0.2,
+        "width": 0.117,
+        "height": 0.018
+      }
+    },
+    {
+      "id": "ts008",
+      "text": "Complete the mini-dialogue with the correct verb forms.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.144,
+        "y": 0.222,
+        "width": 0.332,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts009",
+      "text": "Mira: Wann",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.105,
+        "y": 0.25,
+        "width": 0.093,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts010",
+      "text": "du heute?",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.415,
+        "y": 0.25,
+        "width": 0.082,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts011",
+      "text": "(arbeiten)",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.836,
+        "y": 0.25,
+        "width": 0.064,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts012",
+      "text": "Noah: Ich",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.105,
+        "y": 0.303,
+        "width": 0.081,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts013",
+      "text": "bis vier Uhr.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.415,
+        "y": 0.303,
+        "width": 0.11,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts014",
+      "text": "(arbeiten)",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.836,
+        "y": 0.303,
+        "width": 0.064,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts015",
+      "text": "Mira: Danach",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.105,
+        "y": 0.356,
+        "width": 0.106,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts016",
+      "text": "wir uns im Cafe.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.415,
+        "y": 0.356,
+        "width": 0.156,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts017",
+      "text": "(treffen)",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.836,
+        "y": 0.356,
+        "width": 0.056,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts018",
+      "text": "11",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.097,
+        "y": 0.462,
+        "width": 0.019,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts019",
+      "text": "Richtig oder falsch?",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.144,
+        "y": 0.457,
+        "width": 0.185,
+        "height": 0.018
+      }
+    },
+    {
+      "id": "ts020",
+      "text": "Read the note and mark the correct answer.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.144,
+        "y": 0.479,
+        "width": 0.297,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts021",
+      "text": "Noah arbeitet bis 16 Uhr. Danach trifft er Mira vor dem Cafe.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.122,
+        "y": 0.521,
+        "width": 0.645,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts022",
+      "text": "Noah arbeitet am Abend.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.105,
+        "y": 0.593,
+        "width": 0.219,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts023",
+      "text": "richtig",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.704,
+        "y": 0.593,
+        "width": 0.045,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts024",
+      "text": "falsch",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.842,
+        "y": 0.593,
+        "width": 0.043,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts025",
+      "text": "Mira und Noah treffen sich nach der Arbeit.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.105,
+        "y": 0.636,
+        "width": 0.36,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts026",
+      "text": "richtig",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.704,
+        "y": 0.636,
+        "width": 0.045,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts027",
+      "text": "falsch",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.842,
+        "y": 0.636,
+        "width": 0.043,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts028",
+      "text": "12",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.097,
+        "y": 0.701,
+        "width": 0.019,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts029",
+      "text": "Mini-Ziel",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.144,
+        "y": 0.696,
+        "width": 0.092,
+        "height": 0.018
+      }
+    },
+    {
+      "id": "ts030",
+      "text": "Write one concrete sentence about your next German practice.",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.144,
+        "y": 0.718,
+        "width": 0.393,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts031",
+      "text": "Diese Woche möchte ich ...",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.105,
+        "y": 0.751,
+        "width": 0.164,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts032",
+      "text": "Synthetic demo material created for Lexora",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.071,
+        "y": 0.966,
+        "width": 0.231,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts033",
+      "text": "lexora.dev",
+      "confidence": 0.99,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.888,
+        "y": 0.966,
+        "width": 0.064,
+        "height": 0.013
+      }
+    }
+  ],
+  "exerciseBlanks": [
+    {
+      "id": "ex-blank-001",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.214,
+        "y": 0.254,
+        "width": 0.186,
+        "height": 0.006
+      },
+      "interactionBbox": {
+        "x": 0.214,
+        "y": 0.248,
+        "width": 0.186,
+        "height": 0.02
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.98,
+      "nearbyTextSpanIds": [
+        "ts009",
+        "ts010"
+      ]
+    },
+    {
+      "id": "ex-blank-002",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.214,
+        "y": 0.307,
+        "width": 0.186,
+        "height": 0.006
+      },
+      "interactionBbox": {
+        "x": 0.214,
+        "y": 0.301,
+        "width": 0.186,
+        "height": 0.02
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.98,
+      "nearbyTextSpanIds": [
+        "ts012",
+        "ts013"
+      ]
+    },
+    {
+      "id": "ex-blank-003",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.241,
+        "y": 0.36,
+        "width": 0.159,
+        "height": 0.006
+      },
+      "interactionBbox": {
+        "x": 0.241,
+        "y": 0.354,
+        "width": 0.159,
+        "height": 0.02
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.98,
+      "nearbyTextSpanIds": [
+        "ts015",
+        "ts016"
+      ]
+    },
+    {
+      "id": "ex-blank-004",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.105,
+        "y": 0.815,
+        "width": 0.811,
+        "height": 0.006
+      },
+      "interactionBbox": {
+        "x": 0.105,
+        "y": 0.81,
+        "width": 0.811,
+        "height": 0.02
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": [
+        "ts031"
+      ]
+    },
+    {
+      "id": "ex-blank-005",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.105,
+        "y": 0.849,
+        "width": 0.811,
+        "height": 0.006
+      },
+      "interactionBbox": {
+        "x": 0.105,
+        "y": 0.844,
+        "width": 0.811,
+        "height": 0.02
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": []
+    },
+    {
+      "id": "ex-blank-006",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.105,
+        "y": 0.883,
+        "width": 0.811,
+        "height": 0.006
+      },
+      "interactionBbox": {
+        "x": 0.105,
+        "y": 0.878,
+        "width": 0.811,
+        "height": 0.02
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": []
+    }
+  ],
+  "blankDetection": {
+    "detectionMethod": "vision-structured-v1",
+    "rawCandidateCount": 6,
+    "acceptedCount": 6,
+    "durationMs": 0
+  },
+  "choiceGroups": [
+    {
+      "id": "cg001",
+      "options": [
+        {
+          "id": "opt-richtig-001",
+          "label": "richtig"
+        },
+        {
+          "id": "opt-falsch-001",
+          "label": "falsch"
+        }
+      ]
+    },
+    {
+      "id": "cg002",
+      "options": [
+        {
+          "id": "opt-richtig-002",
+          "label": "richtig"
+        },
+        {
+          "id": "opt-falsch-002",
+          "label": "falsch"
+        }
+      ]
+    }
+  ],
+  "choiceTargets": [
+    {
+      "id": "ct-001",
+      "kind": "choice",
+      "targetBbox": {
+        "x": 0.687,
+        "y": 0.59,
+        "width": 0.15499999999999992,
+        "height": 0.018000000000000016
+      },
+      "interactionBbox": {
+        "x": 0.682,
+        "y": 0.585,
+        "width": 0.20799999999999985,
+        "height": 0.028000000000000025
+      },
+      "optionGroupId": "cg001",
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.98,
+      "nearbyTextSpanIds": [
+        "ts022",
+        "ts023",
+        "ts024"
+      ]
+    },
+    {
+      "id": "ct-003",
+      "kind": "choice",
+      "targetBbox": {
+        "x": 0.687,
+        "y": 0.633,
+        "width": 0.15499999999999992,
+        "height": 0.018000000000000016
+      },
+      "interactionBbox": {
+        "x": 0.682,
+        "y": 0.628,
+        "width": 0.20799999999999985,
+        "height": 0.028000000000000025
+      },
+      "optionGroupId": "cg002",
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.98,
+      "nearbyTextSpanIds": [
+        "ts025",
+        "ts026",
+        "ts027"
+      ]
+    }
+  ],
+  "choiceDetection": {
+    "detectionMethod": "vision-structured-v1",
+    "rawCandidateCount": 4,
+    "acceptedCount": 2,
+    "groupCount": 2,
+    "durationMs": 0
+  },
+  "choiceGrids": [],
+  "choiceGridDetection": null,
+  "sentenceOrderings": [],
+  "sentenceOrderingDetection": null,
+  "matchingInteractions": [],
+  "matchingDetection": null,
+  "freeTextInteractions": [],
+  "freeTextDetection": null,
+  "processor": {
+    "engine": "opencode-go-vision",
+    "engineVersion": "v1",
+    "model": "mimo-v2.5",
+    "language": "de",
+    "parameters": {},
+    "processedAt": "2026-08-11T18:17:19.660587Z",
+    "durationMs": 80718
+  }
+}

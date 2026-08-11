@@ -25,11 +25,15 @@ public class PublicDemoController {
         var book = books.getBook(PublicDemoConstants.BOOK_ID)
             .orElseThrow(() -> new BookNotFoundException(PublicDemoConstants.BOOK_ID));
         return Map.of(
-            "mode", "curated-read-only",
+            "mode", "precomputed-real-read-only",
             "bookId", book.id(),
             "title", book.title(),
             "pageCount", book.pageCount(),
-            "analysisTriggering", false
+            "analysisTriggering", false,
+            "analysisOrigin", "precomputed-real-provider",
+            "provider", "opencode-go",
+            "model", "mimo-v2.5",
+            "sourceSha256", PublicDemoConstants.SOURCE_SHA256
         );
     }
 }

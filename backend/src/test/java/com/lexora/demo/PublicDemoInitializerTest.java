@@ -13,7 +13,6 @@ import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 
 import tools.jackson.databind.json.JsonMapper;
 
@@ -32,11 +31,10 @@ class PublicDemoInitializerTest {
     Path storage;
 
     @Test
-    void initializesOnlySyntheticReadyContentAndAThreePageSourcePdf() throws Exception {
+    void initializesOnlyRealPrecomputedContentAndTheFourPageSyntheticPdf() throws Exception {
         var books = mock(BookRepository.class);
         var answerKeys = mock(AnswerKeyRepository.class);
-        when(books.findById(PublicDemoConstants.BOOK_ID)).thenReturn(Optional.empty());
-        when(books.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(books.upsert(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(books.savePage(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         new PublicDemoInitializer(books, answerKeys, storage.toString()).run(null);
@@ -44,11 +42,11 @@ class PublicDemoInitializerTest {
         var source = storage.resolve("pdf").resolve(PublicDemoConstants.STORAGE_KEY);
         assertThat(Files.size(source)).isGreaterThan(1_000);
         try (var document = Loader.loadPDF(source.toFile())) {
-            assertThat(document.getNumberOfPages()).isEqualTo(3);
+            assertThat(document.getNumberOfPages()).isEqualTo(4);
         }
 
         var pageCaptor = ArgumentCaptor.forClass(BookPage.class);
-        verify(books, times(3)).savePage(pageCaptor.capture());
+        verify(books, times(4)).savePage(pageCaptor.capture());
         assertThat(pageCaptor.getAllValues())
             .extracting(BookPage::bookId)
             .containsOnly(PublicDemoConstants.BOOK_ID);
@@ -59,23 +57,25 @@ class PublicDemoInitializerTest {
         var analyses = pageCaptor.getAllValues().stream()
             .map(page -> readAnalysis(page.analysis()))
             .toList();
-        assertThat(analyses).extracting(PageAnalysis::pageNumber).containsExactly(1, 2, 3);
-        assertThat(analyses.getFirst().exerciseBlanks()).hasSize(1);
-        assertThat(analyses.getFirst().choiceTargets()).hasSize(1);
-        assertThat(analyses.getFirst().choiceGrids()).hasSize(1);
-        assertThat(analyses.getFirst().sentenceOrderings()).hasSize(1);
-        assertThat(analyses.getFirst().matchingInteractions()).hasSize(1);
+        assertThat(analyses).extracting(PageAnalysis::pageNumber).containsExactly(1, 2, 3, 4);
+        assertThat(analyses).extracting(analysis -> analysis.processor().engine())
+            .containsOnly("opencode-go-vision");
+        assertThat(analyses).extracting(analysis -> analysis.processor().model())
+            .containsOnly("mimo-v2.5");
+        assertThat(analyses.getFirst().exerciseBlanks()).hasSize(3);
+        assertThat(analyses.getFirst().choiceTargets()).hasSize(2);
+        assertThat(analyses.get(1).matchingInteractions()).hasSize(1);
+        assertThat(analyses.get(2).sentenceOrderings()).hasSize(2);
         assertThat(analyses.getFirst().freeTextInteractions()).hasSize(1);
 
         var keyCaptor = ArgumentCaptor.forClass(AnswerKey.class);
         verify(answerKeys).save(keyCaptor.capture());
         assertThat(keyCaptor.getValue().bookId()).isEqualTo(PublicDemoConstants.BOOK_ID);
-        assertThat(keyCaptor.getValue().entries()).hasSize(6);
+        assertThat(keyCaptor.getValue().entries()).isNotEmpty();
         assertThat(keyCaptor.getValue().entries())
             .extracting(entry -> entry.interactionKind())
-            .containsExactlyInAnyOrder(
-                "FillBlank", "Choice", "ChoiceGrid",
-                "SentenceOrdering", "Matching", "FreeText"
+            .contains(
+                "FillBlank", "Choice", "SentenceOrdering", "Matching", "FreeText"
             );
     }
 

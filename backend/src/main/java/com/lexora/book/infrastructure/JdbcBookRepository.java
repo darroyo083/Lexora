@@ -69,6 +69,36 @@ class JdbcBookRepository implements BookRepository {
     }
 
     @Override
+    public Book upsert(Book book) {
+        jdbc.update(
+            """
+            INSERT INTO books (id, title, original_filename, mime_type,
+                file_size, checksum, page_count, source_language,
+                storage_key, status, created_at, updated_at, book_profile_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                title = EXCLUDED.title,
+                original_filename = EXCLUDED.original_filename,
+                mime_type = EXCLUDED.mime_type,
+                file_size = EXCLUDED.file_size,
+                checksum = EXCLUDED.checksum,
+                page_count = EXCLUDED.page_count,
+                source_language = EXCLUDED.source_language,
+                storage_key = EXCLUDED.storage_key,
+                status = EXCLUDED.status,
+                updated_at = EXCLUDED.updated_at,
+                book_profile_id = EXCLUDED.book_profile_id
+            """,
+            book.id(), book.title(), book.originalFilename(), book.mimeType(),
+            book.fileSize(), book.checksum(), book.pageCount(), book.sourceLanguage(),
+            book.storageKey(), book.status().name(),
+            Timestamp.from(book.createdAt()), Timestamp.from(book.updatedAt()),
+            book.bookProfileId()
+        );
+        return book;
+    }
+
+    @Override
     public void attachBookProfile(UUID bookId, UUID profileId) {
         jdbc.update(
             "UPDATE books SET book_profile_id = ?, updated_at = now() WHERE id = ?",

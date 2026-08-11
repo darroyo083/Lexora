@@ -5,9 +5,9 @@ This runbook describes the safe handoff from the repository release candidate to
 ## Runtime modes
 
 | Mode | Provider | Upload/process surface | Intended use |
-|---|---|---|---|
+|---|---|---:|---|
 | Development Compose | `local-ocr` | Available for local private work | OCR compatibility and product development |
-| Production Compose | `openai` | Curated demo is read-only | Public portfolio runtime and deployment smoke |
+| Production Compose | `opencode-go` | Curated demo is read-only | Public portfolio runtime and deployment smoke |
 
 `compose.production.yml` is the production source of truth. Its AI image contains the provider client and image/contract code only; it does not contain PaddleOCR, PaddlePaddle, OpenCV, local OCR modules, model caches, or a CPU fallback.
 
@@ -16,21 +16,21 @@ This runbook describes the safe handoff from the repository release candidate to
 | Variable | Required | Purpose |
 |---|---:|---|
 | `POSTGRES_PASSWORD` | Yes | Database credential; choose a strong external value |
-| `OPENAI_API_KEY` | Yes | Authorized server-side provider credential |
-| `OPENAI_VISION_MODEL` | No | Defaults to `gpt-5.4-mini` |
-| `OPENAI_API_BASE_URL` | No | Defaults to the HTTPS Responses endpoint |
+| `OPENCODE_GO_API_KEY` | Yes | Authorized server-side OpenCode Go credential |
+| `OPENCODE_GO_MODEL` | No | Defaults to `mimo-v2.5` |
+| `OPENCODE_GO_BASE_URL` | No | Defaults to the OpenCode Go chat completions endpoint |
 | `LEXORA_HTTP_PORT` | No | Loopback port, default `8088` |
 | `LEXORA_BIND_ADDRESS` | No | Default `127.0.0.1`; changing this is a deliberate deployment action |
 | `LEXORA_PROVIDER_TIMEOUT_SECONDS` | No | Provider deadline, default `90` |
 | `LEXORA_MAX_IMAGE_BYTES` | No | Provider image limit, default 10 MiB |
 
-Never place real values in `.env.example`, Compose files, screenshots, logs, test fixtures, shell history shared in reports, or Git.
+Production Compose pins `LEXORA_ANALYSIS_PROVIDER=opencode-go`, so a development `.env` with `local-ocr` can never change the production provider. Never place real values in `.env.example`, Compose files, screenshots, logs, test fixtures, shell history shared in reports, or Git.
 
 ## Local production proof
 
 ```powershell
 $env:POSTGRES_PASSWORD = '<strong-random-secret>'
-$env:OPENAI_API_KEY = '<authorized-provider-key>'
+$env:OPENCODE_GO_API_KEY = '<authorized-provider-key>'
 $env:LEXORA_HTTP_PORT = '8088'
 docker compose -f compose.production.yml up -d --build --wait
 docker compose -f compose.production.yml ps

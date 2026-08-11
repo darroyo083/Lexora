@@ -29,7 +29,7 @@ Interactive covers context, fill blank, choice, choice grid, sentence ordering, 
 
 ## What is technically interesting?
 
-- **AI at one boundary, deterministic behavior after it.** Production page analysis uses a concrete OpenAI Responses Vision provider and validates a strict, versioned `PageAnalysis` contract.
+- **AI at one boundary, deterministic behavior after it.** Production page analysis uses a concrete OpenCode Go Vision provider (MiMo V2.5) through its official HTTP API and validates a strict, versioned `PageAnalysis` contract.
 - **No local OCR in production.** The production AI image excludes PaddleOCR, PaddlePaddle, OpenCV, OCR modules, and local model downloads. Local OCR remains an explicit development provider.
 - **Source-preserving projection.** The React lesson projector carries page, span, interaction, geometry, confidence, and processor provenance into the learner experience.
 - **Fail-closed correction.** Only resolved backend mappings can produce correct or incorrect feedback. Ambiguous, unmapped, stale, or failed correction remains neutral.
@@ -54,16 +54,16 @@ The runtime is four containers: Nginx/React, Spring Boot, FastAPI, and PostgreSQ
 |---|---|---|
 | Frontend | React 19, TypeScript 7, Vite 8, PDF.js 6 | Landing, native lessons, browser-local answers, lazy Classic reader |
 | Backend | Java 21, Spring Boot 4.1, PostgreSQL 18, PDFBox | Books, page orchestration, profiles, correction authority, public-demo enforcement |
-| AI service | Python 3.12, FastAPI, external OpenAI Vision in production | Bounded image analysis and strict contract validation |
+| AI service | Python 3.12, FastAPI, external OpenCode Go Vision (MiMo V2.5) in production | Bounded image analysis and strict contract validation |
 | Development analysis | PaddleOCR 3.7, OpenCV 4.10 | Optional local compatibility path; absent from the production image |
 
 ## Quick start: curated public demo
 
-Prerequisites: Docker Desktop with Compose and an authorized OpenAI API key. The demo itself is pre-analyzed, but the production AI service intentionally fails startup when its required provider credential is missing.
+Prerequisites: Docker Desktop with Compose and an authorized OpenCode Go API key. The demo itself is pre-analyzed, but the production AI service intentionally fails startup when its required provider credential is missing.
 
 ```powershell
 $env:POSTGRES_PASSWORD = '<strong-random-secret>'
-$env:OPENAI_API_KEY = '<authorized-provider-key>'
+$env:OPENCODE_GO_API_KEY = '<authorized-provider-key>'
 $env:LEXORA_HTTP_PORT = '8088' # optional
 docker compose -f compose.production.yml up -d --build --wait
 ```
@@ -74,7 +74,7 @@ Open `http://127.0.0.1:8088` for the landing or `/demo` for the reader. The defa
 docker compose -f compose.production.yml down
 ```
 
-Production Compose selects `LEXORA_ANALYSIS_PROVIDER=openai`, enables the curated public-demo boundary, limits requests and raster size, and uses a non-root AI runtime. Do not expose it on a public interface until authentication/reverse-proxy, TLS, domain, provider credential, and deployment smoke checks are complete.
+Production Compose pins `LEXORA_ANALYSIS_PROVIDER=opencode-go` (it can never inherit `local-ocr` from a development `.env`), enables the curated public-demo boundary, limits requests and raster size, and uses a non-root AI runtime. Do not expose it on a public interface until authentication/reverse-proxy, TLS, domain, provider credential, and deployment smoke checks are complete.
 
 ## Local development
 

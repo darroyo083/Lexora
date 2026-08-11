@@ -53,7 +53,7 @@ Docker Compose runs `frontend`, `backend`, `ai-service`, and `postgres`. Spring 
 
 ### FastAPI AI Service
 
-The AI service selects one `AnalysisProvider` at startup. Production Compose selects the concrete OpenAI Responses Vision provider and fails startup when its credential is unavailable. That provider validates file size/type, sends one bounded page image, requests strict structured output, validates the complete `PageAnalysis`, and redacts upstream response bodies from application errors. Its production image contains no local OCR dependencies or fallback.
+The AI service selects one `AnalysisProvider` at startup. Production Compose pins the concrete OpenCode Go Vision provider (MiMo V2.5) through its official OpenAI-compatible HTTP API and fails startup when its credential is unavailable. That provider validates file size/type, sends one bounded page image, requests structured JSON output, validates the complete `PageAnalysis`, and redacts upstream response bodies from application errors. Its production image contains no local OCR dependencies or fallback.
 
 The optional `local-ocr` development provider:
 

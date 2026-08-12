@@ -12,6 +12,8 @@ test('landing explains the product, loads real evidence, and provides tactile ke
     .toHaveAttribute('href', '/demo');
   await expect(page.getByRole('link', { name: 'View source' }))
     .toHaveAttribute('href', 'https://github.com/darroyo083/Lexora');
+  await expect(page.locator('.landing-shell')).not.toContainText(/OpenCode Go|MiMo/i);
+  await expect(page.locator('.landing-kicker span')).toHaveCount(0);
 
   const evidence = page.getByAltText(/answer lerne marked correct/i);
   await expect(evidence).toBeVisible();

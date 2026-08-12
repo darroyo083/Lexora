@@ -110,6 +110,30 @@ test('fixes Match grading for labels resolved to generated IDs and supports retr
   await expect(page.locator('.lesson-feedback[data-verdict="correct"]')).toContainText('Correct');
 });
 
+test('keeps Classic usable as a document-first mobile workspace', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto('/demo');
+  await page.getByLabel('Reader mode').getByRole('button', { name: 'Classic' }).click();
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
+
+  const layout = page.locator('.reader-layout');
+  const pageArea = page.locator('.page-area');
+  const rail = page.locator('.right-rail');
+  const [layoutBox, pageAreaBox, railBox] = await Promise.all([
+    layout.boundingBox(),
+    pageArea.boundingBox(),
+    rail.boundingBox(),
+  ]);
+  expect(layoutBox).not.toBeNull();
+  expect(pageAreaBox).not.toBeNull();
+  expect(railBox).not.toBeNull();
+  expect(railBox!.y).toBeGreaterThanOrEqual(pageAreaBox!.y + pageAreaBox!.height - 1);
+  expect(railBox!.width).toBeLessThanOrEqual(375);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(await pageArea.evaluate((element) => element.scrollWidth >= element.clientWidth)).toBe(true);
+});
+
 test('enforces the public read-only API boundary', async ({ request }) => {
   expect((await request.post('/api/books', { multipart: {} })).status()).toBe(403);
   expect((await request.post(`/api/books/${BOOK_ID}/pages/1/process`)).status()).toBe(403);

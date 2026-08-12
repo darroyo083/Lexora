@@ -15,7 +15,7 @@ const interactionFamilies = [
 ] as const;
 
 const architecture = [
-  { id: 'vision', label: 'Private AI analysis', meta: 'OpenCode Go / MiMo V2.5', detail: 'The local/private workflow sends a bounded page image to MiMo and validates a strict, versioned PageAnalysis contract.' },
+  { id: 'vision', label: 'Private AI analysis', meta: 'Vision AI / bounded input', detail: 'The local/private workflow sends one bounded page image to a multimodal model and validates a strict, versioned PageAnalysis contract.' },
   { id: 'service', label: 'Spring Boot', meta: 'Books, profiles, correction', detail: 'The application core owns book state, page profiles, correction authority, and the public read-only boundary.' },
   { id: 'projection', label: 'Lesson projection', meta: 'Source-backed transformation', detail: 'A deterministic projection turns supported page structures into focused lesson steps without inventing content.' },
   { id: 'reader', label: 'React reader', meta: 'Interactive + Classic', detail: 'One product surface provides guided practice and a source-faithful fallback, including keyboard, touch, and responsive layouts.' },
@@ -63,7 +63,7 @@ export default function Landing() {
       <main id="landing-main">
         <section className="landing-hero" id="top" aria-labelledby="landing-title">
           <div className="hero-copy">
-            <p className="landing-kicker"><span>01</span> Source-faithful language practice</p>
+            <p className="landing-kicker">Source-faithful language practice</p>
             <h1 id="landing-title">Scanned workbooks.<br /><em>Structured practice.</em></h1>
             <p className="hero-deck">
               Lexora turns workbook pages into focused interactive lessons, and keeps the
@@ -80,7 +80,7 @@ export default function Landing() {
               </a>
             </div>
             <p className="hero-boundary">
-              <ShieldCheck size={15} aria-hidden="true" /> Interactive demo generated from a real MiMo analysis and precomputed for zero-cost public access.
+              <ShieldCheck size={15} aria-hidden="true" /> Real multimodal analysis, precomputed once for zero-cost public access.
             </p>
           </div>
 
@@ -101,7 +101,7 @@ export default function Landing() {
 
         <section className="landing-transform" aria-labelledby="transform-title">
           <div className="section-heading compact">
-            <p className="landing-kicker"><span>02</span> The transformation</p>
+            <p className="landing-kicker">The transformation</p>
             <h2 id="transform-title">One source. Two trustworthy ways to learn.</h2>
           </div>
           <ol className="transform-rail">
@@ -116,7 +116,7 @@ export default function Landing() {
 
         <section className="landing-modes" id="modes" aria-labelledby="modes-title">
           <div className="section-heading">
-            <p className="landing-kicker"><span>03</span> Product modes</p>
+            <p className="landing-kicker">Product modes</p>
             <h2 id="modes-title">Transformation with an escape hatch.</h2>
             <p>Interactive makes practice deliberate. Classic protects source truth.</p>
           </div>
@@ -159,10 +159,10 @@ export default function Landing() {
 
         <section className="landing-interactions" id="interactions" aria-labelledby="interactions-title">
           <div className="section-heading split">
-            <div><p className="landing-kicker"><span>04</span> Interaction system</p>
+            <div><p className="landing-kicker">Interaction system</p>
               <h2 id="interactions-title">Six families.<br />One correction model.</h2></div>
             <p>Hover, focus, or tap an interaction. The product supports six families; the public
-              workbook shows the structures MiMo detected in original synthetic material.</p>
+              workbook shows the structures Vision AI detected in original synthetic material.</p>
           </div>
           <div className="interaction-index">
             <div className="interaction-list" aria-label="Supported interaction families">
@@ -190,7 +190,7 @@ export default function Landing() {
 
         <section className="landing-architecture" id="architecture" aria-labelledby="architecture-title">
           <div className="section-heading split">
-            <div><p className="landing-kicker"><span>05</span> Engineering signal path</p>
+            <div><p className="landing-kicker">Engineering signal path</p>
               <h2 id="architecture-title">AI at the boundary.<br />Determinism downstream.</h2></div>
             <p>The provider may infer page structure. Product behavior after that boundary is
               contract-driven, testable, and deliberately conservative.</p>
@@ -221,20 +221,20 @@ export default function Landing() {
             <article><span>TRUST</span><h3>Fail-closed correction</h3>
               <p>Ambiguous and unmapped answers remain neutral instead of becoming false authority.</p></article>
             <article><span>PUBLIC DEMO</span><h3>Zero inference spend</h3>
-              <p>Real MiMo output from synthetic content blocks anonymous upload, processing, and extraction.</p></article>
+              <p>Real multimodal AI output from synthetic content blocks anonymous upload, processing, and extraction.</p></article>
           </div>
         </section>
 
         <section className="landing-video" id="video" aria-labelledby="video-title">
           <div className="section-heading split">
-            <div><p className="landing-kicker"><span>06</span> Product film</p>
+            <div><p className="landing-kicker">Product film</p>
               <h2 id="video-title">The complete trust story.<br />In 66 seconds.</h2></div>
             <p>A silent-safe walkthrough of the real curated demo: transformation, four native
               interaction families, grounded correction, Classic Mode, and responsive behavior.</p>
           </div>
           <div className="video-preview">
             <div className="video-rail">
-              <span>REMOTION / 1920 × 1080</span><span>REAL UI EVIDENCE / NO PRIVATE MATERIAL</span>
+              <span>PRODUCT FILM / 1920 × 1080</span><span>REAL UI EVIDENCE / NO PRIVATE MATERIAL</span>
             </div>
             <video controls preload="metadata" playsInline
               poster="/release/lexora-demo-poster.png"
@@ -251,7 +251,7 @@ export default function Landing() {
 
         <section className="landing-safety" aria-labelledby="safety-title">
           <div className="safety-icon"><ShieldCheck size={32} aria-hidden="true" /></div>
-          <div><p className="landing-kicker"><span>07</span> Grounded by design</p>
+          <div><p className="landing-kicker">Grounded by design</p>
             <h2 id="safety-title">Useful without pretending certainty.</h2></div>
           <p>Lexora preserves provenance, uses authoritative correction only when a mapping exists,
             and publishes no private workbook pages, OCR dumps, or answer-key material.</p>
@@ -259,9 +259,9 @@ export default function Landing() {
 
         <section className="landing-final" aria-labelledby="final-title">
           <BookOpen size={38} aria-hidden="true" />
-          <p className="landing-kicker"><span>08</span> See the system work</p>
+          <p className="landing-kicker">See the system work</p>
           <h2 id="final-title">From source page to deliberate practice.</h2>
-          <p>Explore real provider-generated interactions in a bounded, public-safe workbook.</p>
+          <p>Explore real AI-generated interactions in a bounded, public-safe workbook.</p>
           <div className="hero-actions">
             <a className="landing-button landing-button-primary" href="/demo">
               Open the demo <Play size={16} fill="currentColor" aria-hidden="true" /></a>

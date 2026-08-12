@@ -3491,10 +3491,13 @@ html, body, #root {
 }
 
 .reader-layout-interactive .page-area {
-  align-items: stretch;
+  align-items: center;
   justify-content: stretch;
   overflow: hidden;
   padding: clamp(14px, 2.4vw, 28px);
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in oklab, var(--accent-primary) 9%, transparent), transparent 34rem),
+    var(--bg-canvas);
 }
 
 .interactive-lesson {
@@ -3509,17 +3512,19 @@ html, body, #root {
   --lesson-accent: oklch(0.71 0.08 145);
   --lesson-accent-strong: oklch(0.79 0.085 145);
   --lesson-accent-soft: oklch(0.71 0.08 145 / 0.12);
-  width: min(1080px, 100%);
-  height: 100%;
+  width: min(980px, 100%);
+  height: min(100%, 660px);
   min-height: 0;
   margin: 0 auto;
   padding: 0;
   overflow: hidden;
   color: var(--lesson-text);
   border: 1px solid var(--lesson-border);
-  border-radius: 16px;
-  background: var(--lesson-bg);
-  box-shadow: 0 24px 70px oklch(0.05 0.01 145 / 0.38);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 78% 4%, var(--lesson-accent-soft), transparent 24rem),
+    var(--lesson-bg);
+  box-shadow: 0 24px 70px oklch(0.05 0.01 145 / 0.38), 0 0 0 6px oklch(0.1 0.008 145 / .25);
 }
 
 .app[data-theme="light"] .interactive-lesson {
@@ -3546,7 +3551,7 @@ html, body, #root {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px 24px;
-  padding: 18px 24px 14px;
+  padding: 17px 26px 13px;
   border-bottom: 1px solid var(--lesson-border);
   background: var(--lesson-bg-raised);
 }
@@ -3650,13 +3655,24 @@ html, body, #root {
 }
 
 .lesson-stage {
+  position: relative;
   min-height: 0;
   overflow: hidden;
-  padding: clamp(12px, 2.2vh, 22px) clamp(20px, 4vw, 52px);
+  padding: clamp(12px, 2.2vh, 22px) clamp(28px, 5vw, 64px);
+}
+
+.lesson-stage::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: clamp(15px, 2.5vw, 30px);
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, var(--lesson-border), transparent);
 }
 
 .lesson-step-motion {
-  width: min(790px, 100%);
+  width: min(720px, 100%);
   height: 100%;
   min-height: 0;
   margin: 0 auto;
@@ -3683,7 +3699,8 @@ html, body, #root {
   display: flex;
   min-height: 100%;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-block: clamp(24px, 7vh, 58px) 20px;
   color: var(--lesson-text);
 }
 
@@ -3716,7 +3733,7 @@ html, body, #root {
   max-width: 34ch;
   margin: 0;
   color: var(--lesson-text);
-  font-size: clamp(24px, 3.2vw, 36px);
+  font-size: clamp(24px, 3vw, 34px);
   font-weight: 720;
   line-height: 1.15;
   letter-spacing: -0.035em;
@@ -3762,7 +3779,7 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: clamp(18px, 3vh, 30px);
+  margin-top: clamp(16px, 2.6vh, 24px);
 }
 
 .lesson-control-region label {
@@ -3804,7 +3821,7 @@ html, body, #root {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   min-width: 0;
-  margin-top: clamp(18px, 3vh, 30px);
+  margin-top: clamp(16px, 2.6vh, 24px);
   padding: 0;
   border: 0;
 }
@@ -3829,13 +3846,14 @@ html, body, #root {
   justify-content: flex-start;
   padding: 11px 14px;
   border: 1px solid var(--lesson-border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--lesson-bg-raised);
   color: var(--lesson-text);
   font: 650 14px/1.35 var(--font-sans);
   text-align: left;
   cursor: pointer;
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms ease, background-color 150ms ease;
+  box-shadow: 0 2px 0 color-mix(in oklab, var(--lesson-border-strong) 58%, transparent);
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
 }
 
 .lesson-option:hover span,
@@ -3843,6 +3861,8 @@ html, body, #root {
 .lesson-match-item:hover {
   border-color: var(--lesson-border-strong);
   background: var(--lesson-bg-soft);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 color-mix(in oklab, var(--lesson-border-strong) 66%, transparent);
 }
 
 .lesson-option input:focus-visible + span,
@@ -3861,6 +3881,7 @@ html, body, #root {
   border-color: var(--lesson-accent);
   background: var(--lesson-accent-soft);
   color: var(--lesson-text);
+  box-shadow: inset 3px 0 var(--lesson-accent);
 }
 
 .lesson-option input:checked + span::before {
@@ -3881,7 +3902,7 @@ html, body, #root {
   margin-top: clamp(16px, 2.6vh, 26px);
   padding: 12px 14px;
   border: 1px solid var(--lesson-border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--lesson-bg-raised);
   color: var(--lesson-text-muted);
   font-size: 15px;
@@ -3934,6 +3955,9 @@ html, body, #root {
   min-width: 0;
   flex-direction: column;
   gap: 7px;
+  padding: 12px;
+  border: 1px solid var(--lesson-border);
+  background: color-mix(in oklab, var(--lesson-bg-raised) 72%, transparent);
 }
 
 .lesson-matching-columns h3 {
@@ -3950,6 +3974,8 @@ html, body, #root {
 
 .lesson-match-item[data-paired="true"] {
   border-color: var(--lesson-accent);
+  background: var(--lesson-accent-soft);
+  box-shadow: inset 3px 0 var(--lesson-accent);
 }
 
 .lesson-pairs {
@@ -3957,6 +3983,8 @@ html, body, #root {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--lesson-border);
 }
 
 .lesson-pairs button {
@@ -4093,7 +4121,7 @@ html, body, #root {
   align-items: center;
   gap: 16px;
   min-height: 70px;
-  padding: 10px 24px;
+  padding: 10px 26px;
   border-top: 1px solid var(--lesson-border);
   background: var(--lesson-bg-raised);
 }
@@ -4240,16 +4268,61 @@ html, body, #root {
   to { transform: rotate(360deg); }
 }
 
+@media (max-width: 900px) {
+  .reader-layout:not(.reader-layout-interactive) {
+    flex-direction: column;
+  }
+
+  .reader-layout:not(.reader-layout-interactive) .page-area {
+    min-width: 0;
+    min-height: 0;
+    justify-content: flex-start;
+    padding: 16px;
+  }
+
+  .reader-layout:not(.reader-layout-interactive) .page-container,
+  .reader-layout:not(.reader-layout-interactive) .restoration-skeleton {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .reader-layout:not(.reader-layout-interactive) .right-rail {
+    width: 100%;
+    height: min(34dvh, 280px);
+    flex: none;
+    border-top: 1px solid var(--border-strong);
+    border-left: 0;
+  }
+
+  .reader-layout:not(.reader-layout-interactive) .rail-content {
+    padding: 12px;
+  }
+}
+
 @media (max-width: 720px) {
+  .toolbar-center {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 8px;
+    overflow: visible;
+  }
+
+  .toolbar-center .view-controls {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
   .reader-layout-interactive .page-area {
     padding: 0;
   }
 
   .interactive-lesson {
     width: 100%;
+    height: 100%;
     border: 0;
     border-radius: 0;
     box-shadow: none;
+    background: var(--lesson-bg);
   }
 
   .lesson-player-header {
@@ -4273,8 +4346,11 @@ html, body, #root {
   }
 
   .lesson-stage {
+    position: static;
     padding: 10px 20px 6px;
   }
+
+  .lesson-stage::before { display: none; }
 
   .lesson-step-meta {
     margin-bottom: 10px;
@@ -4289,6 +4365,10 @@ html, body, #root {
   .lesson-step h2 {
     max-width: 100%;
     font-size: clamp(22px, 7vw, 29px);
+  }
+
+  .lesson-step {
+    padding-block: 18px 12px;
   }
 
   .lesson-context-step {

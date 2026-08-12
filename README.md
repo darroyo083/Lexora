@@ -1,16 +1,14 @@
 # Lexora
 
-Lexora turns scanned language workbooks into focused interactive lessons while keeping the original page one click away. It is a portfolio-ready MVP built around a simple trust rule: transform what the source supports, and fail closed when it does not.
+Lexora turns scanned language workbooks into focused interactive lessons while keeping the original page one click away. Its trust rule is simple: transform what the source supports, and fail closed when it does not.
 
-[![Lexora demo video: real product evidence from the public demo](frontend/public/release/lexora-demo-poster.png)](frontend/public/release/lexora-demo.mp4)
-
-**Current release candidate:** a read-only public demo built from real OpenCode Go / MiMo V2.5 output, plus a separate local/private AI runtime for owner PDFs. The public server runs no AI service, holds no provider credential, and makes no inference call. Its four-page source workbook is original synthetic material created for Lexora.
+The read-only public demo is built from validated multimodal AI output. It runs no AI service, holds no provider credential, and makes no inference call. A separate local/private workflow handles owner PDFs, while the four-page public workbook is original synthetic material created for Lexora.
 
 ## See it
 
-- **66-second product film:** [watch or download the caption-led MP4](frontend/public/release/lexora-demo.mp4).
 - **Real precomputed demo:** run the public stack below, then open `http://127.0.0.1:8088/demo`.
 - **Source:** this repository. A real public URL remains a deployment-time decision.
+- **Earlier product walkthrough:** [watch or download the caption-led 66-second MP4](frontend/public/release/lexora-demo.mp4). A final cut for the polished interface is intentionally deferred.
 
 The demo runs the real product against deliberately created content. It cannot upload, process, delete, or expose arbitrary books, and opening it does not call the external provider.
 
@@ -29,7 +27,7 @@ Interactive covers context, fill blank, choice, choice grid, sentence ordering, 
 
 ## What is technically interesting?
 
-- **Real AI once, deterministic public behavior after it.** The synthetic PDF was processed through PDFBox rasterization and OpenCode Go / MiMo V2.5, validated as `PageAnalysis` v0.2.0, and committed with safe provenance.
+- **Multimodal AI once, deterministic public behavior after it.** The synthetic PDF was rasterized with PDFBox, analyzed with Vision AI, validated as `PageAnalysis` v0.2.0, and committed with safe provenance.
 - **No AI component in public production.** Public Compose runs only Nginx/React, Spring Boot, and PostgreSQL. It requires no `OPENCODE_GO_API_KEY` and cannot invoke OCR or external inference.
 - **Source-preserving projection.** The React lesson projector carries page, span, interaction, geometry, confidence, and processor provenance into the learner experience.
 - **Fail-closed correction.** Only resolved backend mappings can produce correct or incorrect feedback. Ambiguous, unmapped, stale, or failed correction remains neutral.
@@ -40,7 +38,7 @@ Interactive covers context, fill blank, choice, choice grid, sentence ordering, 
 
 ```mermaid
 flowchart LR
-    Page[Synthetic demo PDF] --> Contract[Frozen real MiMo<br/>PageAnalysis]
+    Page[Synthetic demo PDF] --> Contract[Frozen validated<br/>PageAnalysis]
     Contract --> Projection[Deterministic lesson projection]
     Projection --> Interactive[Interactive renderer]
     Interactive --> Correction[Authoritative correction<br/>fail closed]
@@ -53,7 +51,7 @@ The public runtime is three containers: Nginx/React, Spring Boot, and PostgreSQL
 |---|---|---|
 | Frontend | React 19, TypeScript 7, Vite 8, PDF.js 6 | Landing, native lessons, browser-local answers, lazy Classic reader |
 | Backend | Java 21, Spring Boot 4.1, PostgreSQL 18, PDFBox | Books, page orchestration, profiles, correction authority, public-demo enforcement |
-| AI service | Python 3.12, FastAPI, OpenCode Go Vision (MiMo V2.5) | Local/private bounded image analysis and strict contract validation; absent publicly |
+| AI service | Python 3.12, FastAPI, external Vision API | Local/private bounded image analysis and strict contract validation; absent publicly |
 | Development analysis | PaddleOCR 3.7, OpenCV 4.10 | Optional local compatibility path; absent from the public runtime |
 
 ## Quick start: public demo
@@ -76,7 +74,7 @@ Production Compose enables the precomputed public-demo boundary and contains no 
 
 ## Local/private AI runtime
 
-This workflow keeps arbitrary PDF upload and real MiMo analysis in the same repository while binding privileged services to `127.0.0.1` by default:
+This workflow keeps arbitrary PDF upload and real Vision AI analysis in the same repository while binding privileged services to `127.0.0.1` by default. The exact provider values below are runtime configuration, not part of the public demo:
 
 ```powershell
 Copy-Item .env.example .env
@@ -122,7 +120,7 @@ npm run test:e2e:production
 
 The mocked browser suite uses generated public-safe data. The opt-in full-stack suite accepts book IDs and representative pages only through process-local environment variables; see [the release runbook](docs/public-release.md#verification) rather than committing private identifiers.
 
-## Reproduce the public assets
+## Refresh public screenshots
 
 With the production stack at `http://127.0.0.1:18088`:
 
@@ -130,22 +128,17 @@ With the production stack at `http://127.0.0.1:18088`:
 cd frontend
 $env:LEXORA_CAPTURE_BASE_URL = 'http://127.0.0.1:18088'
 npm run capture:release
-
-cd ../video
-npm ci
-npm run render
-npm run poster
 ```
 
-The capture script first verifies that `/api/public-demo` declares real precomputed provider provenance, is read-only, and cannot trigger analysis. Remotion renders a 66-second 1080p H.264 film from those real UI states with a two-worker memory boundary.
+The capture script first verifies that `/api/public-demo` declares real precomputed provider provenance, is read-only, and cannot trigger analysis. The existing video and poster remain tracked, but their polished-UI replacement belongs to a separate owner-approved media pass.
 
 ## Public versus private
 
 Safe, intentional release material lives in:
 
-- `backend/src/main/resources/demo/` — original synthetic PDF, real normalized MiMo analyses, provenance, and public answer-key data;
-- `frontend/public/release/` — selected screenshots, social image, poster, and final MP4;
-- `video/public/evidence/` — real curated-demo states used by Remotion.
+- `backend/src/main/resources/demo/` — original synthetic PDF, normalized validated analyses, provenance, and public answer-key data;
+- `frontend/public/release/` — selected screenshots, social image, poster, and existing MP4;
+- `video/public/evidence/` — curated-demo states used by the existing film composition.
 
 The private workbook, derived page captures, OCR dumps, answer-key dumps, provider payloads, local storage, credentials, and temporary browser/render output are not public assets and are not included.
 

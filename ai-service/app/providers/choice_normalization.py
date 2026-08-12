@@ -2,7 +2,15 @@
 
 from collections import defaultdict
 
-from app.schemas.page_analysis import BBox, ChoiceTarget, PageAnalysis
+from app.schemas.page_analysis import (
+    BBox,
+    ChoiceGrid,
+    ChoiceGridCell,
+    ChoiceGridDetectionMetadata,
+    ChoiceGridRow,
+    ChoiceTarget,
+    PageAnalysis,
+)
 
 
 def _union(boxes: list[BBox]) -> BBox:
@@ -50,6 +58,7 @@ def normalize_choice_targets(analysis: PageAnalysis) -> PageAnalysis:
             grouped[target.optionGroupId].append(target)
 
     normalized = list(passthrough)
+    merged_ids: dict[str, str] = {}
     for targets in grouped.values():
         ordered = sorted(
             targets,
@@ -61,7 +70,11 @@ def normalize_choice_targets(analysis: PageAnalysis) -> PageAnalysis:
                 clusters[-1].append(target)
             else:
                 clusters.append([target])
-        normalized.extend(_merge(cluster) for cluster in clusters)
+        for cluster in clusters:
+            merged = _merge(cluster)
+            normalized.append(merged)
+            for target in cluster:
+                merged_ids[target.id] = merged.id
 
     normalized.sort(key=lambda target: (
         target.interactionBbox.y,
@@ -71,7 +84,77 @@ def normalize_choice_targets(analysis: PageAnalysis) -> PageAnalysis:
     detection = analysis.choiceDetection
     if detection is not None:
         detection = detection.model_copy(update={"acceptedCount": len(normalized)})
+    semantic_exercises = [exercise.model_copy(update={
+        "interactionIds": list(dict.fromkeys(
+            merged_ids.get(interaction_id, interaction_id)
+            for interaction_id in exercise.interactionIds
+        )),
+    }) for exercise in analysis.semanticExercises]
+
+    targets_by_id = {target.id: target for target in normalized}
+    groups_by_id = {group.id: group for group in analysis.choiceGroups}
+    promoted_target_ids: set[str] = set()
+    promoted_grids: list[ChoiceGrid] = []
+    promoted_semantics = []
+    for exercise in semantic_exercises:
+        targets = [
+            targets_by_id[interaction_id]
+            for interaction_id in exercise.interactionIds
+            if interaction_id in targets_by_id
+        ]
+        group_ids = {target.optionGroupId for target in targets}
+        group_id = next(iter(group_ids)) if len(group_ids) == 1 else None
+        group = groups_by_id.get(group_id) if group_id is not None else None
+        if exercise.kind != "choice-grid" or len(targets) < 2 or group is None:
+            promoted_semantics.append(exercise)
+            continue
+        rows = []
+        for target in targets:
+            cell_width = target.targetBbox.width / len(group.options)
+            cells = [ChoiceGridCell(
+                id=f"{target.id}-cell-{option.id}",
+                optionId=option.id,
+                cellBbox=target.targetBbox.model_copy(update={
+                    "x": target.targetBbox.x + index * cell_width,
+                    "width": cell_width,
+                }),
+                interactionBbox=target.interactionBbox,
+            ) for index, option in enumerate(group.options)]
+            rows.append(ChoiceGridRow(
+                id=f"{target.id}-row",
+                rowBbox=target.interactionBbox,
+                nearbyTextSpanIds=target.nearbyTextSpanIds,
+                cells=cells,
+            ))
+        grid = ChoiceGrid(
+            id=f"{exercise.id}-grid",
+            gridBbox=_union([target.interactionBbox for target in targets]),
+            optionGroupId=group.id,
+            detectionMethod="vision-structured-v1",
+            candidateScore=min(target.candidateScore for target in targets),
+            rows=rows,
+        )
+        promoted_grids.append(grid)
+        promoted_target_ids.update(target.id for target in targets)
+        promoted_semantics.append(exercise.model_copy(update={"interactionIds": [grid.id]}))
+
+    normalized = [target for target in normalized if target.id not in promoted_target_ids]
+    if detection is not None:
+        detection = detection.model_copy(update={"acceptedCount": len(normalized)})
+    grids = [*analysis.choiceGrids, *promoted_grids]
+    grid_detection = analysis.choiceGridDetection
+    if promoted_grids:
+        grid_detection = ChoiceGridDetectionMetadata(
+            detectionMethod="vision-structured-v1",
+            rawCandidateCount=sum(len(grid.rows) for grid in promoted_grids),
+            acceptedCount=len(promoted_grids),
+            groupCount=len(promoted_grids),
+            durationMs=0,
+        )
     return analysis.model_copy(update={
         "choiceTargets": normalized,
         "choiceDetection": detection,
+        "choiceGrids": grids,
+        "choiceGridDetection": grid_detection,
+        "semanticExercises": promoted_semantics,
     })

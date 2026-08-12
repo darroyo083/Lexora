@@ -2,7 +2,7 @@
   "datasetVersion": "1.0.0",
   "source": {
     "path": "demo/lexora-synthetic-workbook.pdf",
-    "sha256": "1d5ddb54822d9bfd80840fd11412f25c51e2a7535b4a4677b93719545c729e9c",
+    "sha256": "7185f637a2a55c22d4e3d846475e6bd6e1682b835f5c76fc76ae91e51aa8d7c9",
     "pageCount": 4,
     "copyright": "Original synthetic demo material created for Lexora."
   },
@@ -12,12 +12,12 @@
     "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
     "schemaVersion": "0.2.0",
     "validatedPageAnalyses": 4,
-    "providerHttpAttempts": 6,
+    "providerHttpAttempts": 10,
     "acceptedProcessedAt": [
-      "2026-08-11T18:10:23.332348Z",
-      "2026-08-11T18:12:41.154699Z",
-      "2026-08-11T18:15:48.847214Z",
-      "2026-08-11T18:17:19.660587Z"
+      "2026-08-12T15:45:35.118555Z",
+      "2026-08-12T15:46:39.633639Z",
+      "2026-08-12T15:47:38.159981Z",
+      "2026-08-12T15:48:17.574663Z"
     ],
     "pipeline": [
       "PDF upload",
@@ -28,9 +28,9 @@
       "Spring PageAnalysis projection"
     ],
     "attemptNotes": [
-      "Page 1 exceeded the initial 90-second client timeout and was retried once.",
-      "Page 3 returned one response that failed PageAnalysis validation and was refreshed once.",
-      "Only the four validated READY analyses are included in this dataset."
+      "Provider calls were limited to one accepted analysis per page; retries were permitted only for transport or contract-validation failures.",
+      "The run made 10 provider HTTP attempts for four validated READY analyses.",
+      "Only validated READY analyses are included in this dataset."
     ]
   }
 }

@@ -101,9 +101,9 @@ def main() -> None:
                 "Spring PageAnalysis projection",
             ],
             "attemptNotes": [
-                "Page 1 exceeded the initial 90-second client timeout and was retried once.",
-                "Page 3 returned one response that failed PageAnalysis validation and was refreshed once.",
-                "Only the four validated READY analyses are included in this dataset.",
+                "Provider calls were limited to one accepted analysis per page; retries were permitted only for transport or contract-validation failures.",
+                f"The run made {args.provider_http_attempts} provider HTTP attempts for four validated READY analyses.",
+                "Only validated READY analyses are included in this dataset.",
             ],
         },
     }

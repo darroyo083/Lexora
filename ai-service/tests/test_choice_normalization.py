@@ -34,6 +34,22 @@ def analysis() -> PageAnalysis:
             "groupCount": 1,
             "durationMs": 10,
         },
+        "semanticExercises": [{
+            "id": "exercise-1",
+            "number": "1",
+            "title": "Artikel wählen",
+            "instruction": "Wähle den Artikel.",
+            "kind": "choice",
+            "bbox": {"x": 0.1, "y": 0.35, "width": 0.6, "height": 0.2},
+            "sourceOrder": 1,
+            "interactionIds": [
+                "row-1-der", "row-1-die", "row-1-das",
+                "row-2-der", "row-2-die", "row-2-das",
+            ],
+            "contextSpanIds": [],
+            "detectionMethod": "vision-semantic-v1",
+            "confidence": 0.98,
+        }],
         "processor": {
             "engine": "opencode-go-vision",
             "engineVersion": "v1",
@@ -71,6 +87,10 @@ def test_merges_same_row_radio_targets_but_preserves_separate_questions():
     assert normalized.choiceDetection is not None
     assert normalized.choiceDetection.rawCandidateCount == 6
     assert normalized.choiceDetection.acceptedCount == 2
+    assert normalized.semanticExercises[0].interactionIds == [
+        "row-1-der",
+        "row-2-der",
+    ]
 
 
 def test_is_idempotent():
@@ -78,3 +98,17 @@ def test_is_idempotent():
     twice = normalize_choice_targets(once)
 
     assert twice == once
+
+
+def test_promotes_semantic_choice_grid_rows_to_explicit_grid():
+    source = analysis()
+    source.semanticExercises[0].kind = "choice-grid"
+
+    normalized = normalize_choice_targets(source)
+
+    assert normalized.choiceTargets == []
+    assert len(normalized.choiceGrids) == 1
+    assert len(normalized.choiceGrids[0].rows) == 2
+    assert len(normalized.choiceGrids[0].rows[0].cells) == 3
+    assert normalized.semanticExercises[0].interactionIds == ["exercise-1-grid"]
+    assert normalize_choice_targets(normalized) == normalized

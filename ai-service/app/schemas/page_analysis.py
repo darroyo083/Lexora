@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class BBox(BaseModel):
@@ -214,6 +214,23 @@ class FreeTextDetectionMetadata(BaseModel):
     durationMs: int = Field(ge=0)
 
 
+class SemanticExercise(BaseModel):
+    id: str
+    number: str | None = None
+    title: str | None = None
+    instruction: str | None = None
+    kind: Literal[
+        "fill-blank", "choice", "choice-grid", "sentence-ordering",
+        "matching", "free-text",
+    ]
+    bbox: BBox
+    sourceOrder: int = Field(ge=1)
+    interactionIds: list[str] = Field(min_length=1)
+    contextSpanIds: list[str] = Field(default_factory=list)
+    detectionMethod: Literal["vision-semantic-v1"] = "vision-semantic-v1"
+    confidence: float = Field(ge=0, le=1)
+
+
 class PageAnalysis(BaseModel):
     schemaVersion: Literal["0.2.0"] = "0.2.0"
     pageNumber: int = Field(ge=1)
@@ -234,7 +251,46 @@ class PageAnalysis(BaseModel):
     matchingDetection: MatchingDetectionMetadata | None = None
     freeTextInteractions: list[FreeTextInteraction] = Field(default_factory=list)
     freeTextDetection: FreeTextDetectionMetadata | None = None
+    semanticExercises: list[SemanticExercise] = Field(default_factory=list)
     processor: ProcessorMetadata
+
+    @model_validator(mode="after")
+    def validate_semantic_references(self):
+        span_ids = {span.id for span in self.textSpans}
+        interaction_ids = {
+            *(blank.id for blank in self.exerciseBlanks),
+            *(target.id for target in self.choiceTargets),
+            *(grid.id for grid in self.choiceGrids),
+            *(ordering.id for ordering in self.sentenceOrderings),
+            *(matching.id for matching in self.matchingInteractions),
+            *(free_text.id for free_text in self.freeTextInteractions),
+        }
+        exercise_ids: set[str] = set()
+        referenced_interactions: set[str] = set()
+        for exercise in self.semanticExercises:
+            if exercise.id in exercise_ids:
+                raise ValueError(f"Duplicate semantic exercise id: {exercise.id}")
+            exercise_ids.add(exercise.id)
+            unknown_interactions = set(exercise.interactionIds) - interaction_ids
+            if unknown_interactions:
+                raise ValueError(
+                    f"Semantic exercise {exercise.id} references unknown interactions: "
+                    f"{sorted(unknown_interactions)}"
+                )
+            duplicate_membership = set(exercise.interactionIds) & referenced_interactions
+            if duplicate_membership:
+                raise ValueError(
+                    f"Interactions belong to multiple semantic exercises: "
+                    f"{sorted(duplicate_membership)}"
+                )
+            referenced_interactions.update(exercise.interactionIds)
+            unknown_spans = set(exercise.contextSpanIds) - span_ids
+            if unknown_spans:
+                raise ValueError(
+                    f"Semantic exercise {exercise.id} references unknown spans: "
+                    f"{sorted(unknown_spans)}"
+                )
+        return self
 
 
 class AnalyzePageRequest(BaseModel):

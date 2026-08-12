@@ -50,6 +50,7 @@ export function normalizePageAnalysis(value: unknown): PageAnalysis {
     matchingDetection: analysis.matchingDetection ?? null,
     freeTextInteractions: Array.isArray(analysis.freeTextInteractions) ? analysis.freeTextInteractions : [],
     freeTextDetection: analysis.freeTextDetection ?? null,
+    semanticExercises: Array.isArray(analysis.semanticExercises) ? analysis.semanticExercises : [],
     processor: analysis.processor as PageAnalysis['processor'],
   };
 }

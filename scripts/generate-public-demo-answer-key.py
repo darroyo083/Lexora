@@ -42,6 +42,19 @@ def reference_entry(page: int, exercise: str, ordinal: int, model_text: str) -> 
     return entry
 
 
+def ordering_entry(exercise: str, ordinal: int, words: list[str]) -> dict:
+    analysis_path = OUTPUT.parent / "page-analysis-3.json"
+    analysis = json.loads(analysis_path.read_text(encoding="utf-8"))
+    interactions = sorted(analysis["sentenceOrderings"], key=lambda item: item["promptIndex"])
+    interaction = interactions[ordinal]
+    ids_by_text = {item["text"]: item["id"] for item in interaction["items"]}
+    try:
+        expected = ",".join(ids_by_text[word] for word in words)
+    except KeyError as error:
+        raise ValueError(f"Ordering word {error.args[0]!r} is missing from the frozen analysis") from error
+    return text_entry(3, exercise, "SentenceOrdering", ordinal, expected)
+
+
 def main() -> None:
     entries = [
         text_entry(1, "1", "FillBlank", 0, "stehe"),
@@ -52,10 +65,7 @@ def main() -> None:
         reference_entry(1, "3", 0, "Am Morgen trinke ich Tee und lerne zehn Minuten Deutsch."),
 
         text_entry(2, "6", "FillBlank", 0, "Bibliothek"),
-        text_entry(2, "4", "Choice", 0, "der"),
-        text_entry(2, "4", "Choice", 1, "die"),
-        text_entry(2, "4", "Choice", 2, "das"),
-        text_entry(2, "4", "Choice", 3, "der"),
+        text_entry(2, "4", "ChoiceGrid", 0, "der,die,das,der"),
         {
             **text_entry(2, "5", "Matching", 0, "1=C;2=D;3=B;4=A"),
             "rawSolutionText": "die Bäckerei=Brot; die Bibliothek=Bücher; der Bahnhof=Züge; die Apotheke=Medikamente",
@@ -70,20 +80,16 @@ def main() -> None:
             },
         },
 
-        text_entry(3, "9", "FillBlank", 0, "Samstag"),
-        text_entry(3, "9", "FillBlank", 1, "15 Uhr"),
-        text_entry(3, "9", "FillBlank", 2, "vor dem Kino"),
+        reference_entry(3, "9", 0, "Hallo! Hast du am Samstag um 15 Uhr Zeit? Wir treffen uns vor dem Kino."),
         text_entry(3, "8", "Choice", 0, "Ja, gern!"),
         text_entry(3, "8", "Choice", 1, "Vor dem Kino."),
-        text_entry(3, "7", "SentenceOrdering", 0, "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1"),
-        text_entry(3, "7", "SentenceOrdering", 1, "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3"),
+        ordering_entry("7", 0, ["Wir", "treffen", "uns", "am", "Samstag"]),
+        ordering_entry("7", 1, ["Kommst", "du", "um", "halb", "drei"]),
 
         text_entry(4, "10", "FillBlank", 0, "arbeitest"),
         text_entry(4, "10", "FillBlank", 1, "arbeite"),
         text_entry(4, "10", "FillBlank", 2, "treffen"),
-        text_entry(4, "12", "FillBlank", 3, "zehn Minuten"),
-        text_entry(4, "12", "FillBlank", 4, "neue Wörter"),
-        text_entry(4, "12", "FillBlank", 5, "am Samstag"),
+        reference_entry(4, "12", 0, "Diese Woche möchte ich jeden Tag zehn Minuten Deutsch üben."),
         text_entry(4, "11", "Choice", 0, "falsch"),
         text_entry(4, "11", "Choice", 1, "richtig"),
     ]

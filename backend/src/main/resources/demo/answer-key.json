@@ -170,97 +170,25 @@
   {
     "pageNumber": 2,
     "exerciseNumber": "4",
-    "interactionKind": "Choice",
+    "interactionKind": "ChoiceGrid",
     "ordinal": 0,
-    "expectedValue": "der",
+    "expectedValue": "der,die,das,der",
     "alternatives": [],
     "caseSensitive": false,
     "punctuationRequired": false,
     "normalizationMode": "strict",
-    "rawSolutionText": "der",
+    "rawSolutionText": "der,die,das,der",
     "confidence": 1.0,
     "mappingWarnings": [],
     "typedPayload": {
       "type": "Text",
-      "value": "der",
+      "value": "der,die,das,der",
       "alternatives": []
     },
     "unitNumber": 2,
     "subExerciseMarker": "a",
     "items": [
-      "der"
-    ]
-  },
-  {
-    "pageNumber": 2,
-    "exerciseNumber": "4",
-    "interactionKind": "Choice",
-    "ordinal": 1,
-    "expectedValue": "die",
-    "alternatives": [],
-    "caseSensitive": false,
-    "punctuationRequired": false,
-    "normalizationMode": "strict",
-    "rawSolutionText": "die",
-    "confidence": 1.0,
-    "mappingWarnings": [],
-    "typedPayload": {
-      "type": "Text",
-      "value": "die",
-      "alternatives": []
-    },
-    "unitNumber": 2,
-    "subExerciseMarker": "b",
-    "items": [
-      "die"
-    ]
-  },
-  {
-    "pageNumber": 2,
-    "exerciseNumber": "4",
-    "interactionKind": "Choice",
-    "ordinal": 2,
-    "expectedValue": "das",
-    "alternatives": [],
-    "caseSensitive": false,
-    "punctuationRequired": false,
-    "normalizationMode": "strict",
-    "rawSolutionText": "das",
-    "confidence": 1.0,
-    "mappingWarnings": [],
-    "typedPayload": {
-      "type": "Text",
-      "value": "das",
-      "alternatives": []
-    },
-    "unitNumber": 2,
-    "subExerciseMarker": "c",
-    "items": [
-      "das"
-    ]
-  },
-  {
-    "pageNumber": 2,
-    "exerciseNumber": "4",
-    "interactionKind": "Choice",
-    "ordinal": 3,
-    "expectedValue": "der",
-    "alternatives": [],
-    "caseSensitive": false,
-    "punctuationRequired": false,
-    "normalizationMode": "strict",
-    "rawSolutionText": "der",
-    "confidence": 1.0,
-    "mappingWarnings": [],
-    "typedPayload": {
-      "type": "Text",
-      "value": "der",
-      "alternatives": []
-    },
-    "unitNumber": 2,
-    "subExerciseMarker": "d",
-    "items": [
-      "der"
+      "der,die,das,der"
     ]
   },
   {
@@ -306,73 +234,25 @@
   {
     "pageNumber": 3,
     "exerciseNumber": "9",
-    "interactionKind": "FillBlank",
+    "interactionKind": "FreeText",
     "ordinal": 0,
-    "expectedValue": "Samstag",
+    "expectedValue": "Hallo! Hast du am Samstag um 15 Uhr Zeit? Wir treffen uns vor dem Kino.",
     "alternatives": [],
     "caseSensitive": false,
     "punctuationRequired": false,
     "normalizationMode": "strict",
-    "rawSolutionText": "Samstag",
+    "rawSolutionText": "Example response written for the Lexora demo",
     "confidence": 1.0,
     "mappingWarnings": [],
     "typedPayload": {
-      "type": "Text",
-      "value": "Samstag",
-      "alternatives": []
+      "type": "Reference",
+      "modelText": "Hallo! Hast du am Samstag um 15 Uhr Zeit? Wir treffen uns vor dem Kino.",
+      "sourceHint": "Lexora synthetic workbook"
     },
     "unitNumber": 3,
     "subExerciseMarker": "a",
     "items": [
-      "Samstag"
-    ]
-  },
-  {
-    "pageNumber": 3,
-    "exerciseNumber": "9",
-    "interactionKind": "FillBlank",
-    "ordinal": 1,
-    "expectedValue": "15 Uhr",
-    "alternatives": [],
-    "caseSensitive": false,
-    "punctuationRequired": false,
-    "normalizationMode": "strict",
-    "rawSolutionText": "15 Uhr",
-    "confidence": 1.0,
-    "mappingWarnings": [],
-    "typedPayload": {
-      "type": "Text",
-      "value": "15 Uhr",
-      "alternatives": []
-    },
-    "unitNumber": 3,
-    "subExerciseMarker": "b",
-    "items": [
-      "15 Uhr"
-    ]
-  },
-  {
-    "pageNumber": 3,
-    "exerciseNumber": "9",
-    "interactionKind": "FillBlank",
-    "ordinal": 2,
-    "expectedValue": "vor dem Kino",
-    "alternatives": [],
-    "caseSensitive": false,
-    "punctuationRequired": false,
-    "normalizationMode": "strict",
-    "rawSolutionText": "vor dem Kino",
-    "confidence": 1.0,
-    "mappingWarnings": [],
-    "typedPayload": {
-      "type": "Text",
-      "value": "vor dem Kino",
-      "alternatives": []
-    },
-    "unitNumber": 3,
-    "subExerciseMarker": "c",
-    "items": [
-      "vor dem Kino"
+      "Hallo! Hast du am Samstag um 15 Uhr Zeit? Wir treffen uns vor dem Kino."
     ]
   },
   {
@@ -428,23 +308,23 @@
     "exerciseNumber": "7",
     "interactionKind": "SentenceOrdering",
     "ordinal": 0,
-    "expectedValue": "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1",
+    "expectedValue": "si-7a-5,si-7a-4,si-7a-3,si-7a-2,si-7a-1",
     "alternatives": [],
     "caseSensitive": false,
     "punctuationRequired": false,
     "normalizationMode": "strict",
-    "rawSolutionText": "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1",
+    "rawSolutionText": "si-7a-5,si-7a-4,si-7a-3,si-7a-2,si-7a-1",
     "confidence": 1.0,
     "mappingWarnings": [],
     "typedPayload": {
       "type": "Text",
-      "value": "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1",
+      "value": "si-7a-5,si-7a-4,si-7a-3,si-7a-2,si-7a-1",
       "alternatives": []
     },
     "unitNumber": 3,
     "subExerciseMarker": "a",
     "items": [
-      "so01-item5,so01-item4,so01-item3,so01-item2,so01-item1"
+      "si-7a-5,si-7a-4,si-7a-3,si-7a-2,si-7a-1"
     ]
   },
   {
@@ -452,23 +332,23 @@
     "exerciseNumber": "7",
     "interactionKind": "SentenceOrdering",
     "ordinal": 1,
-    "expectedValue": "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3",
+    "expectedValue": "si-7b-2,si-7b-4,si-7b-1,si-7b-5,si-7b-3",
     "alternatives": [],
     "caseSensitive": false,
     "punctuationRequired": false,
     "normalizationMode": "strict",
-    "rawSolutionText": "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3",
+    "rawSolutionText": "si-7b-2,si-7b-4,si-7b-1,si-7b-5,si-7b-3",
     "confidence": 1.0,
     "mappingWarnings": [],
     "typedPayload": {
       "type": "Text",
-      "value": "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3",
+      "value": "si-7b-2,si-7b-4,si-7b-1,si-7b-5,si-7b-3",
       "alternatives": []
     },
     "unitNumber": 3,
     "subExerciseMarker": "b",
     "items": [
-      "so02-item2,so02-item4,so02-item1,so02-item5,so02-item3"
+      "si-7b-2,si-7b-4,si-7b-1,si-7b-5,si-7b-3"
     ]
   },
   {
@@ -546,73 +426,25 @@
   {
     "pageNumber": 4,
     "exerciseNumber": "12",
-    "interactionKind": "FillBlank",
-    "ordinal": 3,
-    "expectedValue": "zehn Minuten",
+    "interactionKind": "FreeText",
+    "ordinal": 0,
+    "expectedValue": "Diese Woche möchte ich jeden Tag zehn Minuten Deutsch üben.",
     "alternatives": [],
     "caseSensitive": false,
     "punctuationRequired": false,
     "normalizationMode": "strict",
-    "rawSolutionText": "zehn Minuten",
+    "rawSolutionText": "Example response written for the Lexora demo",
     "confidence": 1.0,
     "mappingWarnings": [],
     "typedPayload": {
-      "type": "Text",
-      "value": "zehn Minuten",
-      "alternatives": []
+      "type": "Reference",
+      "modelText": "Diese Woche möchte ich jeden Tag zehn Minuten Deutsch üben.",
+      "sourceHint": "Lexora synthetic workbook"
     },
     "unitNumber": 4,
-    "subExerciseMarker": "d",
+    "subExerciseMarker": "a",
     "items": [
-      "zehn Minuten"
-    ]
-  },
-  {
-    "pageNumber": 4,
-    "exerciseNumber": "12",
-    "interactionKind": "FillBlank",
-    "ordinal": 4,
-    "expectedValue": "neue Wörter",
-    "alternatives": [],
-    "caseSensitive": false,
-    "punctuationRequired": false,
-    "normalizationMode": "strict",
-    "rawSolutionText": "neue Wörter",
-    "confidence": 1.0,
-    "mappingWarnings": [],
-    "typedPayload": {
-      "type": "Text",
-      "value": "neue Wörter",
-      "alternatives": []
-    },
-    "unitNumber": 4,
-    "subExerciseMarker": "e",
-    "items": [
-      "neue Wörter"
-    ]
-  },
-  {
-    "pageNumber": 4,
-    "exerciseNumber": "12",
-    "interactionKind": "FillBlank",
-    "ordinal": 5,
-    "expectedValue": "am Samstag",
-    "alternatives": [],
-    "caseSensitive": false,
-    "punctuationRequired": false,
-    "normalizationMode": "strict",
-    "rawSolutionText": "am Samstag",
-    "confidence": 1.0,
-    "mappingWarnings": [],
-    "typedPayload": {
-      "type": "Text",
-      "value": "am Samstag",
-      "alternatives": []
-    },
-    "unitNumber": 4,
-    "subExerciseMarker": "f",
-    "items": [
-      "am Samstag"
+      "Diese Woche möchte ich jeden Tag zehn Minuten Deutsch üben."
     ]
   },
   {

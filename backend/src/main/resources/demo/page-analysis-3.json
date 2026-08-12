@@ -6,589 +6,481 @@
   "language": "de",
   "textSpans": [
     {
-      "id": "ts01",
-      "text": "LEXORA / DEUTSCH A1-A2",
-      "confidence": 1.0,
-      "confidenceScope": "page-header",
+      "id": "ts-01",
+      "text": "DEUTSCH ENTDECKEN / A1-A2",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.056,
-        "y": 0.033,
-        "width": 0.211,
-        "height": 0.016
-      }
-    },
-    {
-      "id": "ts02",
-      "text": "03",
-      "confidence": 1.0,
-      "confidenceScope": "page-header",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.906,
-        "y": 0.033,
-        "width": 0.031,
-        "height": 0.016
-      }
-    },
-    {
-      "id": "ts03",
-      "text": "UNIT 3",
-      "confidence": 1.0,
-      "confidenceScope": "header",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.056,
-        "y": 0.057,
-        "width": 0.074,
+        "x": 0.071,
+        "y": 0.037,
+        "width": 0.218,
         "height": 0.015
       }
     },
     {
-      "id": "ts04",
+      "id": "ts-02",
+      "text": "03",
+      "confidence": 0.95,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.912,
+        "y": 0.037,
+        "width": 0.023,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-03",
+      "text": "LEKTION 3",
+      "confidence": 0.95,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.071,
+        "y": 0.065,
+        "width": 0.089,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-04",
       "text": "Ein Treffen planen",
-      "confidence": 1.0,
-      "confidenceScope": "header",
+      "confidence": 0.98,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.056,
-        "y": 0.082,
-        "width": 0.385,
-        "height": 0.044
+        "x": 0.071,
+        "y": 0.092,
+        "width": 0.393,
+        "height": 0.035
       }
     },
     {
-      "id": "ts05",
-      "text": "Put messages in order and choose useful phrases for making plans.",
-      "confidence": 1.0,
-      "confidenceScope": "header",
+      "id": "ts-05",
+      "text": "Verabredungen treffen und kurze Nachrichten schreiben.",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.056,
-        "y": 0.126,
-        "width": 0.539,
-        "height": 0.017
+        "x": 0.071,
+        "y": 0.132,
+        "width": 0.465,
+        "height": 0.015
       }
     },
     {
-      "id": "ts06",
-      "text": "7",
-      "confidence": 1.0,
-      "confidenceScope": "exercise-number",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.074,
-        "y": 0.189,
-        "width": 0.04,
-        "height": 0.028
-      }
-    },
-    {
-      "id": "ts07",
+      "id": "ts-06",
       "text": "Satzpuzzle",
-      "confidence": 1.0,
-      "confidenceScope": "exercise-title",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.19,
-        "width": 0.135,
-        "height": 0.024
+        "x": 0.139,
+        "y": 0.205,
+        "width": 0.125,
+        "height": 0.018
       }
     },
     {
-      "id": "ts08",
-      "text": "Put the word cards in the correct order.",
-      "confidence": 1.0,
-      "confidenceScope": "instruction",
+      "id": "ts-07",
+      "text": "Bringe die Wortkarten in die richtige Reihenfolge.",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.212,
-        "width": 0.303,
-        "height": 0.016
+        "x": 0.139,
+        "y": 0.226,
+        "width": 0.379,
+        "height": 0.013
       }
     },
     {
-      "id": "ts09",
+      "id": "ts-08",
       "text": "a)",
-      "confidence": 1.0,
-      "confidenceScope": "label",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.245,
-        "width": 0.016,
-        "height": 0.016
+        "x": 0.103,
+        "y": 0.262,
+        "width": 0.02,
+        "height": 0.013
       }
     },
     {
-      "id": "ts10",
+      "id": "ts-09",
       "text": "Samstag",
-      "confidence": 1.0,
-      "confidenceScope": "item",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.126,
-        "y": 0.238,
-        "width": 0.09,
-        "height": 0.034
-      }
-    },
-    {
-      "id": "ts11",
-      "text": "am",
-      "confidence": 1.0,
-      "confidenceScope": "item",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.227,
-        "y": 0.238,
-        "width": 0.054,
-        "height": 0.034
-      }
-    },
-    {
-      "id": "ts12",
-      "text": "uns",
-      "confidence": 1.0,
-      "confidenceScope": "item",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.291,
-        "y": 0.238,
-        "width": 0.054,
-        "height": 0.034
-      }
-    },
-    {
-      "id": "ts13",
-      "text": "treffen",
-      "confidence": 1.0,
-      "confidenceScope": "item",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.357,
-        "y": 0.238,
+        "x": 0.146,
+        "y": 0.261,
         "width": 0.094,
-        "height": 0.034
+        "height": 0.022
       }
     },
     {
-      "id": "ts14",
+      "id": "ts-10",
+      "text": "am",
+      "confidence": 0.95,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.261,
+        "y": 0.261,
+        "width": 0.056,
+        "height": 0.022
+      }
+    },
+    {
+      "id": "ts-11",
+      "text": "uns",
+      "confidence": 0.95,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.339,
+        "y": 0.261,
+        "width": 0.056,
+        "height": 0.022
+      }
+    },
+    {
+      "id": "ts-12",
+      "text": "treffen",
+      "confidence": 0.95,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.425,
+        "y": 0.261,
+        "width": 0.083,
+        "height": 0.022
+      }
+    },
+    {
+      "id": "ts-13",
       "text": "Wir",
-      "confidence": 1.0,
-      "confidenceScope": "item",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.462,
-        "y": 0.238,
-        "width": 0.054,
-        "height": 0.034
+        "x": 0.539,
+        "y": 0.261,
+        "width": 0.056,
+        "height": 0.022
       }
     },
     {
-      "id": "ts15",
+      "id": "ts-14",
       "text": "b)",
-      "confidence": 1.0,
-      "confidenceScope": "label",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.327,
-        "width": 0.016,
-        "height": 0.016
+        "x": 0.103,
+        "y": 0.343,
+        "width": 0.02,
+        "height": 0.013
       }
     },
     {
-      "id": "ts16",
+      "id": "ts-15",
       "text": "um",
-      "confidence": 1.0,
-      "confidenceScope": "item",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.126,
-        "y": 0.32,
-        "width": 0.054,
-        "height": 0.034
+        "x": 0.146,
+        "y": 0.342,
+        "width": 0.049,
+        "height": 0.022
       }
     },
     {
-      "id": "ts17",
+      "id": "ts-16",
       "text": "Kommst",
-      "confidence": 1.0,
-      "confidenceScope": "item",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.192,
-        "y": 0.32,
-        "width": 0.098,
-        "height": 0.034
+        "x": 0.217,
+        "y": 0.342,
+        "width": 0.083,
+        "height": 0.022
       }
     },
     {
-      "id": "ts18",
+      "id": "ts-17",
       "text": "drei",
-      "confidence": 1.0,
-      "confidenceScope": "item",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.302,
-        "y": 0.32,
-        "width": 0.063,
-        "height": 0.034
+        "x": 0.322,
+        "y": 0.342,
+        "width": 0.056,
+        "height": 0.022
       }
     },
     {
-      "id": "ts19",
+      "id": "ts-18",
       "text": "du",
-      "confidence": 1.0,
-      "confidenceScope": "item",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.375,
-        "y": 0.32,
-        "width": 0.054,
-        "height": 0.034
+        "x": 0.399,
+        "y": 0.342,
+        "width": 0.042,
+        "height": 0.022
       }
     },
     {
-      "id": "ts20",
+      "id": "ts-19",
       "text": "halb",
-      "confidence": 1.0,
-      "confidenceScope": "item",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.44,
-        "y": 0.32,
-        "width": 0.064,
-        "height": 0.034
+        "x": 0.461,
+        "y": 0.342,
+        "width": 0.056,
+        "height": 0.022
       }
     },
     {
-      "id": "ts21",
-      "text": "8",
-      "confidence": 1.0,
-      "confidenceScope": "exercise-number",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.074,
-        "y": 0.451,
-        "width": 0.04,
-        "height": 0.028
-      }
-    },
-    {
-      "id": "ts22",
+      "id": "ts-20",
       "text": "Welche Nachricht passt?",
-      "confidence": 1.0,
-      "confidenceScope": "exercise-title",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.452,
-        "width": 0.241,
-        "height": 0.024
+        "x": 0.139,
+        "y": 0.469,
+        "width": 0.239,
+        "height": 0.018
       }
     },
     {
-      "id": "ts23",
-      "text": "Choose the best reply.",
-      "confidence": 1.0,
-      "confidenceScope": "instruction",
+      "id": "ts-21",
+      "text": "Wähle die passende Antwort.",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.474,
-        "width": 0.182,
-        "height": 0.016
+        "x": 0.139,
+        "y": 0.49,
+        "width": 0.205,
+        "height": 0.013
       }
     },
     {
-      "id": "ts24",
+      "id": "ts-22",
       "text": "Hast du am Samstag Zeit?",
-      "confidence": 1.0,
-      "confidenceScope": "prompt",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.5,
-        "width": 0.217,
-        "height": 0.016
+        "x": 0.103,
+        "y": 0.518,
+        "width": 0.216,
+        "height": 0.013
       }
     },
     {
-      "id": "ts25",
+      "id": "ts-23",
       "text": "Ja, gern!",
-      "confidence": 1.0,
-      "confidenceScope": "option",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.119,
-        "y": 0.531,
-        "width": 0.087,
-        "height": 0.016
+        "x": 0.103,
+        "y": 0.548,
+        "width": 0.088,
+        "height": 0.013
       }
     },
     {
-      "id": "ts26",
+      "id": "ts-24",
       "text": "Zwei Kaffee.",
-      "confidence": 1.0,
-      "confidenceScope": "option",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.329,
-        "y": 0.531,
-        "width": 0.097,
-        "height": 0.016
+        "x": 0.351,
+        "y": 0.548,
+        "width": 0.096,
+        "height": 0.013
       }
     },
     {
-      "id": "ts27",
+      "id": "ts-25",
       "text": "Links nebenan.",
-      "confidence": 1.0,
-      "confidenceScope": "option",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.595,
-        "y": 0.531,
-        "width": 0.1,
-        "height": 0.016
+        "x": 0.608,
+        "y": 0.548,
+        "width": 0.101,
+        "height": 0.013
       }
     },
     {
-      "id": "ts28",
+      "id": "ts-26",
       "text": "Wo treffen wir uns?",
-      "confidence": 1.0,
-      "confidenceScope": "prompt",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.581,
-        "width": 0.19,
-        "height": 0.016
+        "x": 0.103,
+        "y": 0.596,
+        "width": 0.184,
+        "height": 0.013
       }
     },
     {
-      "id": "ts29",
+      "id": "ts-27",
       "text": "Vor dem Kino.",
-      "confidence": 1.0,
-      "confidenceScope": "option",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.119,
-        "y": 0.612,
-        "width": 0.107,
-        "height": 0.016
+        "x": 0.103,
+        "y": 0.626,
+        "width": 0.108,
+        "height": 0.013
       }
     },
     {
-      "id": "ts30",
+      "id": "ts-28",
       "text": "Am Montag.",
-      "confidence": 1.0,
-      "confidenceScope": "option",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.329,
-        "y": 0.612,
-        "width": 0.097,
-        "height": 0.016
+        "x": 0.351,
+        "y": 0.626,
+        "width": 0.088,
+        "height": 0.013
       }
     },
     {
-      "id": "ts31",
+      "id": "ts-29",
       "text": "Sehr gut.",
-      "confidence": 1.0,
-      "confidenceScope": "option",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.595,
-        "y": 0.612,
-        "width": 0.075,
-        "height": 0.016
+        "x": 0.608,
+        "y": 0.626,
+        "width": 0.079,
+        "height": 0.013
       }
     },
     {
-      "id": "ts32",
-      "text": "9",
-      "confidence": 1.0,
-      "confidenceScope": "exercise-number",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.074,
-        "y": 0.711,
-        "width": 0.04,
-        "height": 0.028
-      }
-    },
-    {
-      "id": "ts33",
+      "id": "ts-30",
       "text": "Deine Nachricht",
-      "confidence": 1.0,
-      "confidenceScope": "exercise-title",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.712,
-        "width": 0.185,
-        "height": 0.024
+        "x": 0.139,
+        "y": 0.732,
+        "width": 0.165,
+        "height": 0.018
       }
     },
     {
-      "id": "ts34",
-      "text": "Write a short invitation with a day, time, and place.",
-      "confidence": 1.0,
-      "confidenceScope": "instruction",
+      "id": "ts-31",
+      "text": "Schreibe eine Einladung mit Tag, Uhrzeit und Ort.",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.734,
-        "width": 0.394,
-        "height": 0.016
+        "x": 0.139,
+        "y": 0.753,
+        "width": 0.348,
+        "height": 0.013
       }
     },
     {
-      "id": "ts35",
+      "id": "ts-32",
       "text": "Hallo! Hast du ...",
-      "confidence": 1.0,
-      "confidenceScope": "prompt",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.098,
-        "y": 0.765,
-        "width": 0.144,
-        "height": 0.016
-      }
-    },
-    {
-      "id": "ts36",
-      "text": "Synthetic demo material created for Lexora",
-      "confidence": 1.0,
-      "confidenceScope": "footer",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.056,
-        "y": 0.953,
-        "width": 0.233,
+        "x": 0.103,
+        "y": 0.778,
+        "width": 0.148,
         "height": 0.013
       }
     },
     {
-      "id": "ts37",
-      "text": "lexora.dev",
-      "confidence": 1.0,
-      "confidenceScope": "footer",
+      "id": "ts-33",
+      "text": "Originale synthetisches Übungsmaterial für Lexora",
+      "confidence": 0.95,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.863,
-        "y": 0.953,
-        "width": 0.068,
+        "x": 0.071,
+        "y": 0.968,
+        "width": 0.25,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts-34",
+      "text": "Seite für die öffentliche Demo",
+      "confidence": 0.95,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.774,
+        "y": 0.968,
+        "width": 0.155,
         "height": 0.013
       }
     }
   ],
-  "exerciseBlanks": [
-    {
-      "id": "eb01",
-      "kind": "fill-in-line",
-      "lineBbox": {
-        "x": 0.098,
-        "y": 0.786,
-        "width": 0.794,
-        "height": 0.005
-      },
-      "interactionBbox": {
-        "x": 0.098,
-        "y": 0.78,
-        "width": 0.794,
-        "height": 0.028
-      },
-      "detectionMethod": "horizontal-line-v1",
-      "candidateScore": 0.95,
-      "nearbyTextSpanIds": [
-        "ts35"
-      ]
-    },
-    {
-      "id": "eb02",
-      "kind": "fill-in-line",
-      "lineBbox": {
-        "x": 0.098,
-        "y": 0.812,
-        "width": 0.794,
-        "height": 0.005
-      },
-      "interactionBbox": {
-        "x": 0.098,
-        "y": 0.806,
-        "width": 0.794,
-        "height": 0.028
-      },
-      "detectionMethod": "horizontal-line-v1",
-      "candidateScore": 0.95,
-      "nearbyTextSpanIds": [
-        "ts35"
-      ]
-    },
-    {
-      "id": "eb03",
-      "kind": "fill-in-line",
-      "lineBbox": {
-        "x": 0.098,
-        "y": 0.837,
-        "width": 0.794,
-        "height": 0.005
-      },
-      "interactionBbox": {
-        "x": 0.098,
-        "y": 0.831,
-        "width": 0.794,
-        "height": 0.028
-      },
-      "detectionMethod": "horizontal-line-v1",
-      "candidateScore": 0.95,
-      "nearbyTextSpanIds": [
-        "ts35"
-      ]
-    }
-  ],
-  "blankDetection": {
-    "detectionMethod": "horizontal-line-v1",
-    "rawCandidateCount": 3,
-    "acceptedCount": 3,
-    "durationMs": 50
-  },
+  "exerciseBlanks": [],
+  "blankDetection": null,
   "choiceGroups": [
     {
-      "id": "cg01",
+      "id": "cg-q1",
       "options": [
         {
-          "id": "opt01",
+          "id": "opt-q1-1",
           "label": "Ja, gern!"
         },
         {
-          "id": "opt02",
+          "id": "opt-q1-2",
           "label": "Zwei Kaffee."
         },
         {
-          "id": "opt03",
+          "id": "opt-q1-3",
           "label": "Links nebenan."
         }
       ]
     },
     {
-      "id": "cg02",
+      "id": "cg-q2",
       "options": [
         {
-          "id": "opt04",
+          "id": "opt-q2-1",
           "label": "Vor dem Kino."
         },
         {
-          "id": "opt05",
+          "id": "opt-q2-2",
           "label": "Am Montag."
         },
         {
-          "id": "opt06",
+          "id": "opt-q2-3",
           "label": "Sehr gut."
         }
       ]
@@ -596,233 +488,322 @@
   ],
   "choiceTargets": [
     {
-      "id": "ct01",
+      "id": "ct-q1-1",
       "kind": "choice",
       "targetBbox": {
-        "x": 0.098,
-        "y": 0.53,
-        "width": 0.489,
-        "height": 0.02200000000000002
+        "x": 0.103,
+        "y": 0.548,
+        "width": 0.528,
+        "height": 0.013000000000000012
       },
       "interactionBbox": {
-        "x": 0.095,
-        "y": 0.528,
-        "width": 0.5539999999999999,
-        "height": 0.028000000000000025
+        "x": 0.103,
+        "y": 0.548,
+        "width": 0.606,
+        "height": 0.013000000000000012
       },
-      "optionGroupId": "cg01",
-      "detectionMethod": "empty-ring-v1",
+      "optionGroupId": "cg-q1",
+      "detectionMethod": "vision-structured-v1",
       "candidateScore": 0.98,
       "nearbyTextSpanIds": [
-        "ts25",
-        "ts26",
-        "ts27"
+        "ts-23",
+        "ts-24",
+        "ts-25"
       ]
     },
     {
-      "id": "ct04",
+      "id": "ct-q2-1",
       "kind": "choice",
       "targetBbox": {
-        "x": 0.098,
-        "y": 0.611,
-        "width": 0.489,
-        "height": 0.02200000000000002
+        "x": 0.103,
+        "y": 0.626,
+        "width": 0.528,
+        "height": 0.013000000000000012
       },
       "interactionBbox": {
-        "x": 0.095,
-        "y": 0.609,
-        "width": 0.528,
-        "height": 0.028000000000000025
+        "x": 0.103,
+        "y": 0.626,
+        "width": 0.584,
+        "height": 0.013000000000000012
       },
-      "optionGroupId": "cg02",
-      "detectionMethod": "empty-ring-v1",
+      "optionGroupId": "cg-q2",
+      "detectionMethod": "vision-structured-v1",
       "candidateScore": 0.98,
       "nearbyTextSpanIds": [
-        "ts29",
-        "ts30",
-        "ts31"
+        "ts-27",
+        "ts-28",
+        "ts-29"
       ]
     }
   ],
-  "choiceDetection": {
-    "detectionMethod": "empty-ring-v1",
-    "rawCandidateCount": 6,
-    "acceptedCount": 2,
-    "groupCount": 2,
-    "durationMs": 60
-  },
+  "choiceDetection": null,
   "choiceGrids": [],
   "choiceGridDetection": null,
   "sentenceOrderings": [
     {
-      "id": "so01",
+      "id": "so-7a",
       "kind": "sentence-ordering",
       "bbox": {
-        "x": 0.098,
-        "y": 0.235,
-        "width": 0.45,
-        "height": 0.04
+        "x": 0.103,
+        "y": 0.261,
+        "width": 0.492,
+        "height": 0.022
       },
-      "exerciseId": "7",
+      "exerciseId": "se-7",
       "promptIndex": 1,
-      "detectionMethod": "sentence-ordering-v1",
-      "candidateScore": 0.9,
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.99,
       "nearbyTextSpanIds": [
-        "ts07",
-        "ts09"
+        "ts-08",
+        "ts-09",
+        "ts-10",
+        "ts-11",
+        "ts-12",
+        "ts-13"
       ],
       "items": [
         {
-          "id": "so01-item1",
+          "id": "si-7a-1",
           "text": "Samstag",
           "bbox": {
-            "x": 0.126,
-            "y": 0.238,
-            "width": 0.09,
-            "height": 0.034
+            "x": 0.146,
+            "y": 0.261,
+            "width": 0.094,
+            "height": 0.022
           },
           "originalIndex": 1
         },
         {
-          "id": "so01-item2",
+          "id": "si-7a-2",
           "text": "am",
           "bbox": {
-            "x": 0.227,
-            "y": 0.238,
-            "width": 0.054,
-            "height": 0.034
+            "x": 0.261,
+            "y": 0.261,
+            "width": 0.056,
+            "height": 0.022
           },
           "originalIndex": 2
         },
         {
-          "id": "so01-item3",
+          "id": "si-7a-3",
           "text": "uns",
           "bbox": {
-            "x": 0.291,
-            "y": 0.238,
-            "width": 0.054,
-            "height": 0.034
+            "x": 0.339,
+            "y": 0.261,
+            "width": 0.056,
+            "height": 0.022
           },
           "originalIndex": 3
         },
         {
-          "id": "so01-item4",
+          "id": "si-7a-4",
           "text": "treffen",
           "bbox": {
-            "x": 0.357,
-            "y": 0.238,
-            "width": 0.094,
-            "height": 0.034
+            "x": 0.425,
+            "y": 0.261,
+            "width": 0.083,
+            "height": 0.022
           },
           "originalIndex": 4
         },
         {
-          "id": "so01-item5",
+          "id": "si-7a-5",
           "text": "Wir",
           "bbox": {
-            "x": 0.462,
-            "y": 0.238,
-            "width": 0.054,
-            "height": 0.034
+            "x": 0.539,
+            "y": 0.261,
+            "width": 0.056,
+            "height": 0.022
           },
           "originalIndex": 5
         }
       ]
     },
     {
-      "id": "so02",
+      "id": "so-7b",
       "kind": "sentence-ordering",
       "bbox": {
-        "x": 0.098,
-        "y": 0.317,
-        "width": 0.45,
-        "height": 0.04
+        "x": 0.103,
+        "y": 0.342,
+        "width": 0.414,
+        "height": 0.022
       },
-      "exerciseId": "7",
+      "exerciseId": "se-7",
       "promptIndex": 2,
-      "detectionMethod": "sentence-ordering-v1",
-      "candidateScore": 0.9,
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.99,
       "nearbyTextSpanIds": [
-        "ts07",
-        "ts15"
+        "ts-14",
+        "ts-15",
+        "ts-16",
+        "ts-17",
+        "ts-18",
+        "ts-19"
       ],
       "items": [
         {
-          "id": "so02-item1",
+          "id": "si-7b-1",
           "text": "um",
           "bbox": {
-            "x": 0.126,
-            "y": 0.32,
-            "width": 0.054,
-            "height": 0.034
+            "x": 0.146,
+            "y": 0.342,
+            "width": 0.049,
+            "height": 0.022
           },
           "originalIndex": 1
         },
         {
-          "id": "so02-item2",
+          "id": "si-7b-2",
           "text": "Kommst",
           "bbox": {
-            "x": 0.192,
-            "y": 0.32,
-            "width": 0.098,
-            "height": 0.034
+            "x": 0.217,
+            "y": 0.342,
+            "width": 0.083,
+            "height": 0.022
           },
           "originalIndex": 2
         },
         {
-          "id": "so02-item3",
+          "id": "si-7b-3",
           "text": "drei",
           "bbox": {
-            "x": 0.302,
-            "y": 0.32,
-            "width": 0.063,
-            "height": 0.034
+            "x": 0.322,
+            "y": 0.342,
+            "width": 0.056,
+            "height": 0.022
           },
           "originalIndex": 3
         },
         {
-          "id": "so02-item4",
+          "id": "si-7b-4",
           "text": "du",
           "bbox": {
-            "x": 0.375,
-            "y": 0.32,
-            "width": 0.054,
-            "height": 0.034
+            "x": 0.399,
+            "y": 0.342,
+            "width": 0.042,
+            "height": 0.022
           },
           "originalIndex": 4
         },
         {
-          "id": "so02-item5",
+          "id": "si-7b-5",
           "text": "halb",
           "bbox": {
-            "x": 0.44,
-            "y": 0.32,
-            "width": 0.064,
-            "height": 0.034
+            "x": 0.461,
+            "y": 0.342,
+            "width": 0.056,
+            "height": 0.022
           },
           "originalIndex": 5
         }
       ]
     }
   ],
-  "sentenceOrderingDetection": {
-    "detectionMethod": "sentence-ordering-v1",
-    "rawCandidateCount": 2,
-    "acceptedCount": 2,
-    "groupCount": 2,
-    "durationMs": 70
-  },
+  "sentenceOrderingDetection": null,
   "matchingInteractions": [],
   "matchingDetection": null,
-  "freeTextInteractions": [],
+  "freeTextInteractions": [
+    {
+      "id": "ft-9",
+      "kind": "free-text",
+      "bbox": {
+        "x": 0.103,
+        "y": 0.807,
+        "width": 0.841,
+        "height": 0.055
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.98,
+      "nearbyTextSpanIds": [
+        "ts-32"
+      ],
+      "responseLines": []
+    }
+  ],
   "freeTextDetection": null,
+  "semanticExercises": [
+    {
+      "id": "se-7",
+      "number": "7",
+      "title": "Satzpuzzle",
+      "instruction": "Bringe die Wortkarten in die richtige Reihenfolge.",
+      "kind": "sentence-ordering",
+      "bbox": {
+        "x": 0.071,
+        "y": 0.19,
+        "width": 0.887,
+        "height": 0.18
+      },
+      "sourceOrder": 1,
+      "interactionIds": [
+        "so-7a",
+        "so-7b"
+      ],
+      "contextSpanIds": [
+        "ts-06",
+        "ts-07"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.99
+    },
+    {
+      "id": "se-8",
+      "number": "8",
+      "title": "Welche Nachricht passt?",
+      "instruction": "Wähle die passende Antwort.",
+      "kind": "choice",
+      "bbox": {
+        "x": 0.071,
+        "y": 0.454,
+        "width": 0.887,
+        "height": 0.2
+      },
+      "sourceOrder": 2,
+      "interactionIds": [
+        "ct-q1-1",
+        "ct-q2-1"
+      ],
+      "contextSpanIds": [
+        "ts-20",
+        "ts-21",
+        "ts-22",
+        "ts-26"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.99
+    },
+    {
+      "id": "se-9",
+      "number": "9",
+      "title": "Deine Nachricht",
+      "instruction": "Schreibe eine Einladung mit Tag, Uhrzeit und Ort.",
+      "kind": "free-text",
+      "bbox": {
+        "x": 0.071,
+        "y": 0.717,
+        "width": 0.887,
+        "height": 0.155
+      },
+      "sourceOrder": 3,
+      "interactionIds": [
+        "ft-9"
+      ],
+      "contextSpanIds": [
+        "ts-30",
+        "ts-31",
+        "ts-32"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.99
+    }
+  ],
   "processor": {
     "engine": "opencode-go-vision",
     "engineVersion": "v1",
     "model": "mimo-v2.5",
     "language": "de",
     "parameters": {},
-    "processedAt": "2026-08-11T18:15:48.847214Z",
-    "durationMs": 89204
+    "processedAt": "2026-08-12T15:47:38.159981Z",
+    "durationMs": 53374
   }
 }

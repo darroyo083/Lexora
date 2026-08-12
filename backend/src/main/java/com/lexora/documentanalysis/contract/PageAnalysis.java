@@ -23,8 +23,40 @@ public record PageAnalysis(
     MatchingDetectionMetadata matchingDetection,
     List<FreeTextInteraction> freeTextInteractions,
     FreeTextDetectionMetadata freeTextDetection,
+    List<SemanticExercise> semanticExercises,
     ProcessorMetadata processor
 ) {
+    public PageAnalysis(
+        String schemaVersion,
+        int pageNumber,
+        int width,
+        int height,
+        String language,
+        List<TextSpan> textSpans,
+        List<ExerciseBlank> exerciseBlanks,
+        BlankDetectionMetadata blankDetection,
+        List<ChoiceGroup> choiceGroups,
+        List<ChoiceTarget> choiceTargets,
+        ChoiceDetectionMetadata choiceDetection,
+        List<ChoiceGrid> choiceGrids,
+        ChoiceGridDetectionMetadata choiceGridDetection,
+        List<SentenceOrderingInteraction> sentenceOrderings,
+        SentenceOrderingDetectionMetadata sentenceOrderingDetection,
+        List<MatchingInteraction> matchingInteractions,
+        MatchingDetectionMetadata matchingDetection,
+        List<FreeTextInteraction> freeTextInteractions,
+        FreeTextDetectionMetadata freeTextDetection,
+        ProcessorMetadata processor
+    ) {
+        this(
+            schemaVersion, pageNumber, width, height, language, textSpans,
+            exerciseBlanks, blankDetection, choiceGroups, choiceTargets,
+            choiceDetection, choiceGrids, choiceGridDetection, sentenceOrderings,
+            sentenceOrderingDetection, matchingInteractions, matchingDetection,
+            freeTextInteractions, freeTextDetection, List.of(), processor
+        );
+    }
+
     public PageAnalysis {
         schemaVersion = schemaVersion == null ? "legacy" : schemaVersion;
         textSpans = textSpans == null ? List.of() : List.copyOf(textSpans);
@@ -37,6 +69,8 @@ public record PageAnalysis(
             ? List.of() : List.copyOf(matchingInteractions);
         freeTextInteractions = freeTextInteractions == null
             ? List.of() : List.copyOf(freeTextInteractions);
+        semanticExercises = semanticExercises == null
+            ? List.of() : List.copyOf(semanticExercises);
     }
 
     public record BBox(double x, double y, double width, double height) {}
@@ -256,6 +290,25 @@ public record PageAnalysis(
         int groupCount,
         long durationMs
     ) {}
+
+    public record SemanticExercise(
+        String id,
+        String number,
+        String title,
+        String instruction,
+        String kind,
+        BBox bbox,
+        int sourceOrder,
+        List<String> interactionIds,
+        List<String> contextSpanIds,
+        String detectionMethod,
+        double confidence
+    ) {
+        public SemanticExercise {
+            interactionIds = interactionIds == null ? List.of() : List.copyOf(interactionIds);
+            contextSpanIds = contextSpanIds == null ? List.of() : List.copyOf(contextSpanIds);
+        }
+    }
 
     public record ProcessorMetadata(
         String engine,

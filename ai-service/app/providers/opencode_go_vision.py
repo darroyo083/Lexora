@@ -46,7 +46,10 @@ SYSTEM_INSTRUCTIONS = """You analyze one language-workbook page for Lexora.
 Return only valid JSON matching the supplied JSON Schema. Preserve source text and normalized geometry.
 Coordinates are fractions of the image width and height in the range 0 to 1.
 Detect only evidence visible on this page. Never invent theory, prompts, choices,
-exercise structure, answers, or answer-key content. If an interaction is uncertain,
+answers, or answer-key content. Identify semanticExercises only from visible numbered
+or clearly bounded source exercises. Each semantic exercise must preserve the visible
+title and instruction, reference every related detected interaction exactly once, and
+include only supporting context spans inside that source exercise. If an interaction is uncertain,
 omit it. Empty arrays are correct when evidence is insufficient. Nearby text IDs must
 refer to returned text spans. The page number and pixel dimensions must match the
 request exactly. Use vision-structured-v1 for every detectionMethod field."""
@@ -255,6 +258,7 @@ class OpenCodeGoVisionProvider:
         )
 
         for attempt in range(2):
+            logger.info("OpenCode Go provider HTTP attempt=%s", attempt + 1)
             try:
                 with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
                     return json.loads(response.read().decode("utf-8"))

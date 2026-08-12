@@ -12,7 +12,7 @@ public final class PublicDemoConstants {
     public static final String STORAGE_KEY = "lexora-public-demo.pdf";
     public static final int PAGE_COUNT = 4;
     public static final String SOURCE_SHA256 =
-        "1d5ddb54822d9bfd80840fd11412f25c51e2a7535b4a4677b93719545c729e9c";
+        "7185f637a2a55c22d4e3d846475e6bd6e1682b835f5c76fc76ae91e51aa8d7c9";
     public static final String ANALYSIS_SCHEMA_VERSION = "0.2.0";
 
     private PublicDemoConstants() {}

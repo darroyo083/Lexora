@@ -7,473 +7,557 @@
   "textSpans": [
     {
       "id": "ts-01",
-      "text": "LEXORA / DEUTSCH A1-A2",
+      "text": "DEUTSCH ENTDECKEN / A1-A2",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.04,
-        "width": 0.16,
-        "height": 0.015
+        "x": 0.068,
+        "y": 0.033,
+        "width": 0.221,
+        "height": 0.016
       }
     },
     {
       "id": "ts-02",
       "text": "01",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.91,
-        "y": 0.04,
-        "width": 0.02,
-        "height": 0.015
+        "x": 0.907,
+        "y": 0.033,
+        "width": 0.021,
+        "height": 0.016
       }
     },
     {
       "id": "ts-03",
-      "text": "UNIT 1",
+      "text": "LEKTION 1",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.065,
-        "width": 0.05,
-        "height": 0.015
+        "x": 0.068,
+        "y": 0.063,
+        "width": 0.092,
+        "height": 0.016
       }
     },
     {
       "id": "ts-04",
       "text": "Mein Morgen",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.085,
-        "width": 0.22,
-        "height": 0.04
+        "x": 0.068,
+        "y": 0.088,
+        "width": 0.234,
+        "height": 0.042
       }
     },
     {
       "id": "ts-05",
-      "text": "Build a small morning routine with familiar verbs and time phrases.",
+      "text": "Tagesabläufe beschreiben und über Gewohnheiten sprechen.",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.125,
-        "width": 0.6,
-        "height": 0.015
+        "x": 0.068,
+        "y": 0.128,
+        "width": 0.571,
+        "height": 0.018
       }
     },
     {
       "id": "ts-06",
-      "text": "1 Lücken ergänzen",
+      "text": "1",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.2,
-        "width": 0.2,
-        "height": 0.02
+        "x": 0.088,
+        "y": 0.197,
+        "width": 0.019,
+        "height": 0.019
       }
     },
     {
       "id": "ts-07",
-      "text": "Complete each sentence with the verb in brackets.",
+      "text": "Lücken ergänzen",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.14,
-        "y": 0.225,
-        "width": 0.4,
-        "height": 0.015
+        "x": 0.13,
+        "y": 0.194,
+        "width": 0.165,
+        "height": 0.023
       }
     },
     {
       "id": "ts-08",
-      "text": "a) Jeden Morgen",
+      "text": "Ergänze die Sätze mit der passenden Verbform.",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.255,
-        "width": 0.12,
-        "height": 0.015
+        "x": 0.13,
+        "y": 0.221,
+        "width": 0.347,
+        "height": 0.014
       }
     },
     {
       "id": "ts-09",
-      "text": "ich um sieben Uhr auf.",
+      "text": "a)",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.42,
-        "y": 0.255,
-        "width": 0.16,
-        "height": 0.015
+        "x": 0.098,
+        "y": 0.249,
+        "width": 0.022,
+        "height": 0.016
       }
     },
     {
       "id": "ts-10",
-      "text": "(aufstehen)",
+      "text": "Jeden Morgen",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.82,
-        "y": 0.255,
-        "width": 0.08,
-        "height": 0.015
+        "x": 0.133,
+        "y": 0.249,
+        "width": 0.136,
+        "height": 0.016
       }
     },
     {
       "id": "ts-11",
-      "text": "b) Danach",
+      "text": "ich um sieben Uhr auf.",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.305,
-        "width": 0.07,
-        "height": 0.015
+        "x": 0.451,
+        "y": 0.249,
+        "width": 0.214,
+        "height": 0.016
       }
     },
     {
       "id": "ts-12",
-      "text": "ich Tee in der Küche.",
+      "text": "(aufstehen)",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.42,
-        "y": 0.305,
-        "width": 0.18,
-        "height": 0.015
+        "x": 0.812,
+        "y": 0.249,
+        "width": 0.092,
+        "height": 0.016
       }
     },
     {
       "id": "ts-13",
-      "text": "(trinken)",
+      "text": "b)",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.82,
-        "y": 0.305,
-        "width": 0.06,
-        "height": 0.015
+        "x": 0.098,
+        "y": 0.298,
+        "width": 0.022,
+        "height": 0.016
       }
     },
     {
       "id": "ts-14",
-      "text": "c) Um acht Uhr",
+      "text": "Danach",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.355,
-        "width": 0.1,
-        "height": 0.015
+        "x": 0.133,
+        "y": 0.298,
+        "width": 0.074,
+        "height": 0.016
       }
     },
     {
       "id": "ts-15",
-      "text": "ich mit dem Fahrrad zur Arbeit.",
+      "text": "ich Tee in der Küche.",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.42,
-        "y": 0.355,
-        "width": 0.25,
-        "height": 0.015
+        "x": 0.404,
+        "y": 0.298,
+        "width": 0.21,
+        "height": 0.016
       }
     },
     {
       "id": "ts-16",
-      "text": "(fahren)",
+      "text": "(trinken)",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.82,
-        "y": 0.355,
-        "width": 0.06,
-        "height": 0.015
+        "x": 0.849,
+        "y": 0.298,
+        "width": 0.072,
+        "height": 0.016
       }
     },
     {
       "id": "ts-17",
-      "text": "2 Die passende Antwort",
+      "text": "c)",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.44,
-        "width": 0.25,
-        "height": 0.02
+        "x": 0.098,
+        "y": 0.347,
+        "width": 0.022,
+        "height": 0.016
       }
     },
     {
       "id": "ts-18",
-      "text": "Choose one answer for each question.",
+      "text": "Um acht Uhr",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.14,
-        "y": 0.465,
-        "width": 0.3,
-        "height": 0.015
+        "x": 0.133,
+        "y": 0.347,
+        "width": 0.128,
+        "height": 0.016
       }
     },
     {
       "id": "ts-19",
-      "text": "Wann stehst du auf?",
+      "text": "ich mit dem Fahrrad zur Arbeit.",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.495,
-        "width": 0.18,
-        "height": 0.015
+        "x": 0.445,
+        "y": 0.347,
+        "width": 0.3,
+        "height": 0.016
       }
     },
     {
       "id": "ts-20",
-      "text": "Um sieben Uhr",
+      "text": "(fahren)",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.525,
-        "width": 0.1,
-        "height": 0.015
+        "x": 0.841,
+        "y": 0.347,
+        "width": 0.063,
+        "height": 0.016
       }
     },
     {
       "id": "ts-21",
-      "text": "Im Park",
+      "text": "2",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.33,
-        "y": 0.525,
-        "width": 0.07,
-        "height": 0.015
+        "x": 0.088,
+        "y": 0.444,
+        "width": 0.019,
+        "height": 0.019
       }
     },
     {
       "id": "ts-22",
-      "text": "Mit Anna",
+      "text": "Die passende Antwort",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.55,
-        "y": 0.525,
-        "width": 0.08,
-        "height": 0.015
+        "x": 0.13,
+        "y": 0.441,
+        "width": 0.228,
+        "height": 0.023
       }
     },
     {
       "id": "ts-23",
-      "text": "Was trinkst du morgens?",
+      "text": "Wähle für jede Frage die richtige Antwort.",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.575,
-        "width": 0.2,
-        "height": 0.015
+        "x": 0.13,
+        "y": 0.468,
+        "width": 0.332,
+        "height": 0.014
       }
     },
     {
       "id": "ts-24",
-      "text": "Einen Tee",
+      "text": "Wann stehst du auf?",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.605,
-        "width": 0.08,
-        "height": 0.015
+        "x": 0.098,
+        "y": 0.493,
+        "width": 0.172,
+        "height": 0.017
       }
     },
     {
       "id": "ts-25",
-      "text": "Nach Berlin",
+      "text": "Um sieben Uhr",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.33,
-        "y": 0.605,
-        "width": 0.08,
+        "x": 0.129,
+        "y": 0.522,
+        "width": 0.133,
         "height": 0.015
       }
     },
     {
       "id": "ts-26",
-      "text": "Sehr langsam",
+      "text": "Im Park",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.55,
-        "y": 0.605,
-        "width": 0.09,
+        "x": 0.363,
+        "y": 0.522,
+        "width": 0.088,
         "height": 0.015
       }
     },
     {
       "id": "ts-27",
-      "text": "3 Kurz schreiben",
+      "text": "Mit Anna",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.685,
-        "width": 0.17,
-        "height": 0.02
-      }
-    },
-    {
-      "id": "ts-28",
-      "text": "Write two sentences about your own morning.",
-      "confidence": 0.99,
-      "confidenceScope": "page",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.14,
-        "y": 0.71,
-        "width": 0.35,
+        "x": 0.612,
+        "y": 0.522,
+        "width": 0.092,
         "height": 0.015
       }
     },
     {
-      "id": "ts-29",
-      "text": "Am Morgen ...",
+      "id": "ts-28",
+      "text": "Was trinkst du morgens?",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.74,
-        "width": 0.08,
+        "x": 0.098,
+        "y": 0.572,
+        "width": 0.202,
+        "height": 0.017
+      }
+    },
+    {
+      "id": "ts-29",
+      "text": "Einen Tee",
+      "confidence": 0.99,
+      "confidenceScope": "full-page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.129,
+        "y": 0.601,
+        "width": 0.098,
         "height": 0.015
       }
     },
     {
       "id": "ts-30",
-      "text": "Synthetic demo material created for Lexora",
+      "text": "Nach Berlin",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.97,
-        "width": 0.2,
-        "height": 0.01
+        "x": 0.363,
+        "y": 0.601,
+        "width": 0.108,
+        "height": 0.015
       }
     },
     {
       "id": "ts-31",
-      "text": "lexora.dev",
+      "text": "Sehr langsam",
       "confidence": 0.99,
-      "confidenceScope": "page",
+      "confidenceScope": "full-page",
       "parentLineId": null,
       "bbox": {
-        "x": 0.86,
-        "y": 0.97,
-        "width": 0.07,
-        "height": 0.01
+        "x": 0.612,
+        "y": 0.601,
+        "width": 0.113,
+        "height": 0.015
+      }
+    },
+    {
+      "id": "ts-32",
+      "text": "3",
+      "confidence": 0.99,
+      "confidenceScope": "full-page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.088,
+        "y": 0.686,
+        "width": 0.019,
+        "height": 0.019
+      }
+    },
+    {
+      "id": "ts-33",
+      "text": "Kurz schreiben",
+      "confidence": 0.99,
+      "confidenceScope": "full-page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.13,
+        "y": 0.683,
+        "width": 0.165,
+        "height": 0.023
+      }
+    },
+    {
+      "id": "ts-34",
+      "text": "Schreibe zwei Sätze über deinen eigenen Morgen.",
+      "confidence": 0.99,
+      "confidenceScope": "full-page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.13,
+        "y": 0.71,
+        "width": 0.386,
+        "height": 0.014
+      }
+    },
+    {
+      "id": "ts-35",
+      "text": "Am Morgen ...",
+      "confidence": 0.99,
+      "confidenceScope": "full-page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.098,
+        "y": 0.735,
+        "width": 0.105,
+        "height": 0.017
+      }
+    },
+    {
+      "id": "ts-36",
+      "text": "Originalsynthetisches Übungsmaterial für Lexora",
+      "confidence": 0.99,
+      "confidenceScope": "full-page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.068,
+        "y": 0.972,
+        "width": 0.321,
+        "height": 0.012
+      }
+    },
+    {
+      "id": "ts-37",
+      "text": "Seite für die öffentliche Demo",
+      "confidence": 0.99,
+      "confidenceScope": "full-page",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.801,
+        "y": 0.972,
+        "width": 0.165,
+        "height": 0.012
       }
     }
   ],
   "exerciseBlanks": [
     {
-      "id": "ex-bl-01",
+      "id": "blank-01",
       "kind": "fill-in-line",
       "lineBbox": {
-        "x": 0.26,
-        "y": 0.255,
-        "width": 0.14,
-        "height": 0.002
+        "x": 0.273,
+        "y": 0.253,
+        "width": 0.168,
+        "height": 0.004
       },
       "interactionBbox": {
-        "x": 0.25,
+        "x": 0.273,
         "y": 0.245,
-        "width": 0.16,
-        "height": 0.025
+        "width": 0.168,
+        "height": 0.022
       },
       "detectionMethod": "vision-structured-v1",
       "candidateScore": 0.95,
       "nearbyTextSpanIds": [
-        "ts-08",
-        "ts-09"
-      ]
-    },
-    {
-      "id": "ex-bl-02",
-      "kind": "fill-in-line",
-      "lineBbox": {
-        "x": 0.21,
-        "y": 0.305,
-        "width": 0.18,
-        "height": 0.002
-      },
-      "interactionBbox": {
-        "x": 0.2,
-        "y": 0.295,
-        "width": 0.2,
-        "height": 0.025
-      },
-      "detectionMethod": "vision-structured-v1",
-      "candidateScore": 0.95,
-      "nearbyTextSpanIds": [
+        "ts-09",
+        "ts-10",
         "ts-11",
         "ts-12"
       ]
     },
     {
-      "id": "ex-bl-03",
+      "id": "blank-02",
       "kind": "fill-in-line",
       "lineBbox": {
-        "x": 0.24,
-        "y": 0.355,
-        "width": 0.16,
-        "height": 0.002
+        "x": 0.213,
+        "y": 0.302,
+        "width": 0.183,
+        "height": 0.004
       },
       "interactionBbox": {
-        "x": 0.23,
-        "y": 0.345,
-        "width": 0.18,
-        "height": 0.025
+        "x": 0.213,
+        "y": 0.294,
+        "width": 0.183,
+        "height": 0.022
       },
       "detectionMethod": "vision-structured-v1",
       "candidateScore": 0.95,
       "nearbyTextSpanIds": [
+        "ts-13",
         "ts-14",
-        "ts-15"
+        "ts-15",
+        "ts-16"
+      ]
+    },
+    {
+      "id": "blank-03",
+      "kind": "fill-in-line",
+      "lineBbox": {
+        "x": 0.265,
+        "y": 0.351,
+        "width": 0.173,
+        "height": 0.004
+      },
+      "interactionBbox": {
+        "x": 0.265,
+        "y": 0.343,
+        "width": 0.173,
+        "height": 0.022
+      },
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "nearbyTextSpanIds": [
+        "ts-17",
+        "ts-18",
+        "ts-19",
+        "ts-20"
       ]
     }
   ],
@@ -481,22 +565,22 @@
     "detectionMethod": "vision-structured-v1",
     "rawCandidateCount": 3,
     "acceptedCount": 3,
-    "durationMs": 50
+    "durationMs": 120
   },
   "choiceGroups": [
     {
       "id": "cg-01",
       "options": [
         {
-          "id": "opt-01",
+          "id": "opt-01-01",
           "label": "Um sieben Uhr"
         },
         {
-          "id": "opt-02",
+          "id": "opt-01-02",
           "label": "Im Park"
         },
         {
-          "id": "opt-03",
+          "id": "opt-01-03",
           "label": "Mit Anna"
         }
       ]
@@ -505,15 +589,15 @@
       "id": "cg-02",
       "options": [
         {
-          "id": "opt-04",
+          "id": "opt-02-01",
           "label": "Einen Tee"
         },
         {
-          "id": "opt-05",
+          "id": "opt-02-02",
           "label": "Nach Berlin"
         },
         {
-          "id": "opt-06",
+          "id": "opt-02-03",
           "label": "Sehr langsam"
         }
       ]
@@ -524,48 +608,48 @@
       "id": "ct-01",
       "kind": "choice",
       "targetBbox": {
-        "x": 0.08,
-        "y": 0.52,
-        "width": 0.465,
-        "height": 0.015000000000000013
+        "x": 0.098,
+        "y": 0.518,
+        "width": 0.502,
+        "height": 0.019000000000000017
       },
       "interactionBbox": {
-        "x": 0.08,
-        "y": 0.515,
-        "width": 0.55,
-        "height": 0.025000000000000022
+        "x": 0.098,
+        "y": 0.518,
+        "width": 0.606,
+        "height": 0.019000000000000017
       },
       "optionGroupId": "cg-01",
       "detectionMethod": "vision-structured-v1",
-      "candidateScore": 0.95,
+      "candidateScore": 0.98,
       "nearbyTextSpanIds": [
-        "ts-20",
-        "ts-21",
-        "ts-22"
+        "ts-25",
+        "ts-26",
+        "ts-27"
       ]
     },
     {
       "id": "ct-04",
       "kind": "choice",
       "targetBbox": {
-        "x": 0.08,
-        "y": 0.6,
-        "width": 0.465,
-        "height": 0.015000000000000013
+        "x": 0.098,
+        "y": 0.597,
+        "width": 0.502,
+        "height": 0.019000000000000017
       },
       "interactionBbox": {
-        "x": 0.08,
-        "y": 0.595,
-        "width": 0.56,
-        "height": 0.025000000000000022
+        "x": 0.098,
+        "y": 0.597,
+        "width": 0.626,
+        "height": 0.019000000000000017
       },
       "optionGroupId": "cg-02",
       "detectionMethod": "vision-structured-v1",
-      "candidateScore": 0.95,
+      "candidateScore": 0.98,
       "nearbyTextSpanIds": [
-        "ts-24",
-        "ts-25",
-        "ts-26"
+        "ts-29",
+        "ts-30",
+        "ts-31"
       ]
     }
   ],
@@ -574,7 +658,7 @@
     "rawCandidateCount": 6,
     "acceptedCount": 2,
     "groupCount": 2,
-    "durationMs": 50
+    "durationMs": 150
   },
   "choiceGrids": [],
   "choiceGridDetection": null,
@@ -587,51 +671,42 @@
       "id": "ft-01",
       "kind": "free-text",
       "bbox": {
-        "x": 0.1,
-        "y": 0.77,
-        "width": 0.75,
-        "height": 0.08
+        "x": 0.098,
+        "y": 0.735,
+        "width": 0.818,
+        "height": 0.082
       },
       "detectionMethod": "vision-structured-v1",
-      "candidateScore": 0.9,
+      "candidateScore": 0.96,
       "nearbyTextSpanIds": [
-        "ts-29"
+        "ts-35"
       ],
       "responseLines": [
         {
-          "id": "rtl-01",
+          "id": "ft-line-01",
           "bbox": {
-            "x": 0.1,
-            "y": 0.775,
-            "width": 0.75,
-            "height": 0.015
+            "x": 0.098,
+            "y": 0.762,
+            "width": 0.818,
+            "height": 0.004
           }
         },
         {
-          "id": "rtl-02",
+          "id": "ft-line-02",
           "bbox": {
-            "x": 0.1,
-            "y": 0.795,
-            "width": 0.75,
-            "height": 0.015
+            "x": 0.098,
+            "y": 0.789,
+            "width": 0.818,
+            "height": 0.004
           }
         },
         {
-          "id": "rtl-03",
+          "id": "ft-line-03",
           "bbox": {
-            "x": 0.1,
-            "y": 0.815,
-            "width": 0.75,
-            "height": 0.015
-          }
-        },
-        {
-          "id": "rtl-04",
-          "bbox": {
-            "x": 0.1,
-            "y": 0.835,
-            "width": 0.75,
-            "height": 0.015
+            "x": 0.098,
+            "y": 0.816,
+            "width": 0.818,
+            "height": 0.004
           }
         }
       ]
@@ -639,18 +714,116 @@
   ],
   "freeTextDetection": {
     "detectionMethod": "vision-structured-v1",
-    "rawCandidateCount": 1,
-    "acceptedCount": 1,
+    "rawCandidateCount": 3,
+    "acceptedCount": 3,
     "groupCount": 1,
-    "durationMs": 50
+    "durationMs": 110
   },
+  "semanticExercises": [
+    {
+      "id": "se-01",
+      "number": "1",
+      "title": "Lücken ergänzen",
+      "instruction": "Ergänze die Sätze mit der passenden Verbform.",
+      "kind": "fill-blank",
+      "bbox": {
+        "x": 0.068,
+        "y": 0.191,
+        "width": 0.864,
+        "height": 0.185
+      },
+      "sourceOrder": 1,
+      "interactionIds": [
+        "blank-01",
+        "blank-02",
+        "blank-03"
+      ],
+      "contextSpanIds": [
+        "ts-06",
+        "ts-07",
+        "ts-08",
+        "ts-09",
+        "ts-10",
+        "ts-11",
+        "ts-12",
+        "ts-13",
+        "ts-14",
+        "ts-15",
+        "ts-16",
+        "ts-17",
+        "ts-18",
+        "ts-19",
+        "ts-20"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.98
+    },
+    {
+      "id": "se-02",
+      "number": "2",
+      "title": "Die passende Antwort",
+      "instruction": "Wähle für jede Frage die richtige Antwort.",
+      "kind": "choice",
+      "bbox": {
+        "x": 0.068,
+        "y": 0.438,
+        "width": 0.864,
+        "height": 0.208
+      },
+      "sourceOrder": 2,
+      "interactionIds": [
+        "ct-01",
+        "ct-04"
+      ],
+      "contextSpanIds": [
+        "ts-21",
+        "ts-22",
+        "ts-23",
+        "ts-24",
+        "ts-25",
+        "ts-26",
+        "ts-27",
+        "ts-28",
+        "ts-29",
+        "ts-30",
+        "ts-31"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.98
+    },
+    {
+      "id": "se-03",
+      "number": "3",
+      "title": "Kurz schreiben",
+      "instruction": "Schreibe zwei Sätze über deinen eigenen Morgen.",
+      "kind": "free-text",
+      "bbox": {
+        "x": 0.068,
+        "y": 0.68,
+        "width": 0.864,
+        "height": 0.145
+      },
+      "sourceOrder": 3,
+      "interactionIds": [
+        "ft-01"
+      ],
+      "contextSpanIds": [
+        "ts-32",
+        "ts-33",
+        "ts-34",
+        "ts-35"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.97
+    }
+  ],
   "processor": {
     "engine": "opencode-go-vision",
     "engineVersion": "v1",
     "model": "mimo-v2.5",
     "language": "de",
     "parameters": {},
-    "processedAt": "2026-08-11T18:10:23.332348Z",
-    "durationMs": 160329
+    "processedAt": "2026-08-12T15:45:35.118555Z",
+    "durationMs": 49159
   }
 }

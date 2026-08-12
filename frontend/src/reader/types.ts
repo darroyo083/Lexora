@@ -182,6 +182,20 @@ export interface FreeTextDetectionMetadata {
   durationMs: number;
 }
 
+export interface SemanticExercise {
+  id: string;
+  number: string | null;
+  title: string | null;
+  instruction: string | null;
+  kind: 'fill-blank' | 'choice' | 'choice-grid' | 'sentence-ordering' | 'matching' | 'free-text';
+  bbox: BBox;
+  sourceOrder: number;
+  interactionIds: string[];
+  contextSpanIds: string[];
+  detectionMethod: 'vision-semantic-v1';
+  confidence: number;
+}
+
 export interface PageAnalysis {
   schemaVersion: string;
   pageNumber: number;
@@ -202,5 +216,6 @@ export interface PageAnalysis {
   matchingDetection: MatchingDetectionMetadata | null;
   freeTextInteractions: FreeTextInteraction[];
   freeTextDetection: FreeTextDetectionMetadata | null;
+  semanticExercises: SemanticExercise[];
   processor: ProcessorMetadata;
 }

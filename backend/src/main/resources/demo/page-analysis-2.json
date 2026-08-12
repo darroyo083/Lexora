@@ -6,430 +6,559 @@
   "language": "de",
   "textSpans": [
     {
-      "id": "t01",
-      "text": "LEXORA / DEUTSCH A1-A2",
-      "confidence": 0.99,
-      "confidenceScope": "page-header",
+      "id": "ts-1",
+      "text": "DEUTSCH ENTDECKEN / A1-A2",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.04,
-        "width": 0.21,
+        "x": 0.063,
+        "y": 0.032,
+        "width": 0.205,
         "height": 0.015
       }
     },
     {
-      "id": "t02",
+      "id": "ts-2",
       "text": "02",
-      "confidence": 0.99,
-      "confidenceScope": "page-header",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.91,
-        "y": 0.04,
-        "width": 0.02,
+        "x": 0.914,
+        "y": 0.032,
+        "width": 0.033,
         "height": 0.015
       }
     },
     {
-      "id": "t03",
-      "text": "UNIT 2",
-      "confidence": 0.99,
-      "confidenceScope": "section-header",
+      "id": "ts-3",
+      "text": "LEKTION 2",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.065,
-        "width": 0.06,
-        "height": 0.015
+        "x": 0.063,
+        "y": 0.061,
+        "width": 0.087,
+        "height": 0.013
       }
     },
     {
-      "id": "t04",
+      "id": "ts-4",
       "text": "In der Stadt",
-      "confidence": 0.99,
-      "confidenceScope": "title",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.09,
-        "width": 0.25,
-        "height": 0.03
+        "x": 0.063,
+        "y": 0.076,
+        "width": 0.272,
+        "height": 0.032
       }
     },
     {
-      "id": "t05",
-      "text": "Use articles and everyday places to describe a short trip through town.",
-      "confidence": 0.99,
-      "confidenceScope": "subtitle",
+      "id": "ts-5",
+      "text": "Orte benennen und sich in der Stadt orientieren.",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.13,
-        "width": 0.55,
-        "height": 0.015
+        "x": 0.063,
+        "y": 0.113,
+        "width": 0.431,
+        "height": 0.013
       }
     },
     {
-      "id": "t06",
-      "text": "4 Artikel waehlen",
-      "confidence": 0.99,
-      "confidenceScope": "exercise-title",
+      "id": "ts-6",
+      "text": "4",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.2,
-        "width": 0.18,
-        "height": 0.02
+        "x": 0.072,
+        "y": 0.162,
+        "width": 0.015,
+        "height": 0.011
       }
     },
     {
-      "id": "t07",
-      "text": "Mark the correct article for each noun.",
-      "confidence": 0.99,
-      "confidenceScope": "instruction",
+      "id": "ts-7",
+      "text": "Artikel wählen",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.13,
-        "y": 0.225,
-        "width": 0.25,
-        "height": 0.012
+        "x": 0.113,
+        "y": 0.161,
+        "width": 0.185,
+        "height": 0.016
       }
     },
     {
-      "id": "t08",
+      "id": "ts-8",
+      "text": "Wähle in jeder Zeile den richtigen Artikel.",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.113,
+        "y": 0.18,
+        "width": 0.272,
+        "height": 0.009
+      }
+    },
+    {
+      "id": "ts-9",
       "text": "der",
-      "confidence": 0.99,
-      "confidenceScope": "choice-label",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.54,
-        "y": 0.24,
+        "x": 0.469,
+        "y": 0.182,
         "width": 0.03,
-        "height": 0.012
+        "height": 0.011
       }
     },
     {
-      "id": "t09",
+      "id": "ts-10",
       "text": "die",
-      "confidence": 0.99,
-      "confidenceScope": "choice-label",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.65,
-        "y": 0.24,
-        "width": 0.03,
-        "height": 0.012
+        "x": 0.592,
+        "y": 0.182,
+        "width": 0.027,
+        "height": 0.011
       }
     },
     {
-      "id": "t10",
+      "id": "ts-11",
       "text": "das",
-      "confidence": 0.99,
-      "confidenceScope": "choice-label",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.76,
-        "y": 0.24,
-        "width": 0.03,
-        "height": 0.012
+        "x": 0.716,
+        "y": 0.182,
+        "width": 0.032,
+        "height": 0.011
       }
     },
     {
-      "id": "t11",
+      "id": "ts-12",
       "text": "Bahnhof",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.11,
-        "y": 0.285,
-        "width": 0.08,
-        "height": 0.015
+        "x": 0.086,
+        "y": 0.205,
+        "width": 0.093,
+        "height": 0.011
       }
     },
     {
-      "id": "t12",
+      "id": "ts-13",
       "text": "Apotheke",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.11,
-        "y": 0.32,
-        "width": 0.09,
-        "height": 0.015
+        "x": 0.086,
+        "y": 0.234,
+        "width": 0.095,
+        "height": 0.011
       }
     },
     {
-      "id": "t13",
+      "id": "ts-14",
       "text": "Museum",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.11,
-        "y": 0.355,
-        "width": 0.07,
-        "height": 0.015
+        "x": 0.086,
+        "y": 0.263,
+        "width": 0.077,
+        "height": 0.011
       }
     },
     {
-      "id": "t14",
+      "id": "ts-15",
       "text": "Markt",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.11,
-        "y": 0.39,
-        "width": 0.06,
-        "height": 0.015
+        "x": 0.086,
+        "y": 0.292,
+        "width": 0.056,
+        "height": 0.011
       }
     },
     {
-      "id": "t15",
-      "text": "5 Wo findet man das?",
-      "confidence": 0.99,
-      "confidenceScope": "exercise-title",
+      "id": "ts-16",
+      "text": "5",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.465,
-        "width": 0.19,
-        "height": 0.02
+        "x": 0.072,
+        "y": 0.344,
+        "width": 0.015,
+        "height": 0.011
       }
     },
     {
-      "id": "t16",
-      "text": "Connect each place with the thing you can find there.",
-      "confidence": 0.99,
-      "confidenceScope": "instruction",
+      "id": "ts-17",
+      "text": "Wo findet man das?",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.13,
-        "y": 0.49,
-        "width": 0.32,
-        "height": 0.012
+        "x": 0.113,
+        "y": 0.343,
+        "width": 0.217,
+        "height": 0.016
       }
     },
     {
-      "id": "t17",
+      "id": "ts-18",
+      "text": "Ordne jedem Ort die passende Sache zu.",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.113,
+        "y": 0.362,
+        "width": 0.263,
+        "height": 0.009
+      }
+    },
+    {
+      "id": "ts-19",
+      "text": "1",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.104,
+        "y": 0.388,
+        "width": 0.015,
+        "height": 0.011
+      }
+    },
+    {
+      "id": "ts-20",
       "text": "die Bäckerei",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.13,
-        "y": 0.535,
-        "width": 0.15,
-        "height": 0.015
+        "x": 0.137,
+        "y": 0.388,
+        "width": 0.111,
+        "height": 0.011
       }
     },
     {
-      "id": "t18",
-      "text": "A Medikamente",
-      "confidence": 0.99,
-      "confidenceScope": "option-label",
+      "id": "ts-21",
+      "text": "A",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.6,
-        "y": 0.535,
-        "width": 0.15,
-        "height": 0.015
+        "x": 0.571,
+        "y": 0.388,
+        "width": 0.017,
+        "height": 0.011
       }
     },
     {
-      "id": "t19",
+      "id": "ts-22",
+      "text": "Medikamente",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.602,
+        "y": 0.388,
+        "width": 0.108,
+        "height": 0.011
+      }
+    },
+    {
+      "id": "ts-23",
+      "text": "2",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.104,
+        "y": 0.417,
+        "width": 0.015,
+        "height": 0.011
+      }
+    },
+    {
+      "id": "ts-24",
       "text": "die Bibliothek",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.13,
-        "y": 0.58,
-        "width": 0.14,
-        "height": 0.015
+        "x": 0.137,
+        "y": 0.417,
+        "width": 0.123,
+        "height": 0.011
       }
     },
     {
-      "id": "t20",
-      "text": "B Züge",
-      "confidence": 0.99,
-      "confidenceScope": "option-label",
+      "id": "ts-25",
+      "text": "B",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.6,
-        "y": 0.58,
-        "width": 0.06,
-        "height": 0.015
+        "x": 0.571,
+        "y": 0.417,
+        "width": 0.017,
+        "height": 0.011
       }
     },
     {
-      "id": "t21",
+      "id": "ts-26",
+      "text": "Züge",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.602,
+        "y": 0.417,
+        "width": 0.041,
+        "height": 0.011
+      }
+    },
+    {
+      "id": "ts-27",
+      "text": "3",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.104,
+        "y": 0.446,
+        "width": 0.015,
+        "height": 0.011
+      }
+    },
+    {
+      "id": "ts-28",
       "text": "der Bahnhof",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.13,
-        "y": 0.625,
-        "width": 0.12,
-        "height": 0.015
+        "x": 0.137,
+        "y": 0.446,
+        "width": 0.103,
+        "height": 0.011
       }
     },
     {
-      "id": "t22",
-      "text": "C Brot",
-      "confidence": 0.99,
-      "confidenceScope": "option-label",
+      "id": "ts-29",
+      "text": "C",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.6,
-        "y": 0.625,
-        "width": 0.06,
-        "height": 0.015
+        "x": 0.571,
+        "y": 0.446,
+        "width": 0.017,
+        "height": 0.011
       }
     },
     {
-      "id": "t23",
+      "id": "ts-30",
+      "text": "Brot",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.602,
+        "y": 0.446,
+        "width": 0.042,
+        "height": 0.011
+      }
+    },
+    {
+      "id": "ts-31",
+      "text": "4",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.104,
+        "y": 0.475,
+        "width": 0.015,
+        "height": 0.011
+      }
+    },
+    {
+      "id": "ts-32",
       "text": "die Apotheke",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.13,
-        "y": 0.67,
-        "width": 0.13,
-        "height": 0.015
+        "x": 0.137,
+        "y": 0.475,
+        "width": 0.106,
+        "height": 0.011
       }
     },
     {
-      "id": "t24",
-      "text": "D Bücher",
-      "confidence": 0.99,
-      "confidenceScope": "option-label",
+      "id": "ts-33",
+      "text": "D",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.6,
-        "y": 0.67,
-        "width": 0.07,
-        "height": 0.015
+        "x": 0.571,
+        "y": 0.475,
+        "width": 0.017,
+        "height": 0.011
       }
     },
     {
-      "id": "t25",
-      "text": "Draw four lines. Every place has one partner.",
-      "confidence": 0.99,
-      "confidenceScope": "instruction",
+      "id": "ts-34",
+      "text": "Bücher",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.705,
-        "width": 0.25,
-        "height": 0.012
+        "x": 0.602,
+        "y": 0.475,
+        "width": 0.048,
+        "height": 0.011
       }
     },
     {
-      "id": "t26",
-      "text": "6 Ein Satz",
-      "confidence": 0.99,
-      "confidenceScope": "exercise-title",
+      "id": "ts-35",
+      "text": "Verbinde vier Paare. Jeder Ort hat genau einen Partner.",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.78,
-        "width": 0.12,
-        "height": 0.02
+        "x": 0.113,
+        "y": 0.494,
+        "width": 0.336,
+        "height": 0.009
       }
     },
     {
-      "id": "t27",
-      "text": "Complete the route with one suitable place.",
-      "confidence": 0.99,
-      "confidenceScope": "instruction",
+      "id": "ts-36",
+      "text": "6",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.13,
-        "y": 0.805,
-        "width": 0.27,
-        "height": 0.012
+        "x": 0.072,
+        "y": 0.546,
+        "width": 0.015,
+        "height": 0.011
       }
     },
     {
-      "id": "t28",
-      "text": "Ich brauche ein Buch. Ich gehe in die",
-      "confidence": 0.99,
-      "confidenceScope": "prompt",
+      "id": "ts-37",
+      "text": "Ein Satz",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.1,
-        "y": 0.825,
-        "width": 0.38,
-        "height": 0.015
+        "x": 0.113,
+        "y": 0.545,
+        "width": 0.103,
+        "height": 0.016
       }
     },
     {
-      "id": "t29",
-      "text": ".",
-      "confidence": 0.99,
-      "confidenceScope": "punctuation",
+      "id": "ts-38",
+      "text": "Ergänze den Satz mit einem passenden Ort.",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.63,
-        "y": 0.825,
-        "width": 0.01,
-        "height": 0.015
+        "x": 0.113,
+        "y": 0.564,
+        "width": 0.28,
+        "height": 0.009
       }
     },
     {
-      "id": "t30",
-      "text": "Synthetic demo material created for Lexora",
-      "confidence": 0.95,
-      "confidenceScope": "footer",
+      "id": "ts-39",
+      "text": "Ich brauche ein Buch. Ich gehe in die _________________.",
+      "confidence": 1.0,
+      "confidenceScope": "line",
       "parentLineId": null,
       "bbox": {
-        "x": 0.07,
-        "y": 0.97,
+        "x": 0.086,
+        "y": 0.589,
+        "width": 0.606,
+        "height": 0.013
+      }
+    },
+    {
+      "id": "ts-40",
+      "text": "Originales synthetisches Übungsmaterial für Lexora",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.063,
+        "y": 0.954,
+        "width": 0.308,
+        "height": 0.009
+      }
+    },
+    {
+      "id": "ts-41",
+      "text": "Seite für die öffentliche Demo",
+      "confidence": 1.0,
+      "confidenceScope": "line",
+      "parentLineId": null,
+      "bbox": {
+        "x": 0.753,
+        "y": 0.954,
         "width": 0.2,
-        "height": 0.01
-      }
-    },
-    {
-      "id": "t31",
-      "text": "lexora.dev",
-      "confidence": 0.95,
-      "confidenceScope": "footer",
-      "parentLineId": null,
-      "bbox": {
-        "x": 0.9,
-        "y": 0.97,
-        "width": 0.06,
-        "height": 0.01
+        "height": 0.009
       }
     }
   ],
   "exerciseBlanks": [
     {
-      "id": "b01",
+      "id": "eb-1",
       "kind": "fill-in-line",
       "lineBbox": {
-        "x": 0.43,
-        "y": 0.825,
-        "width": 0.19,
-        "height": 0.015
+        "x": 0.438,
+        "y": 0.587,
+        "width": 0.254,
+        "height": 0.016
       },
       "interactionBbox": {
-        "x": 0.43,
-        "y": 0.82,
-        "width": 0.19,
-        "height": 0.025
+        "x": 0.418,
+        "y": 0.579,
+        "width": 0.274,
+        "height": 0.032
       },
       "detectionMethod": "vision-structured-v1",
       "candidateScore": 0.95,
       "nearbyTextSpanIds": [
-        "t28",
-        "t29"
+        "ts-39"
       ]
     }
   ],
@@ -441,303 +570,494 @@
   },
   "choiceGroups": [
     {
-      "id": "cg01",
+      "id": "cg-1",
       "options": [
         {
-          "id": "o01",
+          "id": "opt-der",
           "label": "der"
         },
         {
-          "id": "o02",
+          "id": "opt-die",
           "label": "die"
         },
         {
-          "id": "o03",
+          "id": "opt-das",
           "label": "das"
         }
       ]
     }
   ],
-  "choiceTargets": [
-    {
-      "id": "ct01",
-      "kind": "choice",
-      "targetBbox": {
-        "x": 0.54,
-        "y": 0.28,
-        "width": 0.24,
-        "height": 0.020000000000000018
-      },
-      "interactionBbox": {
-        "x": 0.53,
-        "y": 0.27,
-        "width": 0.26,
-        "height": 0.03999999999999998
-      },
-      "optionGroupId": "cg01",
-      "detectionMethod": "vision-structured-v1",
-      "candidateScore": 0.98,
-      "nearbyTextSpanIds": [
-        "t11"
-      ]
-    },
-    {
-      "id": "ct04",
-      "kind": "choice",
-      "targetBbox": {
-        "x": 0.54,
-        "y": 0.315,
-        "width": 0.24,
-        "height": 0.020000000000000018
-      },
-      "interactionBbox": {
-        "x": 0.53,
-        "y": 0.305,
-        "width": 0.26,
-        "height": 0.03999999999999998
-      },
-      "optionGroupId": "cg01",
-      "detectionMethod": "vision-structured-v1",
-      "candidateScore": 0.98,
-      "nearbyTextSpanIds": [
-        "t12"
-      ]
-    },
-    {
-      "id": "ct07",
-      "kind": "choice",
-      "targetBbox": {
-        "x": 0.54,
-        "y": 0.35,
-        "width": 0.24,
-        "height": 0.020000000000000018
-      },
-      "interactionBbox": {
-        "x": 0.53,
-        "y": 0.34,
-        "width": 0.26,
-        "height": 0.03999999999999998
-      },
-      "optionGroupId": "cg01",
-      "detectionMethod": "vision-structured-v1",
-      "candidateScore": 0.98,
-      "nearbyTextSpanIds": [
-        "t13"
-      ]
-    },
-    {
-      "id": "ct10",
-      "kind": "choice",
-      "targetBbox": {
-        "x": 0.54,
-        "y": 0.385,
-        "width": 0.24,
-        "height": 0.020000000000000018
-      },
-      "interactionBbox": {
-        "x": 0.53,
-        "y": 0.375,
-        "width": 0.26,
-        "height": 0.03999999999999998
-      },
-      "optionGroupId": "cg01",
-      "detectionMethod": "vision-structured-v1",
-      "candidateScore": 0.98,
-      "nearbyTextSpanIds": [
-        "t14"
-      ]
-    }
-  ],
+  "choiceTargets": [],
   "choiceDetection": {
     "detectionMethod": "vision-structured-v1",
     "rawCandidateCount": 12,
-    "acceptedCount": 4,
+    "acceptedCount": 0,
+    "groupCount": 4,
+    "durationMs": 0
+  },
+  "choiceGrids": [
+    {
+      "id": "se-4-grid",
+      "kind": "choice-grid",
+      "gridBbox": {
+        "x": 0.526,
+        "y": 0.196,
+        "width": 0.257,
+        "height": 0.11499999999999999
+      },
+      "optionGroupId": "cg-1",
+      "detectionMethod": "vision-structured-v1",
+      "candidateScore": 0.95,
+      "rows": [
+        {
+          "id": "ct-bh-der-row",
+          "rowBbox": {
+            "x": 0.526,
+            "y": 0.196,
+            "width": 0.257,
+            "height": 0.027999999999999997
+          },
+          "promptBbox": null,
+          "nearbyTextSpanIds": [
+            "ts-12"
+          ],
+          "cells": [
+            {
+              "id": "ct-bh-der-cell-opt-der",
+              "optionId": "opt-der",
+              "cellBbox": {
+                "x": 0.541,
+                "y": 0.201,
+                "width": 0.07566666666666666,
+                "height": 0.017999999999999988
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.196,
+                "width": 0.257,
+                "height": 0.027999999999999997
+              }
+            },
+            {
+              "id": "ct-bh-der-cell-opt-die",
+              "optionId": "opt-die",
+              "cellBbox": {
+                "x": 0.6166666666666667,
+                "y": 0.201,
+                "width": 0.07566666666666666,
+                "height": 0.017999999999999988
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.196,
+                "width": 0.257,
+                "height": 0.027999999999999997
+              }
+            },
+            {
+              "id": "ct-bh-der-cell-opt-das",
+              "optionId": "opt-das",
+              "cellBbox": {
+                "x": 0.6923333333333334,
+                "y": 0.201,
+                "width": 0.07566666666666666,
+                "height": 0.017999999999999988
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.196,
+                "width": 0.257,
+                "height": 0.027999999999999997
+              }
+            }
+          ]
+        },
+        {
+          "id": "ct-ap-der-row",
+          "rowBbox": {
+            "x": 0.526,
+            "y": 0.225,
+            "width": 0.257,
+            "height": 0.027999999999999997
+          },
+          "promptBbox": null,
+          "nearbyTextSpanIds": [
+            "ts-13"
+          ],
+          "cells": [
+            {
+              "id": "ct-ap-der-cell-opt-der",
+              "optionId": "opt-der",
+              "cellBbox": {
+                "x": 0.541,
+                "y": 0.23,
+                "width": 0.07566666666666666,
+                "height": 0.017999999999999988
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.225,
+                "width": 0.257,
+                "height": 0.027999999999999997
+              }
+            },
+            {
+              "id": "ct-ap-der-cell-opt-die",
+              "optionId": "opt-die",
+              "cellBbox": {
+                "x": 0.6166666666666667,
+                "y": 0.23,
+                "width": 0.07566666666666666,
+                "height": 0.017999999999999988
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.225,
+                "width": 0.257,
+                "height": 0.027999999999999997
+              }
+            },
+            {
+              "id": "ct-ap-der-cell-opt-das",
+              "optionId": "opt-das",
+              "cellBbox": {
+                "x": 0.6923333333333334,
+                "y": 0.23,
+                "width": 0.07566666666666666,
+                "height": 0.017999999999999988
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.225,
+                "width": 0.257,
+                "height": 0.027999999999999997
+              }
+            }
+          ]
+        },
+        {
+          "id": "ct-mu-der-row",
+          "rowBbox": {
+            "x": 0.526,
+            "y": 0.254,
+            "width": 0.257,
+            "height": 0.028000000000000025
+          },
+          "promptBbox": null,
+          "nearbyTextSpanIds": [
+            "ts-14"
+          ],
+          "cells": [
+            {
+              "id": "ct-mu-der-cell-opt-der",
+              "optionId": "opt-der",
+              "cellBbox": {
+                "x": 0.541,
+                "y": 0.259,
+                "width": 0.07566666666666666,
+                "height": 0.018000000000000016
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.254,
+                "width": 0.257,
+                "height": 0.028000000000000025
+              }
+            },
+            {
+              "id": "ct-mu-der-cell-opt-die",
+              "optionId": "opt-die",
+              "cellBbox": {
+                "x": 0.6166666666666667,
+                "y": 0.259,
+                "width": 0.07566666666666666,
+                "height": 0.018000000000000016
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.254,
+                "width": 0.257,
+                "height": 0.028000000000000025
+              }
+            },
+            {
+              "id": "ct-mu-der-cell-opt-das",
+              "optionId": "opt-das",
+              "cellBbox": {
+                "x": 0.6923333333333334,
+                "y": 0.259,
+                "width": 0.07566666666666666,
+                "height": 0.018000000000000016
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.254,
+                "width": 0.257,
+                "height": 0.028000000000000025
+              }
+            }
+          ]
+        },
+        {
+          "id": "ct-ma-der-row",
+          "rowBbox": {
+            "x": 0.526,
+            "y": 0.283,
+            "width": 0.257,
+            "height": 0.028000000000000025
+          },
+          "promptBbox": null,
+          "nearbyTextSpanIds": [
+            "ts-15"
+          ],
+          "cells": [
+            {
+              "id": "ct-ma-der-cell-opt-der",
+              "optionId": "opt-der",
+              "cellBbox": {
+                "x": 0.541,
+                "y": 0.288,
+                "width": 0.07566666666666666,
+                "height": 0.018000000000000016
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.283,
+                "width": 0.257,
+                "height": 0.028000000000000025
+              }
+            },
+            {
+              "id": "ct-ma-der-cell-opt-die",
+              "optionId": "opt-die",
+              "cellBbox": {
+                "x": 0.6166666666666667,
+                "y": 0.288,
+                "width": 0.07566666666666666,
+                "height": 0.018000000000000016
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.283,
+                "width": 0.257,
+                "height": 0.028000000000000025
+              }
+            },
+            {
+              "id": "ct-ma-der-cell-opt-das",
+              "optionId": "opt-das",
+              "cellBbox": {
+                "x": 0.6923333333333334,
+                "y": 0.288,
+                "width": 0.07566666666666666,
+                "height": 0.018000000000000016
+              },
+              "interactionBbox": {
+                "x": 0.526,
+                "y": 0.283,
+                "width": 0.257,
+                "height": 0.028000000000000025
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "choiceGridDetection": {
+    "detectionMethod": "vision-structured-v1",
+    "rawCandidateCount": 4,
+    "acceptedCount": 1,
     "groupCount": 1,
     "durationMs": 0
   },
-  "choiceGrids": [],
-  "choiceGridDetection": null,
   "sentenceOrderings": [],
   "sentenceOrderingDetection": null,
   "matchingInteractions": [
     {
-      "id": "m01",
+      "id": "mi-1",
       "kind": "matching",
       "bbox": {
-        "x": 0.1,
-        "y": 0.52,
-        "width": 0.7,
-        "height": 0.2
+        "x": 0.104,
+        "y": 0.388,
+        "width": 0.546,
+        "height": 0.1
       },
       "detectionMethod": "vision-structured-v1",
       "candidateScore": 0.95,
       "cardinality": "one-to-one",
       "nearbyTextSpanIds": [
-        "t15",
-        "t16",
-        "t25"
+        "ts-18"
       ],
       "leftItems": [
         {
-          "id": "ml01",
+          "id": "li-1",
           "label": "1",
           "text": "die Bäckerei",
           "bbox": {
-            "x": 0.1,
-            "y": 0.53,
-            "width": 0.2,
-            "height": 0.025
+            "x": 0.104,
+            "y": 0.388,
+            "width": 0.372,
+            "height": 0.011
           },
           "anchorBbox": {
-            "x": 0.33,
-            "y": 0.535,
-            "width": 0.01,
-            "height": 0.01
+            "x": 0.438,
+            "y": 0.388,
+            "width": 0.015,
+            "height": 0.011
           },
           "nearbyTextSpanIds": [
-            "t17"
+            "ts-19",
+            "ts-20"
           ]
         },
         {
-          "id": "ml02",
+          "id": "li-2",
           "label": "2",
           "text": "die Bibliothek",
           "bbox": {
-            "x": 0.1,
-            "y": 0.575,
-            "width": 0.2,
-            "height": 0.025
+            "x": 0.104,
+            "y": 0.417,
+            "width": 0.372,
+            "height": 0.011
           },
           "anchorBbox": {
-            "x": 0.33,
-            "y": 0.58,
-            "width": 0.01,
-            "height": 0.01
+            "x": 0.438,
+            "y": 0.417,
+            "width": 0.015,
+            "height": 0.011
           },
           "nearbyTextSpanIds": [
-            "t19"
+            "ts-23",
+            "ts-24"
           ]
         },
         {
-          "id": "ml03",
+          "id": "li-3",
           "label": "3",
           "text": "der Bahnhof",
           "bbox": {
-            "x": 0.1,
-            "y": 0.62,
-            "width": 0.2,
-            "height": 0.025
+            "x": 0.104,
+            "y": 0.446,
+            "width": 0.372,
+            "height": 0.011
           },
           "anchorBbox": {
-            "x": 0.33,
-            "y": 0.625,
-            "width": 0.01,
-            "height": 0.01
+            "x": 0.438,
+            "y": 0.446,
+            "width": 0.015,
+            "height": 0.011
           },
           "nearbyTextSpanIds": [
-            "t21"
+            "ts-27",
+            "ts-28"
           ]
         },
         {
-          "id": "ml04",
+          "id": "li-4",
           "label": "4",
           "text": "die Apotheke",
           "bbox": {
-            "x": 0.1,
-            "y": 0.665,
-            "width": 0.2,
-            "height": 0.025
+            "x": 0.104,
+            "y": 0.475,
+            "width": 0.372,
+            "height": 0.011
           },
           "anchorBbox": {
-            "x": 0.33,
-            "y": 0.67,
-            "width": 0.01,
-            "height": 0.01
+            "x": 0.438,
+            "y": 0.475,
+            "width": 0.015,
+            "height": 0.011
           },
           "nearbyTextSpanIds": [
-            "t23"
+            "ts-31",
+            "ts-32"
           ]
         }
       ],
       "rightItems": [
         {
-          "id": "mr01",
+          "id": "ri-1",
           "label": "A",
           "text": "Medikamente",
           "bbox": {
-            "x": 0.58,
-            "y": 0.53,
-            "width": 0.22,
-            "height": 0.025
+            "x": 0.556,
+            "y": 0.388,
+            "width": 0.491,
+            "height": 0.011
           },
           "anchorBbox": {
-            "x": 0.58,
-            "y": 0.535,
-            "width": 0.01,
-            "height": 0.01
+            "x": 0.556,
+            "y": 0.388,
+            "width": 0.015,
+            "height": 0.011
           },
           "nearbyTextSpanIds": [
-            "t18"
+            "ts-21",
+            "ts-22"
           ]
         },
         {
-          "id": "mr02",
+          "id": "ri-2",
           "label": "B",
           "text": "Züge",
           "bbox": {
-            "x": 0.58,
-            "y": 0.575,
-            "width": 0.22,
-            "height": 0.025
+            "x": 0.556,
+            "y": 0.417,
+            "width": 0.491,
+            "height": 0.011
           },
           "anchorBbox": {
-            "x": 0.58,
-            "y": 0.58,
-            "width": 0.01,
-            "height": 0.01
+            "x": 0.556,
+            "y": 0.417,
+            "width": 0.015,
+            "height": 0.011
           },
           "nearbyTextSpanIds": [
-            "t20"
+            "ts-25",
+            "ts-26"
           ]
         },
         {
-          "id": "mr03",
+          "id": "ri-3",
           "label": "C",
           "text": "Brot",
           "bbox": {
-            "x": 0.58,
-            "y": 0.62,
-            "width": 0.22,
-            "height": 0.025
+            "x": 0.556,
+            "y": 0.446,
+            "width": 0.491,
+            "height": 0.011
           },
           "anchorBbox": {
-            "x": 0.58,
-            "y": 0.625,
-            "width": 0.01,
-            "height": 0.01
+            "x": 0.556,
+            "y": 0.446,
+            "width": 0.015,
+            "height": 0.011
           },
           "nearbyTextSpanIds": [
-            "t22"
+            "ts-29",
+            "ts-30"
           ]
         },
         {
-          "id": "mr04",
+          "id": "ri-4",
           "label": "D",
           "text": "Bücher",
           "bbox": {
-            "x": 0.58,
-            "y": 0.665,
-            "width": 0.22,
-            "height": 0.025
+            "x": 0.556,
+            "y": 0.475,
+            "width": 0.491,
+            "height": 0.011
           },
           "anchorBbox": {
-            "x": 0.58,
-            "y": 0.67,
-            "width": 0.01,
-            "height": 0.01
+            "x": 0.556,
+            "y": 0.475,
+            "width": 0.015,
+            "height": 0.011
           },
           "nearbyTextSpanIds": [
-            "t24"
+            "ts-33",
+            "ts-34"
           ]
         }
       ]
@@ -752,13 +1072,96 @@
   },
   "freeTextInteractions": [],
   "freeTextDetection": null,
+  "semanticExercises": [
+    {
+      "id": "se-4",
+      "number": "4",
+      "title": "Artikel wählen",
+      "instruction": "Wähle in jeder Zeile den richtigen Artikel.",
+      "kind": "choice-grid",
+      "bbox": {
+        "x": 0.063,
+        "y": 0.155,
+        "width": 0.874,
+        "height": 0.158
+      },
+      "sourceOrder": 4,
+      "interactionIds": [
+        "se-4-grid"
+      ],
+      "contextSpanIds": [
+        "ts-6",
+        "ts-7",
+        "ts-8",
+        "ts-9",
+        "ts-10",
+        "ts-11",
+        "ts-12",
+        "ts-13",
+        "ts-14",
+        "ts-15"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.98
+    },
+    {
+      "id": "se-5",
+      "number": "5",
+      "title": "Wo findet man das?",
+      "instruction": "Ordne jedem Ort die passende Sache zu.",
+      "kind": "matching",
+      "bbox": {
+        "x": 0.063,
+        "y": 0.337,
+        "width": 0.874,
+        "height": 0.173
+      },
+      "sourceOrder": 5,
+      "interactionIds": [
+        "mi-1"
+      ],
+      "contextSpanIds": [
+        "ts-16",
+        "ts-17",
+        "ts-18",
+        "ts-35"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.98
+    },
+    {
+      "id": "se-6",
+      "number": "6",
+      "title": "Ein Satz",
+      "instruction": "Ergänze den Satz mit einem passenden Ort.",
+      "kind": "fill-blank",
+      "bbox": {
+        "x": 0.063,
+        "y": 0.539,
+        "width": 0.874,
+        "height": 0.075
+      },
+      "sourceOrder": 6,
+      "interactionIds": [
+        "eb-1"
+      ],
+      "contextSpanIds": [
+        "ts-36",
+        "ts-37",
+        "ts-38",
+        "ts-39"
+      ],
+      "detectionMethod": "vision-semantic-v1",
+      "confidence": 0.98
+    }
+  ],
   "processor": {
     "engine": "opencode-go-vision",
     "engineVersion": "v1",
     "model": "mimo-v2.5",
     "language": "de",
     "parameters": {},
-    "processedAt": "2026-08-11T18:12:41.154699Z",
-    "durationMs": 100944
+    "processedAt": "2026-08-12T15:46:39.633639Z",
+    "durationMs": 59276
   }
 }

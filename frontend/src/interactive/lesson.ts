@@ -30,6 +30,12 @@ interface LessonBlockBase {
   sourceY: number;
   prompt: string | null;
   evidence: LessonEvidence;
+  exerciseId?: string | null;
+  exerciseNumber?: string | null;
+  exerciseTitle?: string | null;
+  instruction?: string | null;
+  sourceOrder?: number | null;
+  contextParagraphs?: SourceParagraph[];
 }
 
 export interface SourceParagraph {
@@ -54,6 +60,7 @@ export interface ChoiceLessonBlock extends LessonBlockBase {
   kind: 'choice';
   targets: ChoiceTarget[];
   group: ChoiceGroup | null;
+  groupsByTarget?: Record<string, ChoiceGroup | null>;
   itemPrompts: Record<string, string | null>;
 }
 

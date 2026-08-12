@@ -80,10 +80,10 @@ describe('InteractiveLesson', () => {
     render(<InteractiveLesson {...callbacks} />);
 
     expect(screen.getByRole('heading', { name: 'Satzklammer', level: 1 })).toBeTruthy();
-    expect(screen.getByRole('progressbar').querySelector('span')?.style.transform).toBe('scaleX(0.5)');
-    fireEvent.change(screen.getByRole('textbox', { name: 'Your answer' }), { target: { value: 'ist' } });
+    expect(screen.getByRole('progressbar').querySelector('span')?.style.transform).toBe('scaleX(1)');
+    fireEvent.change(screen.getByRole('textbox', { name: /answer for/i }), { target: { value: 'ist' } });
     expect(callbacks.onAnswerChange).toHaveBeenCalledWith('blank-1', 'ist');
-    fireEvent.click(screen.getByRole('button', { name: 'Check answer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Check answers' }));
     expect(callbacks.onCheck).toHaveBeenCalledWith(['blank-1']);
   });
 
@@ -146,7 +146,7 @@ describe('InteractiveLesson', () => {
 
     const correctionCallbacks = props({ correctionLoadError: 'Correction data could not be loaded.' });
     render(<InteractiveLesson {...correctionCallbacks} />);
-    expect(screen.queryByRole('button', { name: 'Check answer' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Check answers' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Correction unavailable. Retry' }));
     expect(correctionCallbacks.onRetryCorrectionLoad).toHaveBeenCalledOnce();
   });

@@ -2,6 +2,7 @@ import type {
   BBox,
   ChoiceGroup,
   PageAnalysis,
+  SemanticExercise,
   TextSpan,
 } from '../reader/types';
 import type {
@@ -416,11 +417,150 @@ function lessonTitle(analysis: PageAnalysis, unit?: LessonUnitContext | null): s
   if (unit?.title?.trim()) return unit.title.trim();
   const header = analysis.textSpans
     .filter(meaningfulSpan)
-    .filter((span) => span.bbox.y < 0.13)
-    .filter((span) => !/^(?:[ABC]\d|\d+)$/i.test(span.text.trim()))
-    .sort((a, b) => a.bbox.y - b.bbox.y || b.bbox.width - a.bbox.width)
+    .filter((span) => span.bbox.y < 0.2)
+    .filter((span) => !/^(?:[ABC]\d|\d+|lektion\s+\d+)$/i.test(span.text.trim()))
+    .filter((span) => !/deutsch\s+(?:entdecken|a1)/i.test(span.text.trim()))
+    .sort((a, b) => b.bbox.height - a.bbox.height || b.bbox.width - a.bbox.width)
     .find((span) => span.text.trim().length >= 4);
   return header?.text.trim() || `Page ${analysis.pageNumber}`;
+}
+
+function semanticExerciseForBlock(
+  block: LessonBlock,
+  byInteractionId: Map<string, SemanticExercise>,
+): SemanticExercise | null {
+  const matches = unique(block.evidence.interactionIds)
+    .map((id) => byInteractionId.get(id))
+    .filter((exercise): exercise is SemanticExercise => Boolean(exercise));
+  if (matches.length === 0) return null;
+  return matches.every((exercise) => exercise.id === matches[0].id) ? matches[0] : null;
+}
+
+function applySemanticExercises(
+  analysis: PageAnalysis,
+  blocks: PositionedBlock[],
+): PositionedBlock[] {
+  const spansById = new Map(analysis.textSpans.map((span) => [span.id, span]));
+  const byInteractionId = new Map<string, SemanticExercise>();
+  for (const exercise of analysis.semanticExercises ?? []) {
+    for (const interactionId of exercise.interactionIds) byInteractionId.set(interactionId, exercise);
+  }
+  return blocks.map(({ sourceY, block }) => {
+    const semantic = semanticExerciseForBlock(block, byInteractionId);
+    if (!semantic) return { sourceY, block };
+    const interactionSpanIds = new Set(block.evidence.spanIds);
+    const repeatedCopy = new Set([
+      semantic.number,
+      semantic.title,
+      semantic.instruction,
+      `${semantic.number} ${semantic.title}`,
+    ].filter((value): value is string => Boolean(value)).map((value) => value.trim().toLocaleLowerCase()));
+    if ((block.kind === 'choice' || block.kind === 'choice-grid') && block.group) {
+      for (const option of block.group.options) repeatedCopy.add(option.label.trim().toLocaleLowerCase());
+    }
+    const semanticContextSpans = semantic.contextSpanIds
+      .map((id) => spansById.get(id))
+      .filter((span): span is TextSpan => (
+        span !== undefined
+        && meaningfulSpan(span)
+        && !interactionSpanIds.has(span.id)
+        && !repeatedCopy.has(span.text.trim().toLocaleLowerCase())
+        && !/^\([^)]{1,30}\)$/.test(span.text.trim())
+      ))
+      .sort((a, b) => a.bbox.y - b.bbox.y || a.bbox.x - b.bbox.x);
+    const assignedContextIds = new Set<string>();
+    let semanticBlock = block;
+    if (block.kind === 'choice') {
+      const itemPrompts = { ...block.itemPrompts };
+      for (const target of block.targets) {
+        const preceding = semanticContextSpans
+          .filter((span) => span.bbox.y <= target.interactionBbox.y)
+          .sort((a, b) => b.bbox.y - a.bbox.y)[0];
+        if (preceding) {
+          itemPrompts[target.id] = preceding.text.trim();
+          assignedContextIds.add(preceding.id);
+        }
+      }
+      semanticBlock = { ...block, itemPrompts };
+    }
+    const contextParagraphs = semanticContextSpans
+      .filter((span) => !assignedContextIds.has(span.id))
+      .map((span) => ({ id: `paragraph-${span.id}`, text: span.text.trim(), spanIds: [span.id] }));
+    return {
+      sourceY,
+      block: {
+        ...semanticBlock,
+        exerciseId: semantic.id,
+        exerciseNumber: semantic.number,
+        exerciseTitle: semantic.title,
+        instruction: semantic.instruction,
+        sourceOrder: semantic.sourceOrder,
+        contextParagraphs,
+      },
+    };
+  });
+}
+
+function coalesceSemanticChoiceExercises(blocks: PositionedBlock[]): PositionedBlock[] {
+  const grouped = new Map<string, PositionedBlock[]>();
+  const passthrough: PositionedBlock[] = [];
+  for (const positioned of blocks) {
+    const { block } = positioned;
+    if (block.kind !== 'choice' || !block.exerciseId) {
+      passthrough.push(positioned);
+      continue;
+    }
+    const group = grouped.get(block.exerciseId) ?? [];
+    group.push(positioned);
+    grouped.set(block.exerciseId, group);
+  }
+  for (const exerciseBlocks of grouped.values()) {
+    if (exerciseBlocks.length === 1) {
+      passthrough.push(exerciseBlocks[0]);
+      continue;
+    }
+    const choices = exerciseBlocks.map(({ block }) => {
+      if (block.kind !== 'choice') throw new Error('Expected a choice block');
+      return block;
+    });
+    const first = choices[0];
+    const groupsByTarget = Object.fromEntries(choices.flatMap((choice) => (
+      choice.targets.map((target) => [target.id, choice.groupsByTarget?.[target.id] ?? choice.group])
+    )));
+    const itemPrompts = Object.assign({}, ...choices.map((choice) => choice.itemPrompts));
+    const promptCopy = new Set(Object.values(itemPrompts)
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.trim().toLocaleLowerCase()));
+    const contextParagraphs = choices
+      .flatMap((choice) => choice.contextParagraphs ?? [])
+      .filter((paragraph) => !promptCopy.has(paragraph.text.trim().toLocaleLowerCase()))
+      .filter((paragraph, index, all) => all.findIndex((item) => item.text === paragraph.text) === index);
+    const sharedGroup = choices.every((choice) => choice.group?.id === first.group?.id)
+      ? first.group : null;
+    const confidences = choices
+      .map((choice) => choice.evidence.confidence)
+      .filter((confidence): confidence is number => confidence !== null);
+    passthrough.push({
+      sourceY: Math.min(...exerciseBlocks.map(({ sourceY }) => sourceY)),
+      block: {
+        ...first,
+        id: first.exerciseId ?? first.id,
+        targets: choices.flatMap((choice) => choice.targets),
+        group: sharedGroup,
+        groupsByTarget,
+        itemPrompts,
+        contextParagraphs,
+        evidence: {
+          spanIds: unique(choices.flatMap((choice) => choice.evidence.spanIds)),
+          interactionIds: unique(choices.flatMap((choice) => choice.evidence.interactionIds)),
+          bboxes: choices.flatMap((choice) => choice.evidence.bboxes),
+          confidence: confidences.length > 0 ? Math.min(...confidences) : null,
+          detectionMethods: unique(choices.flatMap((choice) => choice.evidence.detectionMethods)),
+        },
+      },
+    });
+  }
+  return passthrough;
 }
 
 function interactionCount(blocks: LessonBlock[]): number {
@@ -460,13 +600,18 @@ export function projectLesson({
     return { status: 'UNAVAILABLE', reason: 'SOURCE_MISMATCH' };
   }
 
-  const interactions = interactionBlocks(analysis);
+  const interactions = coalesceSemanticChoiceExercises(
+    applySemanticExercises(analysis, interactionBlocks(analysis)),
+  );
   const contexts = contextBlocks(analysis, interactions);
   if (interactions.length === 0 && !hasMeaningfulStandaloneContext(contexts)) {
     return { status: 'UNAVAILABLE', reason: 'NO_MEANINGFUL_CONTENT' };
   }
-  const blocks = [...contexts, ...interactions]
-    .sort((a, b) => a.sourceY - b.sourceY || a.block.id.localeCompare(b.block.id))
+  const projected = interactions.length > 0 ? interactions : contexts;
+  const blocks = projected
+    .sort((a, b) => (a.block.sourceOrder ?? Number.MAX_SAFE_INTEGER)
+      - (b.block.sourceOrder ?? Number.MAX_SAFE_INTEGER)
+      || a.sourceY - b.sourceY || a.block.id.localeCompare(b.block.id))
     .map(({ block }) => block);
   if (blocks.length === 0) {
     return { status: 'UNAVAILABLE', reason: 'NO_MEANINGFUL_CONTENT' };

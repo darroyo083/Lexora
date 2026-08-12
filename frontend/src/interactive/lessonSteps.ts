@@ -1,8 +1,4 @@
-import type {
-  ContextLessonBlock,
-  Lesson,
-  LessonBlock,
-} from './lesson';
+import type { ContextLessonBlock, Lesson, LessonBlock } from './lesson';
 import { parseMatchingAnswer } from '../reader/matching';
 import { parseOrderedAnswer } from '../reader/ordering';
 
@@ -39,187 +35,81 @@ export interface CompletionLessonStep {
 
 export type LessonStep = ContextLessonStep | ActivityLessonStep | CompletionLessonStep;
 
-const CONTEXT_CHUNK_CHAR_LIMIT = 520;
-const CONTEXT_CHUNK_PARAGRAPH_LIMIT = 2;
-
-function splitContext(block: ContextLessonBlock): ContextLessonBlock['paragraphs'][] {
-  const chunks: ContextLessonBlock['paragraphs'][] = [];
-  let current: ContextLessonBlock['paragraphs'] = [];
-  let characters = 0;
-
-  for (const paragraph of block.paragraphs) {
-    const nextCharacters = characters + paragraph.text.length;
-    if (
-      current.length > 0
-      && (current.length >= CONTEXT_CHUNK_PARAGRAPH_LIMIT || nextCharacters > CONTEXT_CHUNK_CHAR_LIMIT)
-    ) {
-      chunks.push(current);
-      current = [];
-      characters = 0;
-    }
-    current.push(paragraph);
-    characters += paragraph.text.length;
+function answerIds(block: ActivityBlock): string[] {
+  switch (block.kind) {
+    case 'fill-blank': return block.blanks.map((blank) => blank.id);
+    case 'choice': return block.targets.map((target) => target.id);
+    case 'choice-grid': return block.grid.rows.map((row) => row.id);
+    case 'sentence-ordering': return block.interactions.map((interaction) => interaction.id);
+    case 'matching': return [block.interaction.id];
+    case 'free-text': return [block.interaction.id];
   }
-
-  if (current.length > 0) chunks.push(current);
-  return chunks;
 }
 
-function activityItemCount(block: ActivityBlock): number {
+function correctionIds(block: ActivityBlock): string[] {
+  return block.kind === 'choice-grid' ? [block.grid.id] : answerIds(block);
+}
+
+function itemCount(block: ActivityBlock): number {
   switch (block.kind) {
     case 'fill-blank': return block.blanks.length;
     case 'choice': return block.targets.length;
     case 'choice-grid': return block.grid.rows.length;
     case 'sentence-ordering': return block.interactions.length;
-    case 'matching':
+    case 'matching': return block.interaction.leftItems.length;
     case 'free-text': return 1;
-  }
-}
-
-function activityStep(
-  block: ActivityBlock,
-  activityIndex: number,
-  activityCount: number,
-  itemIndex: number,
-): ActivityLessonStep {
-  const itemCount = activityItemCount(block);
-
-  switch (block.kind) {
-    case 'fill-blank': {
-      const item = block.blanks[itemIndex];
-      return {
-        id: `${block.id}:item:${item.id}`,
-        kind: 'activity',
-        block,
-        activityIndex,
-        activityCount,
-        itemIndex,
-        itemCount,
-        answerItemIds: [item.id],
-        requiredAnswerIds: [item.id],
-        correctionItemIds: [item.id],
-      };
-    }
-    case 'choice': {
-      const item = block.targets[itemIndex];
-      return {
-        id: `${block.id}:item:${item.id}`,
-        kind: 'activity',
-        block,
-        activityIndex,
-        activityCount,
-        itemIndex,
-        itemCount,
-        answerItemIds: [item.id],
-        requiredAnswerIds: [item.id],
-        correctionItemIds: [item.id],
-      };
-    }
-    case 'choice-grid': {
-      const row = block.grid.rows[itemIndex];
-      const rowIds = block.grid.rows.map((candidate) => candidate.id);
-      const finalRow = itemIndex === itemCount - 1;
-      return {
-        id: `${block.id}:row:${row.id}`,
-        kind: 'activity',
-        block,
-        activityIndex,
-        activityCount,
-        itemIndex,
-        itemCount,
-        answerItemIds: [row.id],
-        requiredAnswerIds: finalRow ? rowIds : [row.id],
-        correctionItemIds: finalRow ? [block.grid.id] : [],
-      };
-    }
-    case 'sentence-ordering': {
-      const item = block.interactions[itemIndex];
-      return {
-        id: `${block.id}:item:${item.id}`,
-        kind: 'activity',
-        block,
-        activityIndex,
-        activityCount,
-        itemIndex,
-        itemCount,
-        answerItemIds: [item.id],
-        requiredAnswerIds: [item.id],
-        correctionItemIds: [item.id],
-      };
-    }
-    case 'matching':
-      return {
-        id: `${block.id}:item:${block.interaction.id}`,
-        kind: 'activity',
-        block,
-        activityIndex,
-        activityCount,
-        itemIndex: 0,
-        itemCount: 1,
-        answerItemIds: [block.interaction.id],
-        requiredAnswerIds: [block.interaction.id],
-        correctionItemIds: [block.interaction.id],
-      };
-    case 'free-text':
-      return {
-        id: `${block.id}:item:${block.interaction.id}`,
-        kind: 'activity',
-        block,
-        activityIndex,
-        activityCount,
-        itemIndex: 0,
-        itemCount: 1,
-        answerItemIds: [block.interaction.id],
-        requiredAnswerIds: [block.interaction.id],
-        correctionItemIds: [block.interaction.id],
-      };
   }
 }
 
 export function buildLessonSteps(lesson: Lesson): LessonStep[] {
   const blocks = lesson.sections.flatMap((section) => section.blocks);
-  const activityCount = blocks.filter((block) => block.kind !== 'context').length;
-  let activityIndex = 0;
+  const activities = blocks.filter((block): block is ActivityBlock => block.kind !== 'context');
   const steps: LessonStep[] = [];
 
-  for (const block of blocks) {
-    if (block.kind === 'context') {
-      const chunks = splitContext(block);
-      chunks.forEach((paragraphs, partIndex) => {
-        steps.push({
-          id: `${block.id}:part:${partIndex + 1}`,
-          kind: 'context',
-          block,
-          paragraphs,
-          partIndex,
-          partCount: chunks.length,
-        });
+  if (activities.length === 0) {
+    for (const block of blocks) {
+      if (block.kind !== 'context') continue;
+      steps.push({
+        id: block.id,
+        kind: 'context',
+        block,
+        paragraphs: block.paragraphs,
+        partIndex: 0,
+        partCount: 1,
       });
-      continue;
-    }
-
-    const currentActivityIndex = activityIndex++;
-    for (let itemIndex = 0; itemIndex < activityItemCount(block); itemIndex += 1) {
-      steps.push(activityStep(block, currentActivityIndex, activityCount, itemIndex));
     }
   }
+
+  activities.forEach((block, activityIndex) => {
+    const ids = answerIds(block);
+    steps.push({
+      id: block.exerciseId || block.id,
+      kind: 'activity',
+      block,
+      activityIndex,
+      activityCount: activities.length,
+      itemIndex: 0,
+      itemCount: itemCount(block),
+      answerItemIds: ids,
+      requiredAnswerIds: ids,
+      correctionItemIds: correctionIds(block),
+    });
+  });
 
   steps.push({
     id: `${lesson.id}:completion`,
     kind: 'completion',
-    activityCount,
+    activityCount: activities.length,
     interactionCount: lesson.interactionCount,
   });
   return steps;
 }
 
-export function stepAnswerComplete(
-  step: ActivityLessonStep,
-  answers: Record<string, string>,
-): boolean {
+export function stepAnswerComplete(step: ActivityLessonStep, answers: Record<string, string>): boolean {
   if (step.block.kind === 'sentence-ordering') {
-    const interaction = step.block.interactions[step.itemIndex];
-    return parseOrderedAnswer(answers[interaction.id]).length === interaction.items.length;
+    return step.block.interactions.every((interaction) => (
+      parseOrderedAnswer(answers[interaction.id]).length === interaction.items.length
+    ));
   }
   if (step.block.kind === 'matching') {
     const pairs = parseMatchingAnswer(answers[step.block.interaction.id]);

@@ -84,7 +84,7 @@ const RESOLUTION_LABEL: Partial<Record<AnswerResolutionStatus, string>> = {
 const FAMILY_COPY: Record<ActivityLessonStep['block']['kind'], { label: string; title: string }> = {
   'fill-blank': { label: 'Fill in the blank', title: 'Complete the sentence' },
   choice: { label: 'Choose', title: 'Choose an answer' },
-  'choice-grid': { label: 'Choose', title: 'Choose for this statement' },
+  'choice-grid': { label: 'Choice grid', title: 'Choose for each row' },
   'sentence-ordering': { label: 'Put in order', title: 'Build the sentence' },
   matching: { label: 'Match', title: 'Match the pairs' },
   'free-text': { label: 'Write', title: 'Write your response' },
@@ -218,8 +218,8 @@ function StepMeta({ step }: { step: ContextLessonStep | ActivityLessonStep }) {
 
   return (
     <div className="lesson-step-meta">
-      <span>Activity {step.activityIndex + 1} of {step.activityCount}</span>
-      {step.itemCount > 1 && <span>Item {step.itemIndex + 1} of {step.itemCount}</span>}
+      <span>Exercise {step.activityIndex + 1} of {step.activityCount}</span>
+      {step.block.exerciseNumber && <span>Source exercise {step.block.exerciseNumber}</span>}
     </div>
   );
 }
@@ -243,7 +243,7 @@ function ContextStepView({ step }: { step: ContextLessonStep }) {
 }
 
 function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Props }) {
-  const { block, itemIndex } = step;
+  const { block } = step;
   const family = FAMILY_COPY[block.kind];
   const feedback = (itemId: string) => (
     <CorrectionFeedback
@@ -258,131 +258,93 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
     />
   );
 
+  const title = block.exerciseTitle || block.prompt || family.title;
+  const intro = (
+    <>
+      <StepMeta step={step} />
+      <p className="lesson-family-label">{family.label}</p>
+      <h2 tabIndex={-1}>{title}</h2>
+      {block.instruction && <p className="lesson-exercise-instruction">{block.instruction}</p>}
+      {block.contextParagraphs && block.contextParagraphs.length > 0 && (
+        <aside className="lesson-inline-context" aria-label="Context from the workbook">
+          {block.contextParagraphs.map((paragraph) => <p key={paragraph.id}>{paragraph.text}</p>)}
+        </aside>
+      )}
+    </>
+  );
+
   if (block.kind === 'fill-blank') {
-    const blank = block.blanks[itemIndex];
-    const prompt = block.itemPrompts[blank.id] || block.prompt || family.title;
     return (
       <section className="lesson-step lesson-activity-step" data-kind={block.kind}>
-        <StepMeta step={step} />
-        <p className="lesson-family-label">{family.label}</p>
-        <h2 tabIndex={-1}>{prompt}</h2>
-        <div className="lesson-control-region lesson-fill-control">
-          <label htmlFor={`${blank.id}-answer`}>Your answer</label>
-          <input
-            id={`${blank.id}-answer`}
-            value={props.answers[blank.id] ?? ''}
-            onChange={(event) => props.onAnswerChange(blank.id, event.target.value)}
-            autoComplete="off"
-          />
+        {intro}
+        <div className="lesson-exercise-items lesson-fill-items">
+          {block.blanks.map((blank, index) => {
+            const prompt = block.itemPrompts[blank.id] || `Item ${index + 1}`;
+            return <div className="lesson-fill-item" key={blank.id}>
+              <label htmlFor={`${blank.id}-answer`}><span>{String.fromCharCode(97 + index)}) {prompt}</span><input id={`${blank.id}-answer`} value={props.answers[blank.id] ?? ''} onChange={(event) => props.onAnswerChange(blank.id, event.target.value)} autoComplete="off" aria-label={`Answer for ${prompt}`} /></label>
+              {feedback(blank.id)}
+            </div>;
+          })}
         </div>
-        {feedback(blank.id)}
       </section>
     );
   }
 
   if (block.kind === 'choice') {
-    const target = block.targets[itemIndex];
-    const prompt = block.itemPrompts[target.id] || block.prompt || family.title;
+    const groupsByTarget = Object.fromEntries(block.targets.map((target) => [
+      target.id,
+      block.groupsByTarget?.[target.id] ?? block.group,
+    ]));
+    const hasCompleteGroups = block.targets.every((target) => Boolean(groupsByTarget[target.id]));
     return (
       <section className="lesson-step lesson-activity-step" data-kind={block.kind}>
-        <StepMeta step={step} />
-        <p className="lesson-family-label">{family.label}</p>
-        <h2 tabIndex={-1}>{prompt}</h2>
-        {block.group ? (
-          <fieldset className="lesson-option-grid">
-            <legend className="sr-only">{prompt}</legend>
-            {block.group.options.map((option) => (
-              <label key={option.id} className="lesson-option">
-                <input
-                  type="radio"
-                  name={target.id}
-                  value={option.id}
-                  checked={props.answers[target.id] === option.id}
-                  onChange={() => props.onChoiceSelect(target.id, option.id)}
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
-          </fieldset>
+        {intro}
+        {hasCompleteGroups ? (
+          <div className="lesson-exercise-items lesson-choice-items">
+            {block.targets.map((target, index) => {
+              const prompt = block.itemPrompts[target.id] || `Question ${index + 1}`;
+              const group = groupsByTarget[target.id]!;
+              return <fieldset key={target.id} className="lesson-choice-item"><legend><span>{index + 1}</span>{prompt}</legend><div className="lesson-option-grid">{group.options.map((option) => <label key={option.id} className="lesson-option"><input type="radio" name={target.id} value={option.id} checked={props.answers[target.id] === option.id} onChange={() => props.onChoiceSelect(target.id, option.id)} /><span>{option.label}</span></label>)}</div>{feedback(target.id)}</fieldset>;
+            })}
+          </div>
         ) : (
           <div className="lesson-neutral-note">
             <BookOpen size={18} aria-hidden="true" />
-            <span>The source options could not be resolved safely. Use Classic for this item.</span>
+            <span>The source options could not be resolved safely. Use Classic for this exercise.</span>
           </div>
         )}
-        {feedback(target.id)}
       </section>
     );
   }
 
   if (block.kind === 'choice-grid') {
-    const row = block.grid.rows[itemIndex];
-    const prompt = block.rowPrompts[row.id] || block.prompt || family.title;
     return (
       <section className="lesson-step lesson-activity-step" data-kind={block.kind}>
-        <StepMeta step={step} />
-        <p className="lesson-family-label">{family.label}</p>
-        <h2 tabIndex={-1}>{prompt}</h2>
+        {intro}
         {block.group ? (
-          <fieldset className="lesson-option-grid lesson-grid-options">
-            <legend className="sr-only">{prompt}</legend>
-            {block.group.options.map((option) => (
-              <label key={option.id} className="lesson-option">
-                <input
-                  type="radio"
-                  name={row.id}
-                  value={option.id}
-                  checked={props.answers[row.id] === option.id}
-                  onChange={() => props.onGridSelect(row.id, option.id)}
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
-          </fieldset>
+          <div className="lesson-choice-grid" role="group" aria-label={title}>
+            <div className="lesson-choice-grid-head"><span>Item</span>{block.group.options.map((option) => <span key={option.id}>{option.label}</span>)}</div>
+            {block.grid.rows.map((row, index) => <div className="lesson-choice-grid-row" key={row.id}><strong>{block.rowPrompts[row.id] || `Item ${index + 1}`}</strong>{block.group!.options.map((option) => <label key={option.id}><span className="sr-only">{block.rowPrompts[row.id] || `Item ${index + 1}`}: {option.label}</span><input type="radio" name={row.id} value={option.id} checked={props.answers[row.id] === option.id} onChange={() => props.onGridSelect(row.id, option.id)} /></label>)}</div>)}
+            {feedback(block.grid.id)}
+          </div>
         ) : (
           <div className="lesson-neutral-note">
             <BookOpen size={18} aria-hidden="true" />
-            <span>The source options could not be resolved safely. Use Classic for this row.</span>
+            <span>The source options could not be resolved safely. Use Classic for this exercise.</span>
           </div>
         )}
-        {feedback(block.grid.id)}
       </section>
     );
   }
 
   if (block.kind === 'sentence-ordering') {
-    const ordering = block.interactions[itemIndex];
-    const selected = parseOrderedAnswer(props.answers[ordering.id]);
-    const itemById = new Map(ordering.items.map((item) => [item.id, item]));
-    const result = selected.map((id) => itemById.get(id)?.text ?? id).join(' ');
     return (
       <section className="lesson-step lesson-activity-step" data-kind={block.kind}>
-        <StepMeta step={step} />
-        <p className="lesson-family-label">{family.label}</p>
-        <h2 tabIndex={-1}>{block.prompt || family.title}</h2>
-        <div className="lesson-ordering-result" aria-live="polite">
-          <ListChecks size={18} aria-hidden="true" />
-          <span>{result || 'Choose each word in the order it belongs.'}</span>
-        </div>
-        <div className="lesson-token-row" aria-label="Available words">
-          {ordering.items.map((item) => {
-            const position = selected.indexOf(item.id);
-            return (
-              <button
-                type="button"
-                key={item.id}
-                className="lesson-token"
-                data-selected={position >= 0}
-                aria-pressed={position >= 0}
-                onClick={() => props.onOrderingItemClick(ordering.id, item.id)}
-              >
-                {position >= 0 && <span aria-hidden="true">{position + 1}</span>}
-                {item.text}
-              </button>
-            );
-          })}
-        </div>
-        {feedback(ordering.id)}
+        {intro}
+        <div className="lesson-exercise-items lesson-ordering-items">{block.interactions.map((ordering, index) => {
+          const selected = parseOrderedAnswer(props.answers[ordering.id]); const itemById = new Map(ordering.items.map((item) => [item.id, item])); const result = selected.map((id) => itemById.get(id)?.text ?? id).join(' ');
+          return <div className="lesson-ordering-item" key={ordering.id}><h3>{String.fromCharCode(97 + index)})</h3><div className="lesson-ordering-result" aria-live="polite"><ListChecks size={18} aria-hidden="true" /><span>{result || 'Choose each word in the order it belongs.'}</span></div><div className="lesson-token-row" aria-label={`Available words for item ${index + 1}`}>{ordering.items.map((item) => { const position = selected.indexOf(item.id); return <button type="button" key={item.id} className="lesson-token" data-selected={position >= 0} aria-pressed={position >= 0} onClick={() => props.onOrderingItemClick(ordering.id, item.id)}>{position >= 0 && <span aria-hidden="true">{position + 1}</span>}{item.text}</button>; })}</div>{feedback(ordering.id)}</div>;
+        })}</div>
       </section>
     );
   }
@@ -395,9 +357,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
       : null;
     return (
       <section className="lesson-step lesson-activity-step" data-kind={block.kind}>
-        <StepMeta step={step} />
-        <p className="lesson-family-label">{family.label}</p>
-        <h2 tabIndex={-1}>{block.prompt || family.title}</h2>
+        {intro}
         <p className="lesson-step-help"><Link2 size={16} aria-hidden="true" /> Choose one item from each side.</p>
         <div className="lesson-matching-columns">
           <div>
@@ -447,12 +407,9 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
     );
   }
 
-  const prompt = block.prompt || family.title;
   return (
     <section className="lesson-step lesson-activity-step" data-kind={block.kind}>
-      <StepMeta step={step} />
-      <p className="lesson-family-label">{family.label}</p>
-      <h2 tabIndex={-1}>{prompt}</h2>
+      {intro}
       <div className="lesson-control-region lesson-free-text-control">
         <label htmlFor={`${block.interaction.id}-answer`}>Your response</label>
         <textarea
@@ -463,6 +420,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
         />
         <small>Open response. Your work is saved, but Lexora does not claim an automatic grade.</small>
       </div>
+      <p className="lesson-save-status" role="status">{props.answers[block.interaction.id]?.trim() ? 'Saved on this device' : 'Your response saves automatically as you type.'}</p>
       {feedback(block.interaction.id)}
     </section>
   );
@@ -481,7 +439,13 @@ function CompletionStepView({ pageNumber, activityCount }: { pageNumber: number;
 }
 
 function isUnsupportedActivity(step: ActivityLessonStep): boolean {
-  return (step.block.kind === 'choice' || step.block.kind === 'choice-grid') && !step.block.group;
+  const block = step.block;
+  if (block.kind === 'choice') {
+    return block.targets.some((target) => !(
+      block.groupsByTarget?.[target.id] ?? block.group
+    ));
+  }
+  return block.kind === 'choice-grid' && !block.group;
 }
 
 function stepHasFeedback(step: ActivityLessonStep, props: Props): boolean {
@@ -564,7 +528,11 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
 
   const activeIndex = Math.max(0, steps.findIndex((step) => step.id === activeStepId));
   const step = steps[activeIndex] ?? steps[0];
-  const progress = steps.length === 0 ? 0 : ((activeIndex + 1) / steps.length) * 100;
+  const activitySteps = steps.filter((candidate) => candidate.kind === 'activity');
+  const activityPosition = step.kind === 'activity'
+    ? step.activityIndex + 1
+    : step.kind === 'completion' ? activitySteps.length : 0;
+  const progress = activitySteps.length === 0 ? 0 : (activityPosition / activitySteps.length) * 100;
 
   useEffect(() => {
     if (!focusAfterNavigation.current) return;
@@ -587,6 +555,7 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
   const hasFeedback = activityStep ? stepHasFeedback(activityStep, props) : false;
   const canEvaluate = Boolean(
     activityStep
+    && activityStep.block.kind !== 'free-text'
     && !unsupported
     && activityStep.correctionItemIds.length > 0
     && props.canCheck
@@ -609,8 +578,8 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
   const primaryLabel = step.kind === 'completion'
     ? props.pageNumber < props.pageCount ? 'Next page' : 'Open Classic'
     : step.kind === 'activity' && canEvaluate && !hasFeedback
-      ? step.block.kind === 'free-text' ? 'Save response' : 'Check answer'
-      : 'Continue';
+      ? 'Check answers'
+      : step.kind === 'activity' ? 'Next exercise' : 'Continue';
 
   const stepLabel = step.kind === 'context'
     ? 'Read'
@@ -629,18 +598,18 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
         <button type="button" className="lesson-classic-link" onClick={props.onUseClassic}>
           <BookOpen size={16} aria-hidden="true" /> Classic
         </button>
-        <div className="lesson-progress" aria-label={`Lesson progress, step ${activeIndex + 1} of ${steps.length}`}>
+        <div className="lesson-progress" aria-label={`Lesson progress, exercise ${activityPosition} of ${activitySteps.length}`}>
           <div className="lesson-progress-copy">
             <span>{stepLabel}</span>
-            <span>{activeIndex + 1} of {steps.length}</span>
+            <span>{activityPosition} of {activitySteps.length} exercises</span>
           </div>
           <div
             className="lesson-progress-track"
             role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={steps.length}
-            aria-valuenow={activeIndex + 1}
-            aria-label={`Lesson step ${activeIndex + 1} of ${steps.length}`}
+            aria-valuemin={0}
+            aria-valuemax={activitySteps.length}
+            aria-valuenow={activityPosition}
+            aria-label={`Exercise ${activityPosition} of ${activitySteps.length}`}
           >
             <span style={{ transform: `scaleX(${progress / 100})` }} />
           </div>

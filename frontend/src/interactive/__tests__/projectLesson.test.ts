@@ -13,6 +13,7 @@ function analysis(overrides: Partial<PageAnalysis> = {}): PageAnalysis {
     width: 1200,
     height: 1600,
     language: 'de',
+    semanticExercises: [],
     textSpans: [
       { id: 'title', text: 'Konjunktiv II', confidence: 0.99, confidenceScope: 'line', bbox: box(0.1, 0.04, 0.5) },
       { id: 'instruction', text: 'Ergänzen Sie die Sätze.', confidence: 0.96, confidenceScope: 'line', bbox: box(0.1, 0.15, 0.5) },
@@ -83,18 +84,17 @@ describe('projectLesson', () => {
       source: { bookId: 'book-1', pageNumber: 12, schemaVersion: '1.4', processorEngine: 'lexora-ai' },
     });
     expect(blocks.map((block) => block.kind)).toEqual([
-      'context', 'context', 'fill-blank', 'choice', 'choice-grid',
+      'fill-blank', 'choice', 'choice-grid',
       'sentence-ordering', 'matching', 'free-text',
     ]);
-    expect(blocks[1]).toMatchObject({ kind: 'context', variant: 'instruction' });
-    expect(blocks[2]).toMatchObject({
+    expect(blocks[0]).toMatchObject({
       kind: 'fill-blank',
       prompt: 'Wenn ich Zeit hätte?',
       itemPrompts: { 'blank-1': 'Wenn ich Zeit hätte?', 'blank-2': 'Wenn ich Zeit hätte?' },
       evidence: { interactionIds: ['blank-1', 'blank-2'], detectionMethods: ['horizontal-line-v1', 'short-suffix-line-v1'] },
     });
-    expect(blocks[3]).toMatchObject({ kind: 'choice', group: { id: 'choice-group' } });
-    expect(blocks[5]).toMatchObject({
+    expect(blocks[1]).toMatchObject({ kind: 'choice', group: { id: 'choice-group' } });
+    expect(blocks[3]).toMatchObject({
       kind: 'sentence-ordering',
       interactions: [{ id: 'ordering-1' }, { id: 'ordering-2' }],
     });
@@ -107,10 +107,42 @@ describe('projectLesson', () => {
     expect(second).toEqual(first);
     if (first.status !== 'AVAILABLE') return;
     expect(first.lesson.sections[0].blocks[0].evidence).toMatchObject({
-      spanIds: ['title'],
-      interactionIds: [],
-      confidence: 0.99,
-      detectionMethods: ['ocr'],
+      spanIds: ['blank-prompt', 'blank-punctuation'],
+      interactionIds: ['blank-1', 'blank-2'],
+      detectionMethods: ['horizontal-line-v1', 'short-suffix-line-v1'],
+    });
+  });
+
+  it('coalesces separate option groups that belong to one semantic exercise', () => {
+    const source = analysis({
+      choiceGroups: [
+        { id: 'first-options', options: [{ id: 'yes', label: 'Ja' }, { id: 'no', label: 'Nein' }] },
+        { id: 'second-options', options: [{ id: 'cinema', label: 'Kino' }, { id: 'park', label: 'Park' }] },
+      ],
+      choiceTargets: [
+        { id: 'choice-1', kind: 'choice', targetBbox: box(0.4, 0.42), interactionBbox: box(0.39, 0.41), optionGroupId: 'first-options', detectionMethod: 'empty-ring-v1', candidateScore: 0.86, nearbyTextSpanIds: ['choice-prompt'] },
+        { id: 'choice-2', kind: 'choice', targetBbox: box(0.5, 0.46), interactionBbox: box(0.49, 0.45), optionGroupId: 'second-options', detectionMethod: 'empty-ring-v1', candidateScore: 0.84, nearbyTextSpanIds: ['choice-prompt'] },
+      ],
+      semanticExercises: [{
+        id: 'exercise-8', number: '8', title: 'Welche Nachricht passt?', instruction: 'Wähle.',
+        kind: 'choice', bbox: box(0.1, 0.38, 0.7, 0.12), sourceOrder: 8,
+        interactionIds: ['choice-1', 'choice-2'], contextSpanIds: ['choice-prompt'],
+        detectionMethod: 'vision-semantic-v1', confidence: 0.95,
+      }],
+    });
+
+    const result = projectLesson({ bookId: 'book-1', pageNumber: 12, analysis: source });
+    if (result.status !== 'AVAILABLE') throw new Error('Expected an available lesson');
+    const choices = result.lesson.sections[0].blocks.filter((block) => block.kind === 'choice');
+    expect(choices).toHaveLength(1);
+    expect(choices[0]).toMatchObject({
+      exerciseId: 'exercise-8',
+      targets: [{ id: 'choice-1' }, { id: 'choice-2' }],
+      group: null,
+      groupsByTarget: {
+        'choice-1': { id: 'first-options' },
+        'choice-2': { id: 'second-options' },
+      },
     });
   });
 

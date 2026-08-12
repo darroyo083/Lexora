@@ -1,54 +1,50 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test('landing explains the product, loads real evidence, and provides tactile keyboard-safe actions', async ({ page }) => {
+test('public routes explain the product with real evidence and keyboard-safe actions', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('heading', {
     level: 1,
-    name: /Scanned workbooks.*Structured practice/i,
+    name: /Turn workbook exercises into focused practice/i,
   })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Try the real precomputed demo' }))
-    .toHaveAttribute('href', '/demo');
-  await expect(page.getByRole('link', { name: 'View source' }))
-    .toHaveAttribute('href', 'https://github.com/darroyo083/Lexora');
-  await expect(page.locator('.landing-shell')).not.toContainText(/OpenCode Go|MiMo/i);
-  await expect(page.locator('.landing-kicker span')).toHaveCount(0);
+  const primary = page.getByRole('link', { name: 'Try the demo' });
+  await expect(primary).toHaveAttribute('href', '/demo');
+  await expect(page.locator('.site-shell')).not.toContainText(/OpenCode Go|MiMo/i);
 
-  const evidence = page.getByAltText(/answer lerne marked correct/i);
+  const evidence = page.getByAltText(/source-backed German exercise/i);
   await expect(evidence).toBeVisible();
   expect(await evidence.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1440);
 
-  const primary = page.getByRole('link', { name: 'Try the real precomputed demo' });
-  await primary.hover();
-  await expect(primary).toHaveCSS('transform', /matrix\(1, 0, 0, 1, 0, -3\)/);
-
-  for (let index = 0; index < 8; index += 1) await page.keyboard.press('Tab');
+  await primary.focus();
   await expect(primary).toBeFocused();
   await expect(primary).toHaveCSS('outline-style', 'solid');
 
-  await page.getByRole('button', { name: /06 FreeText/i }).click();
-  await expect(page.getByText(/Open responses stay neutral/i)).toBeVisible();
-  await page.getByRole('button', { name: /04 React reader/i }).click();
-  await expect(page.getByText(/One product surface provides guided practice/i)).toBeVisible();
+  await page.getByRole('link', { name: 'Explore the product' }).click();
+  await expect(page).toHaveURL(/\/product$/);
+  await page.getByRole('tab', { name: 'Free text' }).click();
+  await page.getByRole('textbox', { name: /Schreibe einen Satz/ }).fill('Am Morgen lerne ich Deutsch.');
+  await expect(page.getByText(/Saved locally.*stays ungraded/i)).toBeVisible();
 
-  const video = page.getByLabel('Lexora product demo video, 66 seconds');
+  await page.goto('/how-it-works');
+  const video = page.getByLabel('Lexora product walkthrough, 66 seconds');
   await expect(video).toHaveAttribute('preload', 'metadata');
-  await video.hover();
-  await expect(page.locator('.video-preview')).toHaveCSS('transform', /matrix\(1, 0, 0, 1, 0, -4\)/);
-  await video.focus();
-  await expect(page.locator('.video-preview')).toHaveCSS('border-top-color', 'rgb(152, 196, 156)');
+  await expect(video).toHaveAttribute('poster', '/release/lexora-demo-poster.png');
+  await expect(video).not.toHaveAttribute('controls', /.*/);
+  await expect(page.getByRole('button', { name: 'Play video' })).toBeVisible();
+
+  await page.goto('/engineering');
+  await expect(page.getByRole('link', { name: /View source/ }))
+    .toHaveAttribute('href', 'https://github.com/darroyo083/Lexora');
 });
 
-test('landing stays complete without hover at a touch viewport', async ({ page }) => {
+test('product showcase stays complete without hover at a touch viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/product');
 
-  await expect(page.getByRole('link', { name: 'Try the real precomputed demo' })).toBeVisible();
-  await page.goto('/#interactions');
-  await expect(page.getByRole('button', { name: /01 FillBlank/i })).toBeVisible();
-  await expect(page.getByText(/Typed responses mapped to source-backed blank regions/i))
-    .toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open navigation' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Fill blank' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Missing verb' })).toBeVisible();
   expect(await page.evaluate(() => (
     document.documentElement.scrollWidth <= window.innerWidth
   ))).toBe(true);
@@ -65,52 +61,38 @@ test('keeps essential presentation complete across release viewports', async ({ 
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Try the real precomputed demo' })).toBeVisible();
-    await page.locator('#video').scrollIntoViewIfNeeded();
-    await expect(page.getByLabel('Lexora product demo video, 66 seconds')).toBeVisible();
-    await page.locator('footer').scrollIntoViewIfNeeded();
-    await expect(page.getByRole('link', { name: 'GitHub', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Try the demo' })).toBeVisible();
+    await page.goto('/how-it-works');
+    await expect(page.getByLabel('Lexora product walkthrough, 66 seconds')).toBeVisible();
+    await page.goto('/engineering');
+    await expect(page.getByRole('link', { name: /View source/ })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
       .toBe(true);
   }
 });
 
 test('has no automatically detectable WCAG A or AA violations', async ({ page }) => {
-  await page.goto('/');
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa'])
-    .analyze();
-  expect(results.violations).toEqual([]);
+  for (const route of ['/', '/product', '/how-it-works', '/engineering']) {
+    await page.goto(route);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  }
 });
 
-test('removes decorative landing transitions when reduced motion is requested', async ({ page }) => {
-  test.setTimeout(60_000);
+test('removes decorative transition duration when reduced motion is requested', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   expect(await page.evaluate(() => (
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   ))).toBe(true);
-  const evidence = page.locator('.hero-evidence');
-  await expect(evidence).toHaveCSS('transform', 'none');
-  expect(await evidence.evaluate((element) => (
-    Number.parseFloat(getComputedStyle(element).transitionDuration)
-  ))).toBeLessThanOrEqual(0.001);
 
-  const reducedMotionTargets = [
-    ['.landing-wordmark', '.landing-mark'],
-    ['.landing-nav-cta', '.landing-nav-cta'],
-    ['.landing-button', '.landing-button'],
-    ['.transform-rail li', '.transform-rail li > svg'],
-    ['.mode-copy > a', '.mode-copy > a svg'],
-    ['.mode-image', '.mode-image img'],
-    ['.interaction-list button', '.interaction-list button svg'],
-    ['.engineering-proof article', '.engineering-proof article'],
-    ['.video-preview', '.video-preview'],
-    ['.video-caption a', '.video-caption a svg'],
-  ] as const;
-
-  for (const [triggerSelector, targetSelector] of reducedMotionTargets) {
-    await page.locator(triggerSelector).first().hover();
-    await expect(page.locator(targetSelector).first()).toHaveCSS('transform', 'none');
+  for (const selector of ['.site-button', '.site-demo-link', '.home-route-grid a']) {
+    const target = page.locator(selector).first();
+    await target.hover();
+    expect(await target.evaluate((element) => (
+      Number.parseFloat(getComputedStyle(element).transitionDuration)
+    ))).toBeLessThanOrEqual(0.001);
   }
 });

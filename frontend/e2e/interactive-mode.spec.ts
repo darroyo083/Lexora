@@ -138,45 +138,44 @@ test('completes native interactions, checks conservatively, and restores work', 
 
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
   const fill = await advanceToKind(page, 'fill-blank');
-  await fill.getByRole('textbox', { name: 'Your answer' }).fill('bin');
-  await page.getByRole('button', { name: 'Check answer' }).click();
+  await fill.getByRole('textbox', { name: /Answer for/ }).fill('bin');
+  await page.getByRole('button', { name: 'Check answers' }).click();
   await expect(page.getByText('Correct', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
 
   const choice = await advanceToKind(page, 'choice');
   await choice.getByRole('radio', { name: 'A', exact: true }).locator('..').click();
-  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByRole('button', { name: 'Check answers' }).click();
   await expect(page.getByText('Not graded')).toBeVisible();
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
 
   const grid = await advanceToKind(page, 'choice-grid');
   await grid.getByRole('radio').last().locator('..').click();
-  await page.getByRole('button', { name: 'Check answer' }).click();
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
 
   const ordering = await advanceToKind(page, 'sentence-ordering');
   await ordering.getByRole('button', { name: 'Ich' }).click();
   await ordering.getByRole('button', { name: 'lerne', exact: true }).click();
-  await page.getByRole('button', { name: 'Check answer' }).click();
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
 
   const matching = await advanceToKind(page, 'matching');
   await matching.getByRole('button', { name: /1\. lernen/ }).click();
   await matching.getByRole('button', { name: /A\. study/ }).click();
-  await page.getByRole('button', { name: 'Check answer' }).click();
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
 
   const freeText = await advanceToKind(page, 'free-text');
   await freeText.getByRole('textbox', { name: 'Your response' }).fill('Eine freie Antwort.');
-  await page.getByRole('button', { name: 'Save response' }).click();
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
   await expect(page.getByRole('heading', { name: 'Lesson complete' })).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Lesson complete' })).toBeVisible();
   await expect((await backToKind(page, 'free-text')).getByRole('textbox', { name: 'Your response' })).toHaveValue('Eine freie Antwort.');
-  await expect((await backToKind(page, 'fill-blank')).getByRole('textbox', { name: 'Your answer' })).toHaveValue('bin');
+  await expect((await backToKind(page, 'fill-blank')).getByRole('textbox', { name: /Answer for/ })).toHaveValue('bin');
 });
 
 test('persists mode, navigates to an unavailable lesson, and keeps Classic fallback', async ({ page }) => {
@@ -236,30 +235,30 @@ test('supports keyboard operation across all six native interaction families', a
     return page.locator(`.lesson-step[data-kind="${kind}"]`);
   };
 
-  const fill = await openStep('page-1-fill-blank-1:item:blank-1', 'fill-blank');
-  await fill.getByRole('textbox', { name: 'Your answer' }).focus();
+  const fill = await openStep('page-1-fill-blank-1', 'fill-blank');
+  await fill.getByRole('textbox', { name: /Answer for/ }).focus();
   await page.keyboard.type('bin');
-  await expect(fill.getByRole('textbox', { name: 'Your answer' })).toHaveValue('bin');
+  await expect(fill.getByRole('textbox', { name: /Answer for/ })).toHaveValue('bin');
 
-  const choice = await openStep('page-1-choice-choice-1:item:choice-1', 'choice');
+  const choice = await openStep('page-1-choice-choice-1', 'choice');
   const choiceRadio = choice.getByRole('radio').first();
   await choiceRadio.focus();
   await page.keyboard.press('Space');
   await expect(choiceRadio).toBeChecked();
 
-  const grid = await openStep('page-1-grid-grid-1:row:row-1', 'choice-grid');
+  const grid = await openStep('page-1-grid-grid-1', 'choice-grid');
   const gridRadio = grid.getByRole('radio').first();
   await gridRadio.focus();
   await page.keyboard.press('Space');
   await expect(gridRadio).toBeChecked();
 
-  const ordering = await openStep('page-1-ordering-order-exercise:item:ordering-1', 'sentence-ordering');
+  const ordering = await openStep('order-exercise', 'sentence-ordering');
   const token = ordering.locator('.lesson-token').first();
   await token.focus();
   await page.keyboard.press('Enter');
   await expect(token).toHaveAttribute('aria-pressed', 'true');
 
-  const matching = await openStep('page-1-matching-matching-1:item:matching-1', 'matching');
+  const matching = await openStep('page-1-matching-matching-1', 'matching');
   const matchButtons = matching.locator('.lesson-match-item');
   await matchButtons.first().focus();
   await page.keyboard.press('Space');
@@ -267,7 +266,7 @@ test('supports keyboard operation across all six native interaction families', a
   await page.keyboard.press('Enter');
   await expect(matchButtons.first()).toHaveAttribute('data-paired', 'true');
 
-  const freeText = await openStep('page-1-free-free-1:item:free-1', 'free-text');
+  const freeText = await openStep('page-1-free-free-1', 'free-text');
   await freeText.getByRole('textbox', { name: 'Your response' }).focus();
   await page.keyboard.type('Keyboard response');
   await expect(freeText.getByRole('textbox', { name: 'Your response' })).toHaveValue('Keyboard response');
@@ -279,7 +278,7 @@ test('keeps a native interaction inside every target viewport without document s
     localStorage.setItem('lexora.lessonProgress.v1', JSON.stringify({ version: 1, stepByLesson: { [lessonId]: stepId } }));
   }, {
     lessonId: `${BOOK_ID}:page:1`,
-    stepId: 'page-1-matching-matching-1:item:matching-1',
+    stepId: 'page-1-matching-matching-1',
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/demo');

@@ -19,7 +19,7 @@ html[data-surface="landing"]::-webkit-scrollbar-thumb:hover { background: oklch(
   --site-line-strong: oklch(0.42 0.027 145);
   --site-ink: oklch(0.955 0.008 110);
   --site-muted: oklch(0.72 0.019 140);
-  --site-dim: oklch(0.57 0.019 140);
+  --site-dim: oklch(0.60 0.019 140);
   --site-sage: oklch(0.77 0.095 145);
   --site-sage-bright: oklch(0.84 0.1 145);
   --site-sage-ink: oklch(0.2 0.035 145);

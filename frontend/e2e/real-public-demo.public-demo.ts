@@ -2,15 +2,17 @@ import { createHash } from 'node:crypto';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const BOOK_ID = '00000000-0000-4000-8000-000000000001';
-const SOURCE_SHA256 = '1d5ddb54822d9bfd80840fd11412f25c51e2a7535b4a4677b93719545c729e9c';
+const SOURCE_SHA256 = '7185f637a2a55c22d4e3d846475e6bd6e1682b835f5c76fc76ae91e51aa8d7c9';
 
 async function completeCurrentStep(page: Page) {
   const step = page.locator('.lesson-step');
   const kind = await step.getAttribute('data-kind');
   if (kind === 'fill-blank') {
-    await step.getByRole('textbox', { name: 'Your answer' }).fill('probe');
-  } else if (kind === 'choice' || kind === 'choice-grid') {
-    await step.getByRole('radio').first().locator('..').click();
+    for (const textbox of await step.getByRole('textbox').all()) await textbox.fill('probe');
+  } else if (kind === 'choice') {
+    for (const fieldset of await step.locator('fieldset').all()) await fieldset.getByRole('radio').first().check();
+  } else if (kind === 'choice-grid') {
+    for (const row of await step.locator('.lesson-choice-grid-row').all()) await row.getByRole('radio').first().check();
   } else if (kind === 'sentence-ordering') {
     const tokens = step.locator('.lesson-token');
     for (let index = 0; index < await tokens.count(); index += 1) await tokens.nth(index).click();
@@ -23,8 +25,8 @@ async function completeCurrentStep(page: Page) {
   if (await primary.isEnabled()) {
     const label = (await primary.textContent())?.trim();
     await primary.click();
-    if (label === 'Check answer' || label === 'Save response') {
-      await expect(primary).toContainText('Continue');
+    if (label === 'Check answers') {
+      await expect(primary).toContainText('Next exercise');
       await primary.click();
     }
   }
@@ -84,6 +86,26 @@ test('serves one real precomputed source in Classic and Interactive modes', asyn
   expect(browserRequests.some((url) => /\/process|\/extract|\/analy[sz]e/i.test(url))).toBe(false);
 });
 
+test('serves focused public routes with history and responsive layout', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Turn workbook exercises');
+  await page.getByRole('link', { name: 'Explore the product' }).click();
+  await expect(page).toHaveURL(/\/product$/);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('The exercise stays whole');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.goto('/how-it-works');
+  const video = page.getByLabel('Lexora product walkthrough, 66 seconds');
+  await expect(video).toHaveAttribute('poster', '/release/lexora-demo-poster.png');
+  await expect(video).not.toHaveAttribute('controls', /.*/);
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/product');
+  await expect(page.getByRole('button', { name: 'Open navigation' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test('fixes Match grading for labels resolved to generated IDs and supports retry', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.clear();
@@ -97,7 +119,7 @@ test('fixes Match grading for labels resolved to generated IDs and supports retr
   await pair(matching, /2\. die Bibliothek/, /B\. Züge/);
   await pair(matching, /3\. der Bahnhof/, /C\. Brot/);
   await pair(matching, /4\. die Apotheke/, /D\. Bücher/);
-  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByRole('button', { name: 'Check answers' }).click();
   const incorrect = page.locator('.lesson-feedback[data-verdict="incorrect"], .lesson-feedback[data-verdict="partially-correct"]');
   await expect(incorrect.first()).toContainText(/Not quite|partly/i);
   await incorrect.first().getByRole('button', { name: 'Try again' }).click();
@@ -106,7 +128,7 @@ test('fixes Match grading for labels resolved to generated IDs and supports retr
   await pair(matching, /2\. die Bibliothek/, /D\. Bücher/);
   await pair(matching, /1\. die Bäckerei/, /C\. Brot/);
   await pair(matching, /3\. der Bahnhof/, /B\. Züge/);
-  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByRole('button', { name: 'Check answers' }).click();
   await expect(page.locator('.lesson-feedback[data-verdict="correct"]')).toContainText('Correct');
 });
 
@@ -132,6 +154,19 @@ test('keeps Classic usable as a document-first mobile workspace', async ({ page 
   expect(railBox!.width).toBeLessThanOrEqual(375);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(await pageArea.evaluate((element) => element.scrollWidth >= element.clientWidth)).toBe(true);
+});
+
+test('keeps grouped Interactive exercises usable on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem('lexora.readerMode.v1', 'interactive');
+  });
+  await page.goto('/demo');
+  await expect(page.getByText('1 of 3 exercises')).toBeVisible();
+  await expect(page.locator('.lesson-step[data-kind="fill-blank"]')).toBeVisible();
+  await expect(page.getByRole('textbox')).toHaveCount(3);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test('enforces the public read-only API boundary', async ({ request }) => {

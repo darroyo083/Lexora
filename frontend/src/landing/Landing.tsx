@@ -1,283 +1,236 @@
-import { useState, type PointerEvent } from 'react';
+import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import {
-ArrowRight, ArrowUpRight, BookOpen, Braces, Check, Code2,
-Layers3, Play, ScanLine, ScanText, ShieldCheck,
+  ArrowRight, ArrowUpRight, BookOpen, Braces, Code2, Menu, ScanLine,
+  ShieldCheck, X,
 } from 'lucide-react';
+import InteractionShowcase from './InteractionShowcase';
+import VideoPlayer from './VideoPlayer';
 import './landing.css';
 
-const interactionFamilies = [
-  { name: 'FillBlank', index: '01', detail: 'Typed responses mapped to source-backed blank regions.' },
-  { name: 'Choice', index: '02', detail: 'Focused option selection with authoritative feedback.' },
-  { name: 'ChoiceGrid', index: '03', detail: 'Row-aware decisions without flattening workbook structure.' },
-  { name: 'SentenceOrdering', index: '04', detail: 'Reorderable fragments that preserve exercise intent.' },
-  { name: 'Matching', index: '05', detail: 'Pair relationships rendered as a direct manipulation task.' },
-  { name: 'FreeText', index: '06', detail: 'Open responses stay neutral when no authority exists.' },
-] as const;
+type PublicRoute = '/' | '/product' | '/how-it-works' | '/engineering';
 
-const architecture = [
-  { id: 'vision', label: 'Private AI analysis', meta: 'Vision AI / bounded input', detail: 'The local/private workflow sends one bounded page image to a multimodal model and validates a strict, versioned PageAnalysis contract.' },
-  { id: 'service', label: 'Spring Boot', meta: 'Books, profiles, correction', detail: 'The application core owns book state, page profiles, correction authority, and the public read-only boundary.' },
-  { id: 'projection', label: 'Lesson projection', meta: 'Source-backed transformation', detail: 'A deterministic projection turns supported page structures into focused lesson steps without inventing content.' },
-  { id: 'reader', label: 'React reader', meta: 'Interactive + Classic', detail: 'One product surface provides guided practice and a source-faithful fallback, including keyboard, touch, and responsive layouts.' },
-] as const;
+const routes: Array<{ href: PublicRoute; label: string }> = [
+  { href: '/', label: 'Home' },
+  { href: '/product', label: 'Product' },
+  { href: '/how-it-works', label: 'How it works' },
+  { href: '/engineering', label: 'Engineering' },
+];
 
-export default function Landing() {
-  const [activeFamily, setActiveFamily] = useState(0);
-  const [activeArchitecture, setActiveArchitecture] = useState('vision');
+function currentRoute(): PublicRoute {
+  const path = window.location.pathname.replace(/\/$/, '') || '/';
+  return routes.some((route) => route.href === path) ? path as PublicRoute : '/';
+}
 
-  const handleEvidencePointer = (event: PointerEvent<HTMLElement>) => {
-    if (event.pointerType === 'touch') return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-    event.currentTarget.style.setProperty('--evidence-x', x.toFixed(3));
-    event.currentTarget.style.setProperty('--evidence-y', y.toFixed(3));
+function RouteLink({ href, children, className, onNavigate }: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+  onNavigate?: () => void;
+}) {
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey
+      || event.shiftKey || event.altKey || !href.startsWith('/') || href.startsWith('/demo')
+    ) return;
+    event.preventDefault();
+    window.history.pushState({}, '', href);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    onNavigate?.();
   };
+  return <a href={href} className={className} onClick={handleClick}>{children}</a>;
+}
 
-  const resetEvidencePointer = (event: PointerEvent<HTMLElement>) => {
-    event.currentTarget.style.setProperty('--evidence-x', '0');
-    event.currentTarget.style.setProperty('--evidence-y', '0');
-  };
+function SiteHeader({ route }: { route: PublicRoute }) {
+  const [open, setOpen] = useState(false);
 
-  const selectedArchitecture = architecture.find((item) => item.id === activeArchitecture)
-    ?? architecture[0];
+  useEffect(() => setOpen(false), [route]);
 
   return (
-    <div className="landing-shell">
-      <a className="landing-skip" href="#landing-main">Skip to content</a>
-      <header className="landing-nav">
-        <a className="landing-wordmark" href="#top">
-          <span className="landing-mark" aria-hidden="true">L</span><span>Lexora</span>
-        </a>
-        <nav aria-label="Landing navigation">
-          <a href="#modes">Modes</a>
-          <a href="#interactions">Interactions</a>
-          <a href="#architecture">Engineering</a>
-          <a href="#video">Video</a>
-        </nav>
-        <a className="landing-nav-cta" href="/demo">
-          Open demo <ArrowUpRight size={14} aria-hidden="true" />
-        </a>
-      </header>
+    <header className="site-header">
+      <RouteLink className="site-wordmark" href="/">
+        <span className="site-mark" aria-hidden="true">L</span><span>Lexora</span>
+      </RouteLink>
+      <button className="site-menu-button" type="button" aria-expanded={open}
+        aria-controls="site-navigation" onClick={() => setOpen((value) => !value)}>
+        {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
+        <span className="sr-only">{open ? 'Close navigation' : 'Open navigation'}</span>
+      </button>
+      <nav id="site-navigation" aria-label="Public navigation" data-open={open}>
+        {routes.map((item) => (
+          <RouteLink key={item.href} href={item.href} onNavigate={() => setOpen(false)}>
+            <span aria-current={route === item.href ? 'page' : undefined}>{item.label}</span>
+          </RouteLink>
+        ))}
+      </nav>
+      <a className="site-demo-link" href="/demo">Open demo <ArrowUpRight size={15} aria-hidden="true" /></a>
+    </header>
+  );
+}
 
-      <main id="landing-main">
-        <section className="landing-hero" id="top" aria-labelledby="landing-title">
-          <div className="hero-copy">
-            <p className="landing-kicker">Source-faithful language practice</p>
-            <h1 id="landing-title">Scanned workbooks.<br /><em>Structured practice.</em></h1>
-            <p className="hero-deck">
-              Lexora turns workbook pages into focused interactive lessons, and keeps the
-              original source in a source-faithful Classic Mode whenever fidelity matters
-              more than transformation.
-            </p>
-            <div className="hero-actions" aria-label="Project actions">
-              <a className="landing-button landing-button-primary" href="/demo">
-                Try the real precomputed demo <ArrowRight size={17} aria-hidden="true" />
-              </a>
-              <a className="landing-button landing-button-secondary"
-                href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer">
-                <Code2 size={17} aria-hidden="true" /> View source
-              </a>
-            </div>
-            <p className="hero-boundary">
-              <ShieldCheck size={15} aria-hidden="true" /> Real multimodal analysis, precomputed once for zero-cost public access.
-            </p>
-          </div>
+function ProductFrame({ compact = false }: { compact?: boolean }) {
+  return (
+    <figure className={`product-frame${compact ? ' product-frame-compact' : ''}`}>
+      <img src="/release/lexora-interactive.webp" width="1440" height="900"
+        alt="Lexora Interactive mode presenting a source-backed German exercise"
+        fetchPriority={compact ? undefined : 'high'} />
+    </figure>
+  );
+}
 
-          <figure className="hero-evidence" onPointerMove={handleEvidencePointer}
-            onPointerLeave={resetEvidencePointer} tabIndex={0}
-            aria-label="Real Lexora Interactive lesson showing a correct fill-in-the-blank response">
-            <div className="evidence-rail">
-              <span>REAL UI / PUBLIC-SAFE FIXTURE</span><span>INTERACTIVE / CORRECT</span>
-            </div>
-            <div className="evidence-window">
-              <img src="/release/lexora-interactive.webp" width="1440" height="900"
-                alt="Lexora Interactive mode with the answer lerne marked correct"
-                fetchPriority="high" />
-            </div>
-            <figcaption><span>Guided step 02 / 08</span><span>Source-backed correction</span></figcaption>
-          </figure>
-        </section>
+function PageIntro({ eyebrow, title, copy, children }: {
+  eyebrow?: string;
+  title: string;
+  copy: string;
+  children?: ReactNode;
+}) {
+  return (
+    <section className="page-intro">
+      <div>
+        {eyebrow && <p className="site-kicker">{eyebrow}</p>}
+        <h1>{title}</h1>
+        <p>{copy}</p>
+        {children}
+      </div>
+    </section>
+  );
+}
 
-        <section className="landing-transform" aria-labelledby="transform-title">
-          <div className="section-heading compact">
-            <p className="landing-kicker">The transformation</p>
-            <h2 id="transform-title">One source. Two trustworthy ways to learn.</h2>
+function HomePage() {
+  return (
+    <>
+      <section className="home-hero">
+        <div className="home-copy">
+          <p className="site-kicker">Source-faithful language practice</p>
+          <h1>Turn workbook exercises into focused practice.</h1>
+          <p>Lexora rebuilds each source exercise as one coherent learner task, with the original page always within reach.</p>
+          <div className="site-actions">
+            <a className="site-button site-button-primary" href="/demo">Try the demo <ArrowRight size={17} aria-hidden="true" /></a>
+            <RouteLink className="site-button site-button-secondary" href="/product">Explore the product</RouteLink>
           </div>
-          <ol className="transform-rail">
-            <li><ScanLine aria-hidden="true" /><span className="transform-index">INPUT</span>
-              <strong>Scanned page</strong><p>Original layout and context</p></li>
-            <li><Braces aria-hidden="true" /><span className="transform-index">CONTRACT</span>
-              <strong>Structured analysis</strong><p>Versioned, bounded page data</p></li>
-            <li><Layers3 aria-hidden="true" /><span className="transform-index">OUTPUT</span>
-              <strong>Guided lesson</strong><p>One focused interaction at a time</p></li>
-          </ol>
-        </section>
+        </div>
+        <ProductFrame />
+      </section>
+      <section className="home-trust" aria-labelledby="home-trust-title">
+        <h2 id="home-trust-title">One source. Two trustworthy views.</h2>
+        <div className="trust-points">
+          <article><strong>Interactive</strong><p>Complete the full exercise, check it once, then move forward.</p></article>
+          <article><strong>Classic</strong><p>Return to the original workbook page whenever source context matters.</p></article>
+          <article><strong>Grounded</strong><p>Ambiguous answers stay neutral. Lexora never invents correction authority.</p></article>
+        </div>
+      </section>
+      <section className="home-route-grid" aria-label="Explore Lexora">
+        <RouteLink href="/product"><span>Product</span><strong>See complete exercise interactions</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
+        <RouteLink href="/how-it-works"><span>How it works</span><strong>Follow the source-to-lesson path</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
+        <RouteLink href="/engineering"><span>Engineering</span><strong>Review the deterministic boundary</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
+      </section>
+    </>
+  );
+}
 
-        <section className="landing-modes" id="modes" aria-labelledby="modes-title">
-          <div className="section-heading">
-            <p className="landing-kicker">Product modes</p>
-            <h2 id="modes-title">Transformation with an escape hatch.</h2>
-            <p>Interactive makes practice deliberate. Classic protects source truth.</p>
-          </div>
+function ProductPage() {
+  return (
+    <>
+      <PageIntro eyebrow="Product" title="The exercise stays whole."
+        copy="Interactive Mode preserves the source exercise boundary, while Classic Mode preserves the page itself.">
+        <div className="site-actions"><a className="site-button site-button-primary" href="/demo">Practice now <ArrowRight size={17} aria-hidden="true" /></a></div>
+      </PageIntro>
+      <section className="mode-comparison" aria-labelledby="mode-comparison-title">
+        <div className="section-copy"><h2 id="mode-comparison-title">Two views of the same material.</h2><p>Switch modes without losing the page or your orientation.</p></div>
+        <article><div><span>Interactive</span><h3>Work through a complete task.</h3><p>Related blanks, questions, rows, tokens, or pairs remain together.</p></div><img src="/release/lexora-interactive.webp" width="1440" height="900" alt="Interactive Mode showing a focused exercise workspace" /></article>
+        <article><img src="/release/lexora-classic.webp" width="1440" height="900" alt="Classic Mode showing the original synthetic workbook page" /><div><span>Classic</span><h3>Check the source at any time.</h3><p>The workbook remains the authority for layout, wording, and uncertain structure.</p></div></article>
+      </section>
+      <InteractionShowcase />
+    </>
+  );
+}
 
-          <article className="mode-feature mode-interactive">
-            <div className="mode-number">A</div>
-            <div className="mode-copy">
-              <p className="mode-label">Interactive Mode</p>
-              <h3>Attention stays on the exercise, not the page chrome.</h3>
-              <p>A viewport-native player sequences source context, six interaction families,
-                progress, and correction into one clear next action.</p>
-              <ul>
-                <li><Check size={15} aria-hidden="true" /> Focused, saved steps</li>
-                <li><Check size={15} aria-hidden="true" /> Authoritative feedback</li>
-                <li><Check size={15} aria-hidden="true" /> Keyboard and touch complete</li>
-              </ul>
-            </div>
-            <figure className="mode-image mode-image-mobile">
-              <img src="/release/lexora-mobile.webp" width="390" height="844"
-                alt="Lexora lesson player adapted to a mobile viewport" loading="lazy" />
-            </figure>
-          </article>
+function HowItWorksPage() {
+  return (
+    <>
+      <PageIntro eyebrow="How it works" title="Understanding first. Rendering second."
+        copy="Multimodal AI identifies source structure. Lexora validates it, groups complete exercises, and renders a consistent learning interface." />
+      <section className="signal-path" aria-label="Lexora transformation path">
+        <article><ScanLine aria-hidden="true" /><span>Source</span><h2>Visual workbook page</h2><p>Original content, order, and geometry remain traceable.</p></article>
+        <article><Braces aria-hidden="true" /><span>Understanding</span><h2>Semantic exercise data</h2><p>Bounded analysis identifies titles, instructions, related items, and evidence.</p></article>
+        <article><BookOpen aria-hidden="true" /><span>Experience</span><h2>Deterministic lesson</h2><p>Lexora controls layout, correction, navigation, accessibility, and fallback.</p></article>
+      </section>
+      <section className="film-section" aria-labelledby="film-title">
+        <div className="section-copy"><h2 id="film-title">See the product in motion.</h2><p>The current short walkthrough covers Interactive, correction, Classic, and responsive behavior.</p></div>
+        <VideoPlayer />
+      </section>
+      <section className="public-private" aria-labelledby="runtime-title">
+        <h2 id="runtime-title">Private analysis. Public certainty.</h2>
+        <div><article><span>Local workflow</span><p>An owner PDF is rasterized, analyzed, and validated through the private runtime.</p></article><article><span>Public demo</span><p>Frozen validated analysis is read-only. Visitors trigger zero provider inference.</p></article></div>
+      </section>
+    </>
+  );
+}
 
-          <article className="mode-feature mode-classic">
-            <div className="mode-number">B</div>
-            <figure className="mode-image mode-image-classic">
-              <img src="/release/lexora-classic.webp" width="1440" height="900"
-                alt="Lexora Classic mode preserving the synthetic workbook page and contextual exercise rail"
-                loading="lazy" />
-            </figure>
-            <div className="mode-copy">
-              <p className="mode-label">Classic Mode</p>
-              <h3>The source is a feature, not a fallback of last resort.</h3>
-              <p>Unsupported or ambiguous content stays grounded in the original page. Learners
-                retain context; the product avoids pretending that uncertain structure is known.</p>
-              <a href="/demo">Compare both modes <ArrowRight size={16} aria-hidden="true" /></a>
-            </div>
-          </article>
-        </section>
+function EngineeringPage() {
+  return (
+    <>
+      <PageIntro eyebrow="Engineering" title="AI at the boundary. Determinism after it."
+        copy="The model may understand document structure. Product behavior remains contract-driven, testable, conservative, and source-backed." />
+      <section className="engineering-flow" aria-label="Engineering architecture">
+        {[
+          ['Private analysis', 'A bounded page image enters the multimodal workflow.'],
+          ['Validated contract', 'PageAnalysis rejects malformed, invented, or mismatched structures.'],
+          ['Exercise projection', 'Semantic groups become stable Lexora exercise families.'],
+          ['Reader', 'Interactive and Classic share source, answers, and correction.'],
+        ].map(([title, copy], index) => <article key={title}><span>{String(index + 1).padStart(2, '0')}</span><h2>{title}</h2><p>{copy}</p></article>)}
+      </section>
+      <section className="engineering-invariants" aria-labelledby="invariants-title">
+        <ShieldCheck size={34} aria-hidden="true" /><h2 id="invariants-title">The public boundary stays small.</h2>
+        <ul><li>No provider credential</li><li>No AI service</li><li>No arbitrary upload</li><li>No process endpoint</li><li>Demo book only</li><li>Fail-closed grading</li></ul>
+      </section>
+      <section className="engineering-source"><div><h2>Inspect the implementation.</h2><p>Architecture, tests, and the synthetic public dataset are available in the repository.</p></div><a className="site-button site-button-secondary" href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer"><Code2 size={17} aria-hidden="true" /> View source</a></section>
+    </>
+  );
+}
 
-        <section className="landing-interactions" id="interactions" aria-labelledby="interactions-title">
-          <div className="section-heading split">
-            <div><p className="landing-kicker">Interaction system</p>
-              <h2 id="interactions-title">Six families.<br />One correction model.</h2></div>
-            <p>Hover, focus, or tap an interaction. The product supports six families; the public
-              workbook shows the structures Vision AI detected in original synthetic material.</p>
-          </div>
-          <div className="interaction-index">
-            <div className="interaction-list" aria-label="Supported interaction families">
-              {interactionFamilies.map((family, index) => (
-                <button key={family.name} type="button"
-                  className={activeFamily === index ? 'active' : ''}
-                  aria-pressed={activeFamily === index}
-                  onMouseEnter={() => setActiveFamily(index)}
-                  onFocus={() => setActiveFamily(index)}
-                  onClick={() => setActiveFamily(index)}>
-                  <span>{family.index}</span><strong>{family.name}</strong>
-                  <ArrowUpRight size={18} aria-hidden="true" />
-                </button>
-              ))}
-            </div>
-            <div className="interaction-detail" aria-live="polite">
-              <ScanText size={22} aria-hidden="true" />
-              <p className="mode-label">Selected family</p>
-              <h3>{interactionFamilies[activeFamily].name}</h3>
-              <p>{interactionFamilies[activeFamily].detail}</p>
-              <span>Supported by Lexora</span>
-            </div>
-          </div>
-        </section>
+function SiteFooter() {
+  return (
+    <footer className="site-footer">
+      <RouteLink className="site-wordmark" href="/"><span className="site-mark" aria-hidden="true">L</span><span>Lexora</span></RouteLink>
+      <nav aria-label="Footer navigation">{routes.slice(1).map((route) => <RouteLink key={route.href} href={route.href}>{route.label}</RouteLink>)}</nav>
+      <a href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={13} aria-hidden="true" /></a>
+    </footer>
+  );
+}
 
-        <section className="landing-architecture" id="architecture" aria-labelledby="architecture-title">
-          <div className="section-heading split">
-            <div><p className="landing-kicker">Engineering signal path</p>
-              <h2 id="architecture-title">AI at the boundary.<br />Determinism downstream.</h2></div>
-            <p>The provider may infer page structure. Product behavior after that boundary is
-              contract-driven, testable, and deliberately conservative.</p>
-          </div>
-          <div className="architecture-map">
-            <ol>
-              {architecture.map((item, index) => (
-                <li key={item.id}>
-                  <button type="button" className={activeArchitecture === item.id ? 'active' : ''}
-                    aria-pressed={activeArchitecture === item.id}
-                    onMouseEnter={() => setActiveArchitecture(item.id)}
-                    onFocus={() => setActiveArchitecture(item.id)}
-                    onClick={() => setActiveArchitecture(item.id)}>
-                    <span>0{index + 1}</span><strong>{item.label}</strong><small>{item.meta}</small>
-                  </button>
-                  {index < architecture.length - 1 && <ArrowRight aria-hidden="true" />}
-                </li>
-              ))}
-            </ol>
-            <div className="architecture-readout" aria-live="polite">
-              <span>ACTIVE NODE / {selectedArchitecture.id.toUpperCase()}</span>
-              <p>{selectedArchitecture.detail}</p>
-            </div>
-          </div>
-          <div className="engineering-proof">
-            <article><span>PUBLIC RUNTIME</span><h3>No AI service or credential</h3>
-              <p>The deployed demo serves frozen validated analysis and makes zero provider calls.</p></article>
-            <article><span>TRUST</span><h3>Fail-closed correction</h3>
-              <p>Ambiguous and unmapped answers remain neutral instead of becoming false authority.</p></article>
-            <article><span>PUBLIC DEMO</span><h3>Zero inference spend</h3>
-              <p>Real multimodal AI output from synthetic content blocks anonymous upload, processing, and extraction.</p></article>
-          </div>
-        </section>
+export default function Landing() {
+  const [route, setRoute] = useState<PublicRoute>(currentRoute);
 
-        <section className="landing-video" id="video" aria-labelledby="video-title">
-          <div className="section-heading split">
-            <div><p className="landing-kicker">Product film</p>
-              <h2 id="video-title">The complete trust story.<br />In 66 seconds.</h2></div>
-            <p>A silent-safe walkthrough of the real curated demo: transformation, four native
-              interaction families, grounded correction, Classic Mode, and responsive behavior.</p>
-          </div>
-          <div className="video-preview">
-            <div className="video-rail">
-              <span>PRODUCT FILM / 1920 × 1080</span><span>REAL UI EVIDENCE / NO PRIVATE MATERIAL</span>
-            </div>
-            <video controls preload="metadata" playsInline
-              poster="/release/lexora-demo-poster.png"
-              aria-label="Lexora product demo video, 66 seconds"
-              width="1920" height="1080">
-              <source src="/release/lexora-demo.mp4" type="video/mp4" />
-              Your browser does not support embedded video. The same real product states are
-              available throughout this page and in the curated demo.
-            </video>
-            <div className="video-caption"><span>Caption-led / understandable without sound</span>
-              <a href="/release/lexora-demo.mp4" download>Download MP4 <ArrowRight size={14} aria-hidden="true" /></a></div>
-          </div>
-        </section>
+  useEffect(() => {
+    const syncRoute = () => {
+      setRoute(currentRoute());
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    };
+    window.addEventListener('popstate', syncRoute);
+    return () => window.removeEventListener('popstate', syncRoute);
+  }, []);
 
-        <section className="landing-safety" aria-labelledby="safety-title">
-          <div className="safety-icon"><ShieldCheck size={32} aria-hidden="true" /></div>
-          <div><p className="landing-kicker">Grounded by design</p>
-            <h2 id="safety-title">Useful without pretending certainty.</h2></div>
-          <p>Lexora preserves provenance, uses authoritative correction only when a mapping exists,
-            and publishes no private workbook pages, OCR dumps, or answer-key material.</p>
-        </section>
+  useEffect(() => {
+    const titles: Record<PublicRoute, string> = {
+      '/': 'Lexora | Source-faithful workbook practice',
+      '/product': 'Product | Lexora',
+      '/how-it-works': 'How it works | Lexora',
+      '/engineering': 'Engineering | Lexora',
+    };
+    document.title = titles[route];
+  }, [route]);
 
-        <section className="landing-final" aria-labelledby="final-title">
-          <BookOpen size={38} aria-hidden="true" />
-          <p className="landing-kicker">See the system work</p>
-          <h2 id="final-title">From source page to deliberate practice.</h2>
-          <p>Explore real AI-generated interactions in a bounded, public-safe workbook.</p>
-          <div className="hero-actions">
-            <a className="landing-button landing-button-primary" href="/demo">
-              Open the demo <Play size={16} fill="currentColor" aria-hidden="true" /></a>
-            <a className="landing-button landing-button-secondary"
-              href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer">
-              Review the code <ArrowUpRight size={16} aria-hidden="true" /></a>
-          </div>
-        </section>
+  return (
+    <div className="site-shell">
+      <a className="site-skip" href="#site-main">Skip to content</a>
+      <SiteHeader route={route} />
+      <main id="site-main">
+        {route === '/' && <HomePage />}
+        {route === '/product' && <ProductPage />}
+        {route === '/how-it-works' && <HowItWorksPage />}
+        {route === '/engineering' && <EngineeringPage />}
       </main>
-
-      <footer className="landing-footer">
-        <a className="landing-wordmark" href="#top"><span className="landing-mark" aria-hidden="true">L</span>Lexora</a>
-        <p>Source-faithful interactive workbook practice.</p>
-        <a href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer">
-          GitHub <ArrowUpRight size={13} aria-hidden="true" /></a>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

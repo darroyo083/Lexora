@@ -1,51 +1,59 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Landing from './Landing';
 
-afterEach(cleanup);
+beforeEach(() => {
+  window.history.replaceState({}, '', '/');
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+});
 
-describe('portfolio landing', () => {
-  it('communicates the product and exposes real project destinations', () => {
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
+
+describe('Lexora public site', () => {
+  it('opens a focused home route with real product destinations', () => {
     render(<Landing />);
 
-    expect(screen.getByRole('heading', {
-      level: 1,
-      name: /scanned workbooks.*structured practice/i,
-    })).toBeTruthy();
-    expect(screen.getAllByRole('link', { name: /demo/i })[0].getAttribute('href'))
-      .toBe('/demo');
-    expect(screen.getByRole('link', { name: /view source/i }).getAttribute('href'))
-      .toBe('https://github.com/darroyo083/Lexora');
-    expect(screen.getByAltText(/answer lerne marked correct/i).getAttribute('src'))
-      .toBe('/release/lexora-interactive.webp');
-    const video = screen.getByLabelText('Lexora product demo video, 66 seconds');
-    expect(video.getAttribute('poster')).toBe('/release/lexora-demo-poster.png');
-    expect(video.getAttribute('preload')).toBe('metadata');
-    expect(screen.getByRole('link', { name: /Download MP4/i }).getAttribute('href'))
-      .toBe('/release/lexora-demo.mp4');
+    expect(screen.getByRole('heading', { level: 1, name: /turn workbook exercises/i })).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: /open demo|try the demo/i })[0].getAttribute('href')).toBe('/demo');
+    expect(screen.getByRole('link', { name: /explore the product/i }).getAttribute('href')).toBe('/product');
+    expect(screen.getByText(/one source\. two trustworthy views/i)).toBeTruthy();
+    expect(screen.getByText(/ambiguous answers stay neutral/i)).toBeTruthy();
   });
 
-  it('keeps interaction and architecture detail available to click and focus', () => {
+  it('navigates product routes through history without an anchor-only page', () => {
     render(<Landing />);
 
-    const freeText = screen.getByRole('button', { name: /06.*FreeText/i });
-    fireEvent.focus(freeText);
-    expect(screen.getByText(/open responses stay neutral/i)).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('link', { name: 'Product' })[0]);
+    expect(window.location.pathname).toBe('/product');
+    expect(screen.getByRole('heading', { level: 1, name: /exercise stays whole/i })).toBeTruthy();
+    expect(document.title).toBe('Product | Lexora');
 
-    const reader = screen.getByRole('button', { name: /04.*React reader/i });
-    fireEvent.click(reader);
-    expect(screen.getByText(/one product surface provides guided practice/i)).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('link', { name: 'Engineering' })[0]);
+    expect(screen.getByRole('heading', { level: 1, name: /ai at the boundary/i })).toBeTruthy();
+    expect(screen.getByText(/no provider credential/i)).toBeTruthy();
   });
 
-  it('lists all six supported interaction families without hover dependence', () => {
+  it('supports direct deep links and all six real interaction families', () => {
+    window.history.replaceState({}, '', '/product');
     render(<Landing />);
 
-    for (const family of [
-      'FillBlank', 'Choice', 'ChoiceGrid',
-      'SentenceOrdering', 'Matching', 'FreeText',
-    ]) {
-      expect(screen.getByRole('button', { name: new RegExp(`${family}$`, 'i') })).toBeTruthy();
+    for (const family of ['Fill blank', 'Choice', 'Choice grid', 'Sentence ordering', 'Matching', 'Free text']) {
+      expect(screen.getByRole('tab', { name: new RegExp(`^${family}$`, 'i') })).toBeTruthy();
     }
+  });
+
+  it('uses the existing video asset through custom controls', () => {
+    window.history.replaceState({}, '', '/how-it-works');
+    render(<Landing />);
+
+    const video = screen.getByLabelText('Lexora product walkthrough, 66 seconds');
+    expect(video.getAttribute('poster')).toBe('/release/lexora-demo-poster.png');
+    expect(video.querySelector('source')?.getAttribute('src')).toBe('/release/lexora-demo.mp4');
+    expect(video.hasAttribute('controls')).toBe(false);
+    expect(screen.getByRole('button', { name: 'Play video' })).toBeTruthy();
   });
 });

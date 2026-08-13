@@ -5,22 +5,11 @@ import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const output = resolve(here, '../public/release');
-const videoOutput = resolve(here, '../../video/public/evidence');
-const baseUrl = process.env.LEXORA_CAPTURE_BASE_URL ?? 'http://127.0.0.1:18088';
+const baseUrl = process.env.LEXORA_CAPTURE_BASE_URL ?? 'http://127.0.0.1:8088';
 
 await mkdir(output, { recursive: true });
-await mkdir(videoOutput, { recursive: true });
 
-const browser = await chromium.launch();
-try {
-  const desktop = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
-    colorScheme: 'dark',
-  });
-  const page = await desktop.newPage();
-  await page.addInitScript(() => localStorage.clear());
-  await page.goto(`${baseUrl}/demo`, { waitUntil: 'networkidle' });
-
+async function verifyPublicBoundary(page) {
   const boundary = await page.evaluate(async () => {
     const response = await fetch('/api/public-demo');
     return response.json();
@@ -32,86 +21,40 @@ try {
     || boundary.model !== 'mimo-v2.5') {
     throw new Error('Release captures require the curated read-only public demo');
   }
+}
 
-  await page.getByRole('heading', { name: 'A deliberate daily practice' }).waitFor();
-  await page.screenshot({
-    path: resolve(videoOutput, 'interactive-start.webp'),
-    type: 'webp',
-    quality: 92,
+async function openCleanDemo(page) {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto(`${baseUrl}/demo`, { waitUntil: 'networkidle' });
+  await verifyPublicBoundary(page);
+  await page.getByRole('heading', { name: 'Mein Morgen' }).waitFor();
+}
+
+const browser = await chromium.launch();
+try {
+  const desktop = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    colorScheme: 'dark',
   });
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByRole('textbox', { name: 'Your answer' }).fill('lerne');
-  await page.getByRole('button', { name: 'Check answer' }).click();
-  await page.getByText('Correct', { exact: true }).waitFor();
+  const page = await desktop.newPage();
+  await openCleanDemo(page);
+
   await page.screenshot({
     path: resolve(output, 'lexora-interactive.webp'),
     type: 'webp',
     quality: 90,
   });
-  await page.screenshot({
-    path: resolve(videoOutput, 'interactive-correct.webp'),
-    type: 'webp',
-    quality: 92,
-  });
 
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByRole('radio', { name: 'Guten Morgen' }).locator('..').click();
-  await page.getByRole('button', { name: 'Check answer' }).click();
-  await page.getByText('Correct', { exact: true }).waitFor();
-  await page.screenshot({
-    path: resolve(videoOutput, 'choice-correct.webp'),
-    type: 'webp',
-    quality: 92,
-  });
-
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByRole('radio', { name: 'der', exact: true }).locator('..').click();
-  await page.getByRole('button', { name: 'Check answer' }).click();
-  await page.screenshot({
-    path: resolve(videoOutput, 'choice-grid.webp'),
-    type: 'webp',
-    quality: 92,
-  });
-
-  await page.getByRole('button', { name: 'Continue' }).click();
-  for (const token of ['Ich', 'lerne', 'jeden', 'Tag']) {
-    await page.getByRole('button', { name: token, exact: true }).click();
-  }
-  await page.getByRole('button', { name: 'Check answer' }).click();
-  await page.screenshot({
-    path: resolve(videoOutput, 'sentence-ordering.webp'),
-    type: 'webp',
-    quality: 92,
-  });
-
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByRole('button', { name: /1\. lernen/ }).click();
-  await page.getByRole('button', { name: /A\. study/ }).click();
-  await page.getByRole('button', { name: /2\. Buch/ }).click();
-  await page.getByRole('button', { name: /B\. book/ }).click();
-  await page.getByRole('button', { name: 'Check answer' }).click();
-  await page.screenshot({
-    path: resolve(videoOutput, 'matching.webp'),
-    type: 'webp',
-    quality: 92,
-  });
-
-  await page.getByRole('button', { name: 'Classic' }).first().click();
+  await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
   await page.locator('canvas').first().waitFor({ state: 'visible' });
   await page.screenshot({
     path: resolve(output, 'lexora-classic.webp'),
     type: 'webp',
-    quality: 88,
-  });
-  await page.screenshot({
-    path: resolve(videoOutput, 'classic.webp'),
-    type: 'webp',
-    quality: 92,
+    quality: 90,
   });
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: /Scanned workbooks.*Structured practice/i }).waitFor();
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole('heading', { name: /Turn workbook exercises/i }).waitFor();
   await page.screenshot({
     path: resolve(output, 'lexora-landing.webp'),
     type: 'webp',
@@ -126,18 +69,11 @@ try {
     hasTouch: true,
   });
   const mobilePage = await mobile.newPage();
-  await mobilePage.addInitScript(() => localStorage.clear());
-  await mobilePage.goto(`${baseUrl}/demo`, { waitUntil: 'networkidle' });
-  await mobilePage.getByRole('heading', { name: 'A deliberate daily practice' }).waitFor();
+  await openCleanDemo(mobilePage);
   await mobilePage.screenshot({
     path: resolve(output, 'lexora-mobile.webp'),
     type: 'webp',
-    quality: 88,
-  });
-  await mobilePage.screenshot({
-    path: resolve(videoOutput, 'mobile.webp'),
-    type: 'webp',
-    quality: 92,
+    quality: 90,
   });
   await mobile.close();
 
@@ -146,9 +82,9 @@ try {
     colorScheme: 'dark',
   });
   const socialPage = await social.newPage();
+  await socialPage.addInitScript(() => localStorage.clear());
   await socialPage.goto(baseUrl, { waitUntil: 'networkidle' });
-  await socialPage.getByRole('heading', { name: /Scanned workbooks.*Structured practice/i }).waitFor();
-  await socialPage.evaluate(() => window.scrollTo(0, 0));
+  await socialPage.getByRole('heading', { name: /Turn workbook exercises/i }).waitFor();
   await socialPage.screenshot({
     path: resolve(output, 'lexora-social.png'),
     type: 'png',

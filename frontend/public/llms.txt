@@ -6,4 +6,3 @@ does not trigger external AI inference.
 
 - [Project overview](https://github.com/darroyo083/Lexora)
 - [Interactive public demo](/demo)
-- [Portfolio film](/release/lexora-demo.mp4)

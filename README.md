@@ -8,7 +8,6 @@ The read-only public demo is built from validated multimodal AI output. It runs 
 
 - **Real precomputed demo:** run the public stack below, then open `http://127.0.0.1:8088/demo`.
 - **Source:** this repository. A real public URL remains a deployment-time decision.
-- **Earlier product walkthrough:** [watch or download the caption-led 66-second MP4](frontend/public/release/lexora-demo.mp4). A final cut for the polished interface is intentionally deferred.
 
 The demo runs the real product against deliberately created content. It cannot upload, process, delete, or expose arbitrary books, and opening it does not call the external provider.
 
@@ -130,15 +129,14 @@ $env:LEXORA_CAPTURE_BASE_URL = 'http://127.0.0.1:18088'
 npm run capture:release
 ```
 
-The capture script first verifies that `/api/public-demo` declares real precomputed provider provenance, is read-only, and cannot trigger analysis. The existing video and poster remain tracked, but their polished-UI replacement belongs to a separate owner-approved media pass.
+The capture script first verifies that `/api/public-demo` declares real precomputed provider provenance, is read-only, uses the expected internal provider/model contract, and cannot trigger analysis.
 
 ## Public versus private
 
 Safe, intentional release material lives in:
 
 - `backend/src/main/resources/demo/` — original synthetic PDF, normalized validated analyses, provenance, and public answer-key data;
-- `frontend/public/release/` — selected screenshots, social image, poster, and existing MP4;
-- `video/public/evidence/` — curated-demo states used by the existing film composition.
+- `frontend/public/release/` — selected current product screenshots and the social image.
 
 The private workbook, derived page captures, OCR dumps, answer-key dumps, provider payloads, local storage, credentials, and temporary browser/render output are not public assets and are not included.
 

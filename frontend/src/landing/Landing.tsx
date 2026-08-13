@@ -1,23 +1,28 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import {
-  ArrowRight, ArrowUpRight, BookOpen, Braces, Code2, Menu, ScanLine,
-  ShieldCheck, X,
+  ArrowRight, ArrowUpRight, BookOpen, Braces, Code2, Menu, Moon, ScanLine,
+  ShieldCheck, Sun, X,
 } from 'lucide-react';
 import InteractionShowcase from './InteractionShowcase';
-import VideoPlayer from './VideoPlayer';
+import BrandMark from '../components/BrandMark';
+import { readThemeModePreference, writeThemeModePreference, type ThemeMode } from '../state/theme';
 import './landing.css';
 
-type PublicRoute = '/' | '/product' | '/how-it-works' | '/engineering';
+type PublicRoute = '/' | '/product' | '/how-it-works' | '/inside-lexora';
 
 const routes: Array<{ href: PublicRoute; label: string }> = [
   { href: '/', label: 'Home' },
   { href: '/product', label: 'Product' },
   { href: '/how-it-works', label: 'How it works' },
-  { href: '/engineering', label: 'Engineering' },
+  { href: '/inside-lexora', label: 'Inside Lexora' },
 ];
 
 function currentRoute(): PublicRoute {
   const path = window.location.pathname.replace(/\/$/, '') || '/';
+  if (path === '/engineering') {
+    window.history.replaceState({}, '', '/inside-lexora');
+    return '/inside-lexora';
+  }
   return routes.some((route) => route.href === path) ? path as PublicRoute : '/';
 }
 
@@ -33,14 +38,30 @@ function RouteLink({ href, children, className, onNavigate }: {
       || event.shiftKey || event.altKey || !href.startsWith('/') || href.startsWith('/demo')
     ) return;
     event.preventDefault();
-    window.history.pushState({}, '', href);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    onNavigate?.();
+    const navigate = () => {
+      window.history.pushState({}, '', href);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      onNavigate?.();
+    };
+    const transitionDocument = document as Document & {
+      startViewTransition?: (update: () => void) => unknown;
+    };
+    const reducedMotion = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (transitionDocument.startViewTransition && !reducedMotion) {
+      transitionDocument.startViewTransition(navigate);
+    } else {
+      navigate();
+    }
   };
   return <a href={href} className={className} onClick={handleClick}>{children}</a>;
 }
 
-function SiteHeader({ route }: { route: PublicRoute }) {
+function SiteHeader({ route, theme, onToggleTheme }: {
+  route: PublicRoute;
+  theme: ThemeMode;
+  onToggleTheme: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => setOpen(false), [route]);
@@ -48,7 +69,7 @@ function SiteHeader({ route }: { route: PublicRoute }) {
   return (
     <header className="site-header">
       <RouteLink className="site-wordmark" href="/">
-        <span className="site-mark" aria-hidden="true">L</span><span>Lexora</span>
+        <BrandMark className="site-brand-mark" />
       </RouteLink>
       <button className="site-menu-button" type="button" aria-expanded={open}
         aria-controls="site-navigation" onClick={() => setOpen((value) => !value)}>
@@ -62,7 +83,13 @@ function SiteHeader({ route }: { route: PublicRoute }) {
           </RouteLink>
         ))}
       </nav>
-      <a className="site-demo-link" href="/demo">Open demo <ArrowUpRight size={15} aria-hidden="true" /></a>
+      <div className="site-header-actions">
+        <button className="site-theme-toggle" type="button" onClick={onToggleTheme}
+          aria-label={theme === 'dark' ? 'Use light theme' : 'Use dark theme'}>
+          {theme === 'dark' ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
+        </button>
+        <a className="site-demo-link" href="/demo">Open demo <ArrowUpRight size={15} aria-hidden="true" /></a>
+      </div>
     </header>
   );
 }
@@ -121,7 +148,7 @@ function HomePage() {
       <section className="home-route-grid" aria-label="Explore Lexora">
         <RouteLink href="/product"><span>Product</span><strong>See complete exercise interactions</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
         <RouteLink href="/how-it-works"><span>How it works</span><strong>Follow the source-to-lesson path</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
-        <RouteLink href="/engineering"><span>Engineering</span><strong>Review the deterministic boundary</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
+        <RouteLink href="/inside-lexora"><span>Inside Lexora</span><strong>See what keeps the demo trustworthy</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
       </section>
     </>
   );
@@ -154,9 +181,17 @@ function HowItWorksPage() {
         <article><Braces aria-hidden="true" /><span>Understanding</span><h2>Semantic exercise data</h2><p>Bounded analysis identifies titles, instructions, related items, and evidence.</p></article>
         <article><BookOpen aria-hidden="true" /><span>Experience</span><h2>Deterministic lesson</h2><p>Lexora controls layout, correction, navigation, accessibility, and fallback.</p></article>
       </section>
-      <section className="film-section" aria-labelledby="film-title">
-        <div className="section-copy"><h2 id="film-title">See the product in motion.</h2><p>The current short walkthrough covers Interactive, correction, Classic, and responsive behavior.</p></div>
-        <VideoPlayer />
+      <section className="static-product-section" aria-labelledby="static-product-title">
+        <div className="static-product-copy">
+          <span>Real product, real source</span>
+          <h2 id="static-product-title">Structure becomes practice. The page stays close.</h2>
+          <p>This is the current public demo: a complete source exercise in Interactive Mode, with the original synthetic workbook always available in Classic.</p>
+          <a className="site-button site-button-primary" href="/demo">Open the live demo <ArrowRight size={17} aria-hidden="true" /></a>
+        </div>
+        <figure className="static-product-preview">
+          <img src="/release/lexora-interactive.webp" width="1440" height="900" alt="Current Lexora Interactive Mode presenting a source-backed German exercise" />
+          <figcaption><span>Interactive</span><span>Current public demo</span></figcaption>
+        </figure>
       </section>
       <section className="public-private" aria-labelledby="runtime-title">
         <h2 id="runtime-title">Private analysis. Public certainty.</h2>
@@ -166,12 +201,12 @@ function HowItWorksPage() {
   );
 }
 
-function EngineeringPage() {
+function InsideLexoraPage() {
   return (
     <>
-      <PageIntro eyebrow="Engineering" title="AI at the boundary. Determinism after it."
+      <PageIntro eyebrow="Inside Lexora" title="AI at the boundary. Determinism after it."
         copy="The model may understand document structure. Product behavior remains contract-driven, testable, conservative, and source-backed." />
-      <section className="engineering-flow" aria-label="Engineering architecture">
+      <section className="engineering-flow" aria-label="How Lexora stays trustworthy">
         {[
           ['Private analysis', 'A bounded page image enters the multimodal workflow.'],
           ['Validated contract', 'PageAnalysis rejects malformed, invented, or mismatched structures.'],
@@ -191,15 +226,24 @@ function EngineeringPage() {
 function SiteFooter() {
   return (
     <footer className="site-footer">
-      <RouteLink className="site-wordmark" href="/"><span className="site-mark" aria-hidden="true">L</span><span>Lexora</span></RouteLink>
+      <RouteLink className="site-wordmark" href="/"><BrandMark className="site-brand-mark" /></RouteLink>
       <nav aria-label="Footer navigation">{routes.slice(1).map((route) => <RouteLink key={route.href} href={route.href}>{route.label}</RouteLink>)}</nav>
-      <a href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={13} aria-hidden="true" /></a>
+      <a className="site-github-link" href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer">GitHub</a>
     </footer>
   );
 }
 
 export default function Landing() {
   const [route, setRoute] = useState<PublicRoute>(currentRoute);
+  const [theme, setTheme] = useState<ThemeMode>(readThemeModePreference);
+
+  const toggleTheme = () => {
+    setTheme((current) => {
+      const next = current === 'dark' ? 'light' : 'dark';
+      writeThemeModePreference(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const syncRoute = () => {
@@ -215,20 +259,67 @@ export default function Landing() {
       '/': 'Lexora | Source-faithful workbook practice',
       '/product': 'Product | Lexora',
       '/how-it-works': 'How it works | Lexora',
-      '/engineering': 'Engineering | Lexora',
+      '/inside-lexora': 'Inside Lexora | Lexora',
     };
     document.title = titles[route];
   }, [route]);
 
+  useEffect(() => {
+    document.documentElement.dataset.publicTheme = theme;
+    return () => { delete document.documentElement.dataset.publicTheme; };
+  }, [theme]);
+
+  useEffect(() => {
+    const routePage = document.querySelector<HTMLElement>('.route-page');
+    if (!routePage) return undefined;
+
+    const targets = Array.from(routePage.querySelectorAll<HTMLElement>([
+      ':scope > section',
+      '.mode-comparison > article',
+      '.signal-path > article',
+      '.engineering-flow > article',
+      '.trust-points > article',
+      '.home-route-grid > a',
+      '.public-private article',
+    ].join(', ')));
+    const reducedMotion = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    targets.forEach((target, index) => {
+      target.classList.add('scroll-reveal');
+      target.style.setProperty('--reveal-delay', `${(index % 3) * 70}ms`);
+      if (reducedMotion) target.dataset.revealed = 'true';
+    });
+    routePage.dataset.motionReady = 'true';
+
+    if (reducedMotion || typeof IntersectionObserver === 'undefined') {
+      targets.forEach((target) => { target.dataset.revealed = 'true'; });
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        (entry.target as HTMLElement).dataset.revealed = 'true';
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, [route]);
+
   return (
-    <div className="site-shell">
+    <div className="site-shell" data-theme={theme}>
       <a className="site-skip" href="#site-main">Skip to content</a>
-      <SiteHeader route={route} />
+      <SiteHeader route={route} theme={theme} onToggleTheme={toggleTheme} />
       <main id="site-main">
-        {route === '/' && <HomePage />}
-        {route === '/product' && <ProductPage />}
-        {route === '/how-it-works' && <HowItWorksPage />}
-        {route === '/engineering' && <EngineeringPage />}
+        <div className="route-page" key={route} data-route={route === '/' ? 'home' : route.slice(1)}>
+          {route === '/' && <HomePage />}
+          {route === '/product' && <ProductPage />}
+          {route === '/how-it-works' && <HowItWorksPage />}
+          {route === '/inside-lexora' && <InsideLexoraPage />}
+        </div>
       </main>
       <SiteFooter />
     </div>

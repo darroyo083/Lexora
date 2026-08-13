@@ -148,7 +148,7 @@ jobs:
           fail=0
           is_public_release_binary() {
             case "$1" in
-              backend/src/main/resources/demo/lexora-synthetic-workbook.pdf|frontend/public/release/lexora-classic.webp|frontend/public/release/lexora-interactive.webp|frontend/public/release/lexora-landing.webp|frontend/public/release/lexora-mobile.webp|frontend/public/release/lexora-social.png|frontend/public/release/lexora-demo-poster.png|frontend/public/release/lexora-demo.mp4|video/public/evidence/choice-correct.webp|video/public/evidence/choice-grid.webp|video/public/evidence/classic.webp|video/public/evidence/interactive-correct.webp|video/public/evidence/interactive-start.webp|video/public/evidence/matching.webp|video/public/evidence/mobile.webp|video/public/evidence/sentence-ordering.webp)
+              backend/src/main/resources/demo/lexora-synthetic-workbook.pdf|frontend/public/release/lexora-classic.webp|frontend/public/release/lexora-interactive.webp|frontend/public/release/lexora-landing.webp|frontend/public/release/lexora-mobile.webp|frontend/public/release/lexora-social.png)
                 return 0
                 ;;
             esac

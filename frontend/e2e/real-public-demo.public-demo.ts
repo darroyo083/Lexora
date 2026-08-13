@@ -96,9 +96,8 @@ test('serves focused public routes with history and responsive layout', async ({
   await expect(page).toHaveURL(/\/$/);
 
   await page.goto('/how-it-works');
-  const video = page.getByLabel('Lexora product walkthrough, 66 seconds');
-  await expect(video).toHaveAttribute('poster', '/release/lexora-demo-poster.png');
-  await expect(video).not.toHaveAttribute('controls', /.*/);
+  await expect(page.getByAltText(/Current Lexora Interactive Mode/i)).toBeVisible();
+  await expect(page.locator('video')).toHaveCount(0);
 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/product');
@@ -141,17 +140,14 @@ test('keeps Classic usable as a document-first mobile workspace', async ({ page 
 
   const layout = page.locator('.reader-layout');
   const pageArea = page.locator('.page-area');
-  const rail = page.locator('.right-rail');
-  const [layoutBox, pageAreaBox, railBox] = await Promise.all([
+  const [layoutBox, pageAreaBox] = await Promise.all([
     layout.boundingBox(),
     pageArea.boundingBox(),
-    rail.boundingBox(),
   ]);
   expect(layoutBox).not.toBeNull();
   expect(pageAreaBox).not.toBeNull();
-  expect(railBox).not.toBeNull();
-  expect(railBox!.y).toBeGreaterThanOrEqual(pageAreaBox!.y + pageAreaBox!.height - 1);
-  expect(railBox!.width).toBeLessThanOrEqual(375);
+  await expect(page.locator('.right-rail')).toHaveCount(0);
+  expect(pageAreaBox!.width).toBeLessThanOrEqual(375);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(await pageArea.evaluate((element) => element.scrollWidth >= element.clientWidth)).toBe(true);
 });
@@ -167,6 +163,37 @@ test('keeps grouped Interactive exercises usable on mobile', async ({ page }) =>
   await expect(page.locator('.lesson-step[data-kind="fill-blank"]')).toBeVisible();
   await expect(page.getByRole('textbox')).toHaveCount(3);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('resolves every deterministic page-four answer and keeps free text honest', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem('lexora.currentPage', '4');
+    localStorage.setItem('lexora.readerMode.v1', 'interactive');
+  });
+  await page.goto('/demo');
+  await expect(page.getByRole('heading', { name: 'Kleine Wiederholung' })).toBeVisible();
+
+  const blanks = page.locator('.lesson-fill-item input');
+  await blanks.nth(0).fill('arbeitest');
+  await blanks.nth(1).fill('arbeite');
+  await blanks.nth(2).fill('treffen');
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await expect(page.locator('.lesson-feedback[data-verdict="correct"]')).toHaveCount(3);
+
+  await page.getByRole('button', { name: 'Next exercise' }).click();
+  const statements = page.locator('.lesson-choice-item');
+  await statements.nth(0).getByText('falsch', { exact: true }).click();
+  await statements.nth(1).getByText('richtig', { exact: true }).click();
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await expect(page.locator('.lesson-feedback[data-verdict="correct"]')).toHaveCount(2);
+
+  await page.getByRole('button', { name: 'Next exercise' }).click();
+  await page.getByRole('textbox', { name: 'Your response' }).fill(
+    'Diese Woche übe ich jeden Tag zehn Minuten.',
+  );
+  await expect(page.getByText('Saved on this device', { exact: true })).toBeVisible();
+  await expect(page.getByText(/does not claim an automatic grade/i)).toBeVisible();
 });
 
 test('enforces the public read-only API boundary', async ({ request }) => {

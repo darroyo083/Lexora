@@ -27,13 +27,11 @@ test('public routes explain the product with real evidence and keyboard-safe act
   await expect(page.getByText(/Saved locally.*stays ungraded/i)).toBeVisible();
 
   await page.goto('/how-it-works');
-  const video = page.getByLabel('Lexora product walkthrough, 66 seconds');
-  await expect(video).toHaveAttribute('preload', 'metadata');
-  await expect(video).toHaveAttribute('poster', '/release/lexora-demo-poster.png');
-  await expect(video).not.toHaveAttribute('controls', /.*/);
-  await expect(page.getByRole('button', { name: 'Play video' })).toBeVisible();
+  await expect(page.getByAltText(/Current Lexora Interactive Mode/i)).toBeVisible();
+  await expect(page.getByRole('link', { name: /Open the live demo/ })).toHaveAttribute('href', '/demo');
+  await expect(page.locator('video')).toHaveCount(0);
 
-  await page.goto('/engineering');
+  await page.goto('/inside-lexora');
   await expect(page.getByRole('link', { name: /View source/ }))
     .toHaveAttribute('href', 'https://github.com/darroyo083/Lexora');
 });
@@ -63,8 +61,9 @@ test('keeps essential presentation complete across release viewports', async ({ 
     await page.goto('/');
     await expect(page.getByRole('link', { name: 'Try the demo' })).toBeVisible();
     await page.goto('/how-it-works');
-    await expect(page.getByLabel('Lexora product walkthrough, 66 seconds')).toBeVisible();
-    await page.goto('/engineering');
+    await expect(page.getByAltText(/Current Lexora Interactive Mode/i)).toBeVisible();
+    await expect(page.locator('video')).toHaveCount(0);
+    await page.goto('/inside-lexora');
     await expect(page.getByRole('link', { name: /View source/ })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
       .toBe(true);
@@ -72,7 +71,7 @@ test('keeps essential presentation complete across release viewports', async ({ 
 });
 
 test('has no automatically detectable WCAG A or AA violations', async ({ page }) => {
-  for (const route of ['/', '/product', '/how-it-works', '/engineering']) {
+  for (const route of ['/', '/product', '/how-it-works', '/inside-lexora']) {
     await page.goto(route);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])

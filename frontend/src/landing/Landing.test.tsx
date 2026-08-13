@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Landing from './Landing';
 
 beforeEach(() => {
+  localStorage.clear();
   window.history.replaceState({}, '', '/');
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
 });
@@ -18,6 +19,9 @@ describe('Lexora public site', () => {
     render(<Landing />);
 
     expect(screen.getByRole('heading', { level: 1, name: /turn workbook exercises/i })).toBeTruthy();
+    const brandLinks = screen.getAllByRole('link', { name: 'Lexora' });
+    expect(brandLinks).toHaveLength(2);
+    expect(brandLinks.every((link) => link.querySelector('img')?.getAttribute('src') === '/lexora-mark.svg')).toBe(true);
     expect(screen.getAllByRole('link', { name: /open demo|try the demo/i })[0].getAttribute('href')).toBe('/demo');
     expect(screen.getByRole('link', { name: /explore the product/i }).getAttribute('href')).toBe('/product');
     expect(screen.getByText(/one source\. two trustworthy views/i)).toBeTruthy();
@@ -32,9 +36,21 @@ describe('Lexora public site', () => {
     expect(screen.getByRole('heading', { level: 1, name: /exercise stays whole/i })).toBeTruthy();
     expect(document.title).toBe('Product | Lexora');
 
-    fireEvent.click(screen.getAllByRole('link', { name: 'Engineering' })[0]);
+    fireEvent.click(screen.getAllByRole('link', { name: 'Inside Lexora' })[0]);
+    expect(window.location.pathname).toBe('/inside-lexora');
     expect(screen.getByRole('heading', { level: 1, name: /ai at the boundary/i })).toBeTruthy();
     expect(screen.getByText(/no provider credential/i)).toBeTruthy();
+  });
+
+  it('shares a persistent light and dark theme preference', () => {
+    render(<Landing />);
+    const shell = document.querySelector('.site-shell');
+    expect(shell?.getAttribute('data-theme')).toBe('dark');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Use light theme' }));
+    expect(shell?.getAttribute('data-theme')).toBe('light');
+    expect(localStorage.getItem('lexora.themeMode')).toBe('light');
+    expect(screen.getByRole('button', { name: 'Use dark theme' })).toBeTruthy();
   });
 
   it('supports direct deep links and all six real interaction families', () => {
@@ -46,14 +62,44 @@ describe('Lexora public site', () => {
     }
   });
 
-  it('uses the existing video asset through custom controls', () => {
+  it('redirects the retired engineering URL to the canonical Inside Lexora route', () => {
+    window.history.replaceState({}, '', '/engineering');
+    render(<Landing />);
+
+    expect(window.location.pathname).toBe('/inside-lexora');
+    expect(screen.getByRole('heading', { level: 1, name: /ai at the boundary/i })).toBeTruthy();
+  });
+
+  it('makes matching pair selection explicit and reversible', () => {
+    window.history.replaceState({}, '', '/product');
+    render(<Landing />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Matching' }));
+
+    const bakery = screen.getByRole('button', { name: 'Bäckerei, not paired yet' });
+    const bread = screen.getByRole('button', { name: 'Brot' });
+    expect(bread.hasAttribute('disabled')).toBe(true);
+
+    fireEvent.click(bakery);
+    expect(bread.hasAttribute('disabled')).toBe(false);
+    expect(screen.getByText(/matching item for Bäckerei/i)).toBeTruthy();
+
+    fireEvent.click(bread);
+    expect(screen.getByRole('button', { name: 'Bäckerei, paired with Brot' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reset pairs' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset pairs' }));
+    expect(screen.getByRole('button', { name: 'Bäckerei, not paired yet' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Brot' }).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('presents the current product statically without a video player', () => {
     window.history.replaceState({}, '', '/how-it-works');
     render(<Landing />);
 
-    const video = screen.getByLabelText('Lexora product walkthrough, 66 seconds');
-    expect(video.getAttribute('poster')).toBe('/release/lexora-demo-poster.png');
-    expect(video.querySelector('source')?.getAttribute('src')).toBe('/release/lexora-demo.mp4');
-    expect(video.hasAttribute('controls')).toBe(false);
-    expect(screen.getByRole('button', { name: 'Play video' })).toBeTruthy();
+    const preview = screen.getByAltText(/Current Lexora Interactive Mode/i);
+    expect(preview.getAttribute('src')).toBe('/release/lexora-interactive.webp');
+    expect(document.querySelector('video')).toBeNull();
+    expect(screen.getByRole('link', { name: /Open the live demo/ }).getAttribute('href')).toBe('/demo');
   });
 });

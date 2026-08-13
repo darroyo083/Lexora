@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT / "ai-service"))
 
 from app.providers.choice_normalization import normalize_choice_targets
 from app.schemas.page_analysis import PageAnalysis
+from public_demo_geometry import normalize_public_demo_page_two
 
 
 def get_json(url: str) -> dict:
@@ -64,7 +65,10 @@ def main() -> None:
         if processor["model"] != "mimo-v2.5":
             raise ValueError(f"Page {page_number} was not produced by MiMo V2.5")
         normalized = normalize_choice_targets(PageAnalysis.model_validate(analysis))
-        analyses.append(normalized.model_dump(mode="json"))
+        normalized_json = normalized.model_dump(mode="json")
+        if page_number == 2:
+            normalized_json = normalize_public_demo_page_two(normalized_json, SOURCE)
+        analyses.append(normalized_json)
 
     for page_number, analysis in enumerate(analyses, start=1):
         target = DEMO_DIR / f"page-analysis-{page_number}.json"
@@ -98,6 +102,7 @@ def main() -> None:
                 "OpenCode Go / MiMo V2.5",
                 "Pydantic PageAnalysis validation",
                 "Deterministic same-row choice-target normalization",
+                "Source-authoritative page-2 geometry normalization",
                 "Spring PageAnalysis projection",
             ],
             "attemptNotes": [

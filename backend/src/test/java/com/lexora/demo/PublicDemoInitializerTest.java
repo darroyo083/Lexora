@@ -68,6 +68,21 @@ class PublicDemoInitializerTest {
         assertThat(analyses.get(2).sentenceOrderings()).hasSize(2);
         assertThat(analyses.getFirst().freeTextInteractions()).hasSize(1);
 
+        var pageTwo = analyses.get(1);
+        assertThat(pageTwo.processor().parameters())
+            .containsEntry("geometryNormalization", "lexora-synthetic-source-v1");
+        assertThat(pageTwo.exerciseBlanks().getFirst().interactionBbox().y())
+            .isGreaterThan(0.8);
+        var firstGridRow = pageTwo.choiceGrids().getFirst().rows().getFirst();
+        assertThat(firstGridRow.cells())
+            .extracting(cell -> cell.interactionBbox().x())
+            .containsExactly(0.532258, 0.641129, 0.75);
+        assertThat(pageTwo.choiceGrids().getFirst().rows())
+            .extracting(row -> row.rowBbox().y())
+            .containsExactly(0.27081, 0.309578, 0.348347, 0.387115);
+        assertThat(pageTwo.matchingInteractions().getFirst().bbox().y())
+            .isBetween(0.52, 0.53);
+
         var keyCaptor = ArgumentCaptor.forClass(AnswerKey.class);
         verify(answerKeys).save(keyCaptor.capture());
         assertThat(keyCaptor.getValue().bookId()).isEqualTo(PublicDemoConstants.BOOK_ID);

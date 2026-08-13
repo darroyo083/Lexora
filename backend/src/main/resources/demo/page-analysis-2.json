@@ -544,16 +544,16 @@
       "id": "eb-1",
       "kind": "fill-in-line",
       "lineBbox": {
-        "x": 0.438,
-        "y": 0.587,
-        "width": 0.254,
-        "height": 0.016
+        "x": 0.43629,
+        "y": 0.840365,
+        "width": 0.193548,
+        "height": 0.003421
       },
       "interactionBbox": {
-        "x": 0.418,
-        "y": 0.579,
-        "width": 0.274,
-        "height": 0.032
+        "x": 0.426613,
+        "y": 0.826112,
+        "width": 0.212903,
+        "height": 0.031927
       },
       "detectionMethod": "vision-structured-v1",
       "candidateScore": 0.95,
@@ -600,10 +600,10 @@
       "id": "se-4-grid",
       "kind": "choice-grid",
       "gridBbox": {
-        "x": 0.526,
-        "y": 0.196,
-        "width": 0.257,
-        "height": 0.11499999999999999
+        "x": 0.524194,
+        "y": 0.27081,
+        "width": 0.274194,
+        "height": 0.150513
       },
       "optionGroupId": "cg-1",
       "detectionMethod": "vision-structured-v1",
@@ -612,10 +612,10 @@
         {
           "id": "ct-bh-der-row",
           "rowBbox": {
-            "x": 0.526,
-            "y": 0.196,
-            "width": 0.257,
-            "height": 0.027999999999999997
+            "x": 0.104839,
+            "y": 0.27081,
+            "width": 0.709677,
+            "height": 0.034208
           },
           "promptBbox": null,
           "nearbyTextSpanIds": [
@@ -626,48 +626,48 @@
               "id": "ct-bh-der-cell-opt-der",
               "optionId": "opt-der",
               "cellBbox": {
-                "x": 0.541,
-                "y": 0.201,
-                "width": 0.07566666666666666,
-                "height": 0.017999999999999988
+                "x": 0.543548,
+                "y": 0.278791,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.196,
-                "width": 0.257,
-                "height": 0.027999999999999997
+                "x": 0.532258,
+                "y": 0.27195,
+                "width": 0.048387,
+                "height": 0.031927
               }
             },
             {
               "id": "ct-bh-der-cell-opt-die",
               "optionId": "opt-die",
               "cellBbox": {
-                "x": 0.6166666666666667,
-                "y": 0.201,
-                "width": 0.07566666666666666,
-                "height": 0.017999999999999988
+                "x": 0.652419,
+                "y": 0.278791,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.196,
-                "width": 0.257,
-                "height": 0.027999999999999997
+                "x": 0.641129,
+                "y": 0.27195,
+                "width": 0.048387,
+                "height": 0.031927
               }
             },
             {
               "id": "ct-bh-der-cell-opt-das",
               "optionId": "opt-das",
               "cellBbox": {
-                "x": 0.6923333333333334,
-                "y": 0.201,
-                "width": 0.07566666666666666,
-                "height": 0.017999999999999988
+                "x": 0.76129,
+                "y": 0.278791,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.196,
-                "width": 0.257,
-                "height": 0.027999999999999997
+                "x": 0.75,
+                "y": 0.27195,
+                "width": 0.048387,
+                "height": 0.031927
               }
             }
           ]
@@ -675,10 +675,10 @@
         {
           "id": "ct-ap-der-row",
           "rowBbox": {
-            "x": 0.526,
-            "y": 0.225,
-            "width": 0.257,
-            "height": 0.027999999999999997
+            "x": 0.104839,
+            "y": 0.309578,
+            "width": 0.709677,
+            "height": 0.034208
           },
           "promptBbox": null,
           "nearbyTextSpanIds": [
@@ -689,48 +689,48 @@
               "id": "ct-ap-der-cell-opt-der",
               "optionId": "opt-der",
               "cellBbox": {
-                "x": 0.541,
-                "y": 0.23,
-                "width": 0.07566666666666666,
-                "height": 0.017999999999999988
+                "x": 0.543548,
+                "y": 0.31756,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.225,
-                "width": 0.257,
-                "height": 0.027999999999999997
+                "x": 0.532258,
+                "y": 0.310718,
+                "width": 0.048387,
+                "height": 0.031927
               }
             },
             {
               "id": "ct-ap-der-cell-opt-die",
               "optionId": "opt-die",
               "cellBbox": {
-                "x": 0.6166666666666667,
-                "y": 0.23,
-                "width": 0.07566666666666666,
-                "height": 0.017999999999999988
+                "x": 0.652419,
+                "y": 0.31756,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.225,
-                "width": 0.257,
-                "height": 0.027999999999999997
+                "x": 0.641129,
+                "y": 0.310718,
+                "width": 0.048387,
+                "height": 0.031927
               }
             },
             {
               "id": "ct-ap-der-cell-opt-das",
               "optionId": "opt-das",
               "cellBbox": {
-                "x": 0.6923333333333334,
-                "y": 0.23,
-                "width": 0.07566666666666666,
-                "height": 0.017999999999999988
+                "x": 0.76129,
+                "y": 0.31756,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.225,
-                "width": 0.257,
-                "height": 0.027999999999999997
+                "x": 0.75,
+                "y": 0.310718,
+                "width": 0.048387,
+                "height": 0.031927
               }
             }
           ]
@@ -738,10 +738,10 @@
         {
           "id": "ct-mu-der-row",
           "rowBbox": {
-            "x": 0.526,
-            "y": 0.254,
-            "width": 0.257,
-            "height": 0.028000000000000025
+            "x": 0.104839,
+            "y": 0.348347,
+            "width": 0.709677,
+            "height": 0.034208
           },
           "promptBbox": null,
           "nearbyTextSpanIds": [
@@ -752,48 +752,48 @@
               "id": "ct-mu-der-cell-opt-der",
               "optionId": "opt-der",
               "cellBbox": {
-                "x": 0.541,
-                "y": 0.259,
-                "width": 0.07566666666666666,
-                "height": 0.018000000000000016
+                "x": 0.543548,
+                "y": 0.356328,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.254,
-                "width": 0.257,
-                "height": 0.028000000000000025
+                "x": 0.532258,
+                "y": 0.349487,
+                "width": 0.048387,
+                "height": 0.031927
               }
             },
             {
               "id": "ct-mu-der-cell-opt-die",
               "optionId": "opt-die",
               "cellBbox": {
-                "x": 0.6166666666666667,
-                "y": 0.259,
-                "width": 0.07566666666666666,
-                "height": 0.018000000000000016
+                "x": 0.652419,
+                "y": 0.356328,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.254,
-                "width": 0.257,
-                "height": 0.028000000000000025
+                "x": 0.641129,
+                "y": 0.349487,
+                "width": 0.048387,
+                "height": 0.031927
               }
             },
             {
               "id": "ct-mu-der-cell-opt-das",
               "optionId": "opt-das",
               "cellBbox": {
-                "x": 0.6923333333333334,
-                "y": 0.259,
-                "width": 0.07566666666666666,
-                "height": 0.018000000000000016
+                "x": 0.76129,
+                "y": 0.356328,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.254,
-                "width": 0.257,
-                "height": 0.028000000000000025
+                "x": 0.75,
+                "y": 0.349487,
+                "width": 0.048387,
+                "height": 0.031927
               }
             }
           ]
@@ -801,10 +801,10 @@
         {
           "id": "ct-ma-der-row",
           "rowBbox": {
-            "x": 0.526,
-            "y": 0.283,
-            "width": 0.257,
-            "height": 0.028000000000000025
+            "x": 0.104839,
+            "y": 0.387115,
+            "width": 0.709677,
+            "height": 0.034208
           },
           "promptBbox": null,
           "nearbyTextSpanIds": [
@@ -815,48 +815,48 @@
               "id": "ct-ma-der-cell-opt-der",
               "optionId": "opt-der",
               "cellBbox": {
-                "x": 0.541,
-                "y": 0.288,
-                "width": 0.07566666666666666,
-                "height": 0.018000000000000016
+                "x": 0.543548,
+                "y": 0.395097,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.283,
-                "width": 0.257,
-                "height": 0.028000000000000025
+                "x": 0.532258,
+                "y": 0.388255,
+                "width": 0.048387,
+                "height": 0.031927
               }
             },
             {
               "id": "ct-ma-der-cell-opt-die",
               "optionId": "opt-die",
               "cellBbox": {
-                "x": 0.6166666666666667,
-                "y": 0.288,
-                "width": 0.07566666666666666,
-                "height": 0.018000000000000016
+                "x": 0.652419,
+                "y": 0.395097,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.283,
-                "width": 0.257,
-                "height": 0.028000000000000025
+                "x": 0.641129,
+                "y": 0.388255,
+                "width": 0.048387,
+                "height": 0.031927
               }
             },
             {
               "id": "ct-ma-der-cell-opt-das",
               "optionId": "opt-das",
               "cellBbox": {
-                "x": 0.6923333333333334,
-                "y": 0.288,
-                "width": 0.07566666666666666,
-                "height": 0.018000000000000016
+                "x": 0.76129,
+                "y": 0.395097,
+                "width": 0.025806,
+                "height": 0.018244
               },
               "interactionBbox": {
-                "x": 0.526,
-                "y": 0.283,
-                "width": 0.257,
-                "height": 0.028000000000000025
+                "x": 0.75,
+                "y": 0.388255,
+                "width": 0.048387,
+                "height": 0.031927
               }
             }
           ]
@@ -878,10 +878,10 @@
       "id": "mi-1",
       "kind": "matching",
       "bbox": {
-        "x": 0.104,
-        "y": 0.388,
-        "width": 0.546,
-        "height": 0.1
+        "x": 0.104839,
+        "y": 0.521665,
+        "width": 0.790323,
+        "height": 0.18358
       },
       "detectionMethod": "vision-structured-v1",
       "candidateScore": 0.95,
@@ -895,16 +895,16 @@
           "label": "1",
           "text": "die Bäckerei",
           "bbox": {
-            "x": 0.104,
-            "y": 0.388,
-            "width": 0.372,
-            "height": 0.011
+            "x": 0.104839,
+            "y": 0.521665,
+            "width": 0.312903,
+            "height": 0.033067
           },
           "anchorBbox": {
-            "x": 0.438,
-            "y": 0.388,
-            "width": 0.015,
-            "height": 0.011
+            "x": 0.430645,
+            "y": 0.533637,
+            "width": 0.012903,
+            "height": 0.009122
           },
           "nearbyTextSpanIds": [
             "ts-19",
@@ -916,16 +916,16 @@
           "label": "2",
           "text": "die Bibliothek",
           "bbox": {
-            "x": 0.104,
-            "y": 0.417,
-            "width": 0.372,
-            "height": 0.011
+            "x": 0.104839,
+            "y": 0.571836,
+            "width": 0.312903,
+            "height": 0.033067
           },
           "anchorBbox": {
-            "x": 0.438,
-            "y": 0.417,
-            "width": 0.015,
-            "height": 0.011
+            "x": 0.430645,
+            "y": 0.583808,
+            "width": 0.012903,
+            "height": 0.009122
           },
           "nearbyTextSpanIds": [
             "ts-23",
@@ -937,16 +937,16 @@
           "label": "3",
           "text": "der Bahnhof",
           "bbox": {
-            "x": 0.104,
-            "y": 0.446,
-            "width": 0.372,
-            "height": 0.011
+            "x": 0.104839,
+            "y": 0.622007,
+            "width": 0.312903,
+            "height": 0.033067
           },
           "anchorBbox": {
-            "x": 0.438,
-            "y": 0.446,
-            "width": 0.015,
-            "height": 0.011
+            "x": 0.430645,
+            "y": 0.633979,
+            "width": 0.012903,
+            "height": 0.009122
           },
           "nearbyTextSpanIds": [
             "ts-27",
@@ -958,16 +958,16 @@
           "label": "4",
           "text": "die Apotheke",
           "bbox": {
-            "x": 0.104,
-            "y": 0.475,
-            "width": 0.372,
-            "height": 0.011
+            "x": 0.104839,
+            "y": 0.672178,
+            "width": 0.312903,
+            "height": 0.033067
           },
           "anchorBbox": {
-            "x": 0.438,
-            "y": 0.475,
-            "width": 0.015,
-            "height": 0.011
+            "x": 0.430645,
+            "y": 0.684151,
+            "width": 0.012903,
+            "height": 0.009122
           },
           "nearbyTextSpanIds": [
             "ts-31",
@@ -981,16 +981,16 @@
           "label": "A",
           "text": "Medikamente",
           "bbox": {
-            "x": 0.556,
-            "y": 0.388,
-            "width": 0.491,
-            "height": 0.011
+            "x": 0.582258,
+            "y": 0.521665,
+            "width": 0.312903,
+            "height": 0.033067
           },
           "anchorBbox": {
-            "x": 0.556,
-            "y": 0.388,
-            "width": 0.015,
-            "height": 0.011
+            "x": 0.556452,
+            "y": 0.533637,
+            "width": 0.012903,
+            "height": 0.009122
           },
           "nearbyTextSpanIds": [
             "ts-21",
@@ -1002,16 +1002,16 @@
           "label": "B",
           "text": "Züge",
           "bbox": {
-            "x": 0.556,
-            "y": 0.417,
-            "width": 0.491,
-            "height": 0.011
+            "x": 0.582258,
+            "y": 0.571836,
+            "width": 0.312903,
+            "height": 0.033067
           },
           "anchorBbox": {
-            "x": 0.556,
-            "y": 0.417,
-            "width": 0.015,
-            "height": 0.011
+            "x": 0.556452,
+            "y": 0.583808,
+            "width": 0.012903,
+            "height": 0.009122
           },
           "nearbyTextSpanIds": [
             "ts-25",
@@ -1023,16 +1023,16 @@
           "label": "C",
           "text": "Brot",
           "bbox": {
-            "x": 0.556,
-            "y": 0.446,
-            "width": 0.491,
-            "height": 0.011
+            "x": 0.582258,
+            "y": 0.622007,
+            "width": 0.312903,
+            "height": 0.033067
           },
           "anchorBbox": {
-            "x": 0.556,
-            "y": 0.446,
-            "width": 0.015,
-            "height": 0.011
+            "x": 0.556452,
+            "y": 0.633979,
+            "width": 0.012903,
+            "height": 0.009122
           },
           "nearbyTextSpanIds": [
             "ts-29",
@@ -1044,16 +1044,16 @@
           "label": "D",
           "text": "Bücher",
           "bbox": {
-            "x": 0.556,
-            "y": 0.475,
-            "width": 0.491,
-            "height": 0.011
+            "x": 0.582258,
+            "y": 0.672178,
+            "width": 0.312903,
+            "height": 0.033067
           },
           "anchorBbox": {
-            "x": 0.556,
-            "y": 0.475,
-            "width": 0.015,
-            "height": 0.011
+            "x": 0.556452,
+            "y": 0.684151,
+            "width": 0.012903,
+            "height": 0.009122
           },
           "nearbyTextSpanIds": [
             "ts-33",
@@ -1080,10 +1080,10 @@
       "instruction": "Wähle in jeder Zeile den richtigen Artikel.",
       "kind": "choice-grid",
       "bbox": {
-        "x": 0.063,
-        "y": 0.155,
-        "width": 0.874,
-        "height": 0.158
+        "x": 0.070968,
+        "y": 0.17959,
+        "width": 0.858065,
+        "height": 0.245154
       },
       "sourceOrder": 4,
       "interactionIds": [
@@ -1111,10 +1111,10 @@
       "instruction": "Ordne jedem Ort die passende Sache zu.",
       "kind": "matching",
       "bbox": {
-        "x": 0.063,
-        "y": 0.337,
-        "width": 0.874,
-        "height": 0.173
+        "x": 0.070968,
+        "y": 0.442987,
+        "width": 0.858065,
+        "height": 0.290764
       },
       "sourceOrder": 5,
       "interactionIds": [
@@ -1136,10 +1136,10 @@
       "instruction": "Ergänze den Satz mit einem passenden Ort.",
       "kind": "fill-blank",
       "bbox": {
-        "x": 0.063,
-        "y": 0.539,
-        "width": 0.874,
-        "height": 0.075
+        "x": 0.070968,
+        "y": 0.751995,
+        "width": 0.858065,
+        "height": 0.114025
       },
       "sourceOrder": 6,
       "interactionIds": [
@@ -1160,7 +1160,9 @@
     "engineVersion": "v1",
     "model": "mimo-v2.5",
     "language": "de",
-    "parameters": {},
+    "parameters": {
+      "geometryNormalization": "lexora-synthetic-source-v1"
+    },
     "processedAt": "2026-08-12T15:46:39.633639Z",
     "durationMs": 59276
   }

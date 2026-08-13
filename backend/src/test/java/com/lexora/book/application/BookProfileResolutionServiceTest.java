@@ -1,7 +1,12 @@
 package com.lexora.book.application;
 
 import com.lexora.book.domain.BookProfile;
+import com.lexora.book.domain.PageRange;
+import com.lexora.book.domain.UnitRef;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,5 +70,28 @@ class BookProfileResolutionServiceTest {
     void solutionRangeIsExposed() {
         assertThat(service.loesungenPdfRange(profile).from()).isEqualTo(18);
         assertThat(service.loesungenPdfRange(profile).to()).isEqualTo(20);
+    }
+
+    @Test
+    void publicDemoKeepsFourthWorkbookPageInsideItsFinalUnit() {
+        var publicDemo = new BookProfile(
+            UUID.fromString("b88fc22a-4f77-4e0f-9adb-00f9e2f066e8"),
+            "Lexora",
+            "lexora-public-demo-v1",
+            0,
+            List.of(
+                new UnitRef(1, "Mein Morgen", 1),
+                new UnitRef(2, "In der Stadt", 2),
+                new UnitRef(3, "Ein Treffen planen", 3),
+                new UnitRef(4, "Kleine Wiederholung", 4)
+            ),
+            new PageRange(5, 5),
+            List.of()
+        );
+
+        assertThat(service.resolveUnit(publicDemo, 4).map(unit -> unit.unitNumber()))
+            .contains(4);
+        assertThat(service.pdfPagesForUnit(publicDemo, 4, 4)).containsExactly(4);
+        assertThat(service.resolveUnit(publicDemo, 5)).isEmpty();
     }
 }

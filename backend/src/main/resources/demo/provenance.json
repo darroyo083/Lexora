@@ -25,8 +25,15 @@
       "OpenCode Go / MiMo V2.5",
       "Pydantic PageAnalysis validation",
       "Deterministic same-row choice-target normalization",
+      "Source-authoritative page-2 geometry normalization",
       "Spring PageAnalysis projection"
     ],
+    "geometryNormalization": {
+      "page": 2,
+      "method": "lexora-synthetic-source-v1",
+      "authority": "Deterministic authored coordinates from scripts/generate-public-demo-workbook.py",
+      "verifiedSourceSha256": "7185f637a2a55c22d4e3d846475e6bd6e1682b835f5c76fc76ae91e51aa8d7c9"
+    },
     "attemptNotes": [
       "Provider calls were limited to one accepted analysis per page; retries were permitted only for transport or contract-validation failures.",
       "The run made 10 provider HTTP attempts for four validated READY analyses.",

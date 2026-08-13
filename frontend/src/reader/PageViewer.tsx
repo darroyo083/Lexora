@@ -79,7 +79,7 @@ export interface OrderingFloatControl {
   onExpand: (exerciseId: string) => void;
   onCollapse: () => void;
   onClose: (exerciseId: string) => void;
-  onDock: () => void;
+  onDock?: () => void;
   onPromptChange: (interactionId: string) => void;
   onOrderingChange: (interactionId: string, ordered: string[]) => void;
 }
@@ -509,9 +509,7 @@ export default function PageViewer({
                           className="grid-cell-mark"
                           aria-hidden="true"
                           style={gridMarkStyle(cell, viewportHeight, rotation)}
-                        >
-                          ×
-                        </span>
+                        />
                       )}
                     </Fragment>
                   );

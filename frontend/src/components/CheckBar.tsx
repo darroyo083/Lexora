@@ -7,6 +7,7 @@ interface CheckBarProps {
   hasAnswerKey: boolean;
   anyRevealed: boolean;
   onCheck: () => void;
+  compact?: boolean;
 }
 
 export default function CheckBar({
@@ -16,6 +17,7 @@ export default function CheckBar({
   hasAnswerKey,
   anyRevealed,
   onCheck,
+  compact = false,
 }: CheckBarProps) {
   const hasChecked = uiState === 'CHECKED' || uiState === 'REVEALED';
   const totalGradableChecked = totalGradable > 0;
@@ -28,11 +30,11 @@ export default function CheckBar({
           {totalCorrect} of {totalGradable} correct
         </span>
       )}
-      {!hasChecked && (
+      {!compact && !hasChecked && (
         <span className="check-bar-hint">
           {hasAnswerKey
-            ? (anyRevealed ? 'Retry revealed items to check again' : 'Exercises ready to check')
-            : 'Answer key not available'}
+            ? (anyRevealed ? 'Try the revealed exercises again' : 'Check answers on this page')
+            : 'No answer key is available for this page'}
         </span>
       )}
       <button
@@ -40,11 +42,11 @@ export default function CheckBar({
         className="check-bar-btn"
         onClick={onCheck}
         disabled={checkDisabled}
-        aria-label={checkDisabled ? 'Check answers unavailable while an answer is revealed' : 'Check answers (Ctrl+Enter)'}
+        aria-label={checkDisabled ? 'Answers cannot be checked right now' : 'Check answers (Ctrl+Enter)'}
       >
         <Check size={15} />
         <span>Check answers</span>
-        <kbd>Ctrl+Enter</kbd>
+        {!compact && <kbd>Ctrl+Enter</kbd>}
       </button>
     </div>
   );

@@ -5,6 +5,7 @@ import { FileText } from 'lucide-react';
 import LeftRail from './components/LeftRail';
 import ReaderToolbar from './components/ReaderToolbar';
 import RightRail from './components/RightRail';
+import CheckBar from './components/CheckBar';
 import InteractiveLesson from './interactive/InteractiveLesson';
 import { projectLesson } from './interactive/projectLesson';
 import type { ChoiceGrid, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './reader/types';
@@ -157,7 +158,7 @@ export default function App() {
   const [orderingView, dispatchOrderingView] = useReducer(
     orderingViewReducer,
     undefined,
-    () => emptyOrderingView(readOrderingModePreference()),
+    () => emptyOrderingView(publicDemoEntry ? 'floating' : readOrderingModePreference()),
   );
   const { mode: orderingMode, expandedExerciseId: expandedOrderingExercise, closedExerciseIds: closedOrderingExercises } = orderingView;
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
@@ -1101,7 +1102,7 @@ export default function App() {
 
   return (
     <div className="app" data-design="stitch" data-theme={theme} data-dev-mode={devMode} data-reader-mode={readerMode}>
-      <LeftRail devMode={devMode} onToggleDevMode={handleToggleDevMode} />
+      {!publicDemoEntry && <LeftRail devMode={devMode} onToggleDevMode={handleToggleDevMode} />}
 
       <div className="app-main-workspace">
         <ReaderToolbar
@@ -1223,7 +1224,7 @@ export default function App() {
                   onExpand: (exerciseId) => dispatchOrderingView({ type: 'expand', exerciseId }),
                   onCollapse: () => dispatchOrderingView({ type: 'collapse' }),
                   onClose: (exerciseId) => dispatchOrderingView({ type: 'close', exerciseId }),
-                  onDock: handleOrderingDock,
+                  onDock: import.meta.env.DEV && devMode ? handleOrderingDock : undefined,
                   onPromptChange: setOrderingActivePrompt,
                   onOrderingChange: handleOrderingChange,
                 } : undefined}
@@ -1283,7 +1284,25 @@ export default function App() {
             )}
           </div>
 
-          {readerMode === 'classic' && <RightRail
+          {readerMode === 'classic' && (
+            <div className="classic-check-dock" aria-label="Answer check">
+              <CheckBar
+                totalGradable={Object.values(correctionVerdicts).filter(
+                  (verdict) => verdict !== undefined && verdict !== CorrectionVerdict.NOT_AUTO_GRADABLE,
+                ).length}
+                totalCorrect={Object.values(correctionVerdicts).filter(
+                  (verdict) => verdict === CorrectionVerdict.CORRECT,
+                ).length}
+                uiState={correctionUiState}
+                hasAnswerKey={correctionReady}
+                anyRevealed={Object.values(correctionReveal).some(Boolean)}
+                onCheck={handleCorrectionCheck}
+                compact
+              />
+            </div>
+          )}
+
+          {readerMode === 'classic' && import.meta.env.DEV && devMode && <RightRail
             devMode={devMode}
             spans={interaction.spans}
             blanks={interaction.blanks}

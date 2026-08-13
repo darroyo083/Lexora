@@ -6,7 +6,6 @@ import {
   Check,
   CircleCheck,
   Eye,
-  Link2,
   ListChecks,
   LoaderCircle,
   RefreshCw,
@@ -81,13 +80,20 @@ const RESOLUTION_LABEL: Partial<Record<AnswerResolutionStatus, string>> = {
   EXTRACTION_UNCERTAIN: 'The source answer is uncertain, so this item stays ungraded.',
 };
 
-const FAMILY_COPY: Record<ActivityLessonStep['block']['kind'], { label: string; title: string }> = {
-  'fill-blank': { label: 'Fill in the blank', title: 'Complete the sentence' },
-  choice: { label: 'Choose', title: 'Choose an answer' },
-  'choice-grid': { label: 'Choice grid', title: 'Choose for each row' },
-  'sentence-ordering': { label: 'Put in order', title: 'Build the sentence' },
-  matching: { label: 'Match', title: 'Match the pairs' },
-  'free-text': { label: 'Write', title: 'Write your response' },
+const RESOLUTION_HEADING: Partial<Record<AnswerResolutionStatus, string>> = {
+  UNMAPPED: 'No answer key available',
+  AMBIGUOUS: 'Answer not graded',
+  MISSING: 'No model answer',
+  EXTRACTION_UNCERTAIN: 'Answer not graded',
+};
+
+const FAMILY_COPY: Record<ActivityLessonStep['block']['kind'], { title: string }> = {
+  'fill-blank': { title: 'Complete the sentence' },
+  choice: { title: 'Choose an answer' },
+  'choice-grid': { title: 'Choose for each row' },
+  'sentence-ordering': { title: 'Build the sentence' },
+  matching: { title: 'Match the pairs' },
+  'free-text': { title: 'Write your answer' },
 };
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -178,7 +184,7 @@ function CorrectionFeedback({
       {visible && (
         <div className="lesson-feedback" data-verdict={verdict?.toLowerCase() ?? 'neutral'} role="status">
           <div className="lesson-feedback-copy">
-            <strong>{verdict ? VERDICT_LABEL[verdict] : 'Not graded'}</strong>
+            <strong>{verdict ? VERDICT_LABEL[verdict] : (resolution && RESOLUTION_HEADING[resolution]) ?? 'Answer not graded'}</strong>
             {detail && <span>{detail.correctCount} of {detail.totalCount} correct.</span>}
             {neutral && <span>{neutral}</span>}
             {revealed && expected && <span className="lesson-expected">Answer: {expected}</span>}
@@ -262,7 +268,6 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
   const intro = (
     <>
       <StepMeta step={step} />
-      <p className="lesson-family-label">{family.label}</p>
       <h2 tabIndex={-1}>{title}</h2>
       {block.instruction && <p className="lesson-exercise-instruction">{block.instruction}</p>}
       {block.contextParagraphs && block.contextParagraphs.length > 0 && (
@@ -343,7 +348,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
         {intro}
         <div className="lesson-exercise-items lesson-ordering-items">{block.interactions.map((ordering, index) => {
           const selected = parseOrderedAnswer(props.answers[ordering.id]); const itemById = new Map(ordering.items.map((item) => [item.id, item])); const result = selected.map((id) => itemById.get(id)?.text ?? id).join(' ');
-          return <div className="lesson-ordering-item" key={ordering.id}><h3>{String.fromCharCode(97 + index)})</h3><div className="lesson-ordering-result" aria-live="polite"><ListChecks size={18} aria-hidden="true" /><span>{result || 'Choose each word in the order it belongs.'}</span></div><div className="lesson-token-row" aria-label={`Available words for item ${index + 1}`}>{ordering.items.map((item) => { const position = selected.indexOf(item.id); return <button type="button" key={item.id} className="lesson-token" data-selected={position >= 0} aria-pressed={position >= 0} onClick={() => props.onOrderingItemClick(ordering.id, item.id)}>{position >= 0 && <span aria-hidden="true">{position + 1}</span>}{item.text}</button>; })}</div>{feedback(ordering.id)}</div>;
+          return <div className="lesson-ordering-item" key={ordering.id}><h3>{String.fromCharCode(97 + index)})</h3><div className="lesson-ordering-result" aria-live="polite"><ListChecks size={18} aria-hidden="true" /><span>{result || 'Select the words in the correct order.'}</span></div><div className="lesson-token-row" aria-label={`Words for sentence ${index + 1}`}>{ordering.items.map((item) => { const position = selected.indexOf(item.id); return <button type="button" key={item.id} className="lesson-token" data-selected={position >= 0} aria-pressed={position >= 0} onClick={() => props.onOrderingItemClick(ordering.id, item.id)}>{position >= 0 && <span aria-hidden="true">{position + 1}</span>}{item.text}</button>; })}</div>{feedback(ordering.id)}</div>;
         })}</div>
       </section>
     );
@@ -358,10 +363,10 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
     return (
       <section className="lesson-step lesson-activity-step" data-kind={block.kind}>
         {intro}
-        <p className="lesson-step-help"><Link2 size={16} aria-hidden="true" /> Choose one item from each side.</p>
+        <p className="lesson-step-help">Choose a place first, then its matching item.</p>
         <div className="lesson-matching-columns">
           <div>
-            <h3>First</h3>
+            <h3>Places</h3>
             {block.interaction.leftItems.map((item) => (
               <button
                 type="button"
@@ -375,7 +380,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
             ))}
           </div>
           <div>
-            <h3>Second</h3>
+            <h3>Matching items</h3>
             {block.interaction.rightItems.map((item) => (
               <button
                 type="button"
@@ -399,7 +404,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
                 <span className="sr-only">Remove pair</span>
               </button>
             ))}
-            <button type="button" className="lesson-reset-link" onClick={() => props.onMatchingReset(block.interaction.id)}>Clear</button>
+            <button type="button" className="lesson-reset-link" onClick={() => props.onMatchingReset(block.interaction.id)}>Reset pairs</button>
           </div>
         )}
         {feedback(block.interaction.id)}
@@ -420,7 +425,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
         />
         <small>Open response. Your work is saved, but Lexora does not claim an automatic grade.</small>
       </div>
-      <p className="lesson-save-status" role="status">{props.answers[block.interaction.id]?.trim() ? 'Saved on this device' : 'Your response saves automatically as you type.'}</p>
+      <p className="lesson-save-status" role="status">{props.answers[block.interaction.id]?.trim() ? 'Saved on this device' : 'Your response is saved automatically.'}</p>
       {feedback(block.interaction.id)}
     </section>
   );
@@ -582,8 +587,8 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
       : step.kind === 'activity' ? 'Next exercise' : 'Continue';
 
   const stepLabel = step.kind === 'context'
-    ? 'Read'
-    : step.kind === 'activity' ? FAMILY_COPY[step.block.kind].label : 'Complete';
+    ? 'Lesen'
+    : step.kind === 'activity' ? `Exercise ${activityPosition}` : 'Complete';
 
   return (
     <div className="interactive-lesson lesson-player">

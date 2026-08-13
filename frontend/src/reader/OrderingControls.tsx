@@ -67,7 +67,7 @@ export default function OrderingControls({
           ‹
         </button>
         <span className="ordering-panel-prompt-index" aria-live="polite">
-          Satz {promptIndex} / {siblings.length}
+          Sentence {promptIndex} / {siblings.length}
         </span>
         <button
           type="button"
@@ -82,7 +82,7 @@ export default function OrderingControls({
       <div className="ordering-panel-body" aria-live="polite">
         {items.length === 0 ? (
           <span className="ordering-panel-empty">
-            Click the printed fragments in order
+            Select the words on the page in the correct order.
           </span>
         ) : (
           <ol className="ordering-chips" aria-label="Constructed sentence">
@@ -130,7 +130,7 @@ export default function OrderingControls({
       <div className="ordering-panel-footer">
         <span className="ordering-panel-progress" aria-live="polite">
           {items.length} / {active.items.length}
-          {remaining.length > 0 ? ` — ${remaining.length} left` : ' — complete'}
+          {remaining.length > 0 ? ` · ${remaining.length} remaining` : ' · complete'}
         </span>
         <button
           type="button"

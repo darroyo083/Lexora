@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ChevronRight, GripVertical, Minimize2, X } from 'lucide-react';
 import type { SentenceOrderingInteraction } from './types';
 import { groupSentenceOrderings } from './overlay';
 import { parseOrderedAnswer } from './ordering';
@@ -31,7 +32,7 @@ interface BubbleProps {
   onExpand: () => void;
   onCollapse: () => void;
   onClose: () => void;
-  onDock: () => void;
+  onDock?: () => void;
   onDragMove: (position: Point) => void;
   onPromptChange: (interactionId: string) => void;
   onOrderingChange: (interactionId: string, ordered: string[]) => void;
@@ -82,7 +83,7 @@ function OrderingFloatingBubble({
   if (closed) return null;
 
   const progress = exerciseProgress(interactions, answers);
-  const label = `Ordering ${progress.ordered}/${progress.total}`;
+  const label = `Satzpuzzle ${progress.ordered}/${progress.total}`;
 
   /**
    * Pointer handlers live on the bubble root and serve BOTH forms. Collapsed
@@ -166,8 +167,10 @@ function OrderingFloatingBubble({
           disabled={disabled}
           onClick={handleClick}
         >
-          <span className="ordering-bubble-progress">{label}</span>
-          <span aria-hidden="true">▸</span>
+          <GripVertical size={14} aria-hidden="true" />
+          <span className="ordering-bubble-label">Satzpuzzle</span>
+          <span className="ordering-bubble-progress">{progress.ordered}/{progress.total}</span>
+          <ChevronRight size={15} aria-hidden="true" />
         </button>
       </div>
     );
@@ -190,8 +193,9 @@ function OrderingFloatingBubble({
           className="ordering-bubble-grip"
           title="Drag to move"
         >
-          <span className="ordering-bubble-grip-dots" aria-hidden="true">⠿</span>
-          <span className="ordering-bubble-title">{label}</span>
+          <GripVertical className="ordering-bubble-grip-dots" size={14} aria-hidden="true" />
+          <span className="ordering-bubble-title">Satzpuzzle</span>
+          <span className="ordering-bubble-count">{progress.ordered}/{progress.total}</span>
         </div>
         <button
           type="button"
@@ -201,9 +205,9 @@ function OrderingFloatingBubble({
           disabled={disabled}
           onClick={onCollapse}
         >
-          ▾
+          <Minimize2 size={14} aria-hidden="true" />
         </button>
-        <button
+        {onDock && <button
           type="button"
           className="ordering-bubble-action"
           aria-label="Dock ordering to side panel"
@@ -212,7 +216,7 @@ function OrderingFloatingBubble({
           onClick={onDock}
         >
           Dock
-        </button>
+        </button>}
         <button
           type="button"
           className="ordering-bubble-action"
@@ -221,20 +225,22 @@ function OrderingFloatingBubble({
           disabled={disabled}
           onClick={onClose}
         >
-          ×
+          <X size={14} aria-hidden="true" />
         </button>
       </div>
-      <OrderingControls
-        active={active}
-        siblings={siblings}
-        promptIndex={promptIndex}
-        ordered={ordered}
-        disabled={disabled}
-        verdict={verdictByItem[active.id]}
-        expected={expectedSequencesByItem[active.id]}
-        onPromptChange={onPromptChange}
-        onOrderingChange={onOrderingChange}
-      />
+      <div className="ordering-bubble-content">
+        <OrderingControls
+          active={active}
+          siblings={siblings}
+          promptIndex={promptIndex}
+          ordered={ordered}
+          disabled={disabled}
+          verdict={verdictByItem[active.id]}
+          expected={expectedSequencesByItem[active.id]}
+          onPromptChange={onPromptChange}
+          onOrderingChange={onOrderingChange}
+        />
+      </div>
     </div>
   );
 }
@@ -254,7 +260,7 @@ interface Props {
   onExpand: (exerciseId: string) => void;
   onCollapse: () => void;
   onClose: (exerciseId: string) => void;
-  onDock: () => void;
+  onDock?: () => void;
   onPromptChange: (interactionId: string) => void;
   onOrderingChange: (interactionId: string, ordered: string[]) => void;
 }

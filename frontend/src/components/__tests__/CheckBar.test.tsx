@@ -21,12 +21,12 @@ describe('CheckBar', () => {
 
   it('is disabled without an answer key', () => {
     render(<CheckBar {...baseProps} hasAnswerKey={false} />);
-    expect((screen.getByRole('button', { name: /Check answers/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: /Answers cannot/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('is disabled while any item is revealed (frozen semantics)', () => {
     render(<CheckBar {...baseProps} anyRevealed />);
-    expect((screen.getByRole('button', { name: /Check answers/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: /Answers cannot/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('is enabled when an answer key exists and nothing is revealed', () => {
@@ -51,6 +51,13 @@ describe('CheckBar', () => {
 
   it('shows the retry hint when revealed blocks checking', () => {
     render(<CheckBar {...baseProps} anyRevealed />);
-    expect(screen.getByText('Retry revealed items to check again')).toBeTruthy();
+    expect(screen.getByText('Try the revealed exercises again')).toBeTruthy();
+  });
+
+  it('reduces the classic control to one clear action', () => {
+    render(<CheckBar {...baseProps} compact />);
+    expect(screen.queryByText('Check answers on this page')).toBeNull();
+    expect(screen.queryByText('Ctrl+Enter')).toBeNull();
+    expect(screen.getByRole('button', { name: /Check answers/ })).toBeTruthy();
   });
 });

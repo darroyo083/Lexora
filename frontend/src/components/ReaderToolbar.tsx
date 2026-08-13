@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Sun, Moon } from 'lucide-react';
+import BrandMark from './BrandMark';
 import type { ThemeMode } from '../state/theme';
 import { ZOOM_OPTIONS } from '../reader/zoom';
 import type { ProcessControl, ProcessingTarget } from '../reader/processing';
@@ -144,8 +145,9 @@ export default function ReaderToolbar({
     <>
       <div className="toolbar-left">
         <div className="logo-group">
-          <span className="brand-logo">Lexora</span>
-          <span className="doc-tag">Workbook Reader</span>
+          <a className="reader-brand-home" href="/" aria-label="Go to the Lexora home page">
+            <BrandMark className="reader-brand-mark" decorative />
+          </a>
         </div>
 
         {!readOnly && <label className="upload-btn" title="Upload a scanned workbook PDF">

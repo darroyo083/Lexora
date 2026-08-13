@@ -80,11 +80,19 @@ export default function MatchingOverlay({
         const graded = verdict !== undefined && GRADED_VERDICTS.has(verdict);
         const revealed = revealedByItem[interaction.id] === true;
         const expectedPairs = expectedPairsByItem[interaction.id] ?? [];
-        const leftIdByLabel = new Map(
-          interaction.leftItems.map((item) => [item.label, item.id]),
+        const leftIdByLabel = new Map<string, string>(
+          interaction.leftItems.flatMap((item) => [
+            [item.id, item.id],
+            [item.label, item.id],
+            [item.text, item.id],
+          ] as Array<[string, string]>),
         );
-        const rightIdByLabel = new Map(
-          interaction.rightItems.map((item) => [item.label, item.id]),
+        const rightIdByLabel = new Map<string, string>(
+          interaction.rightItems.flatMap((item) => [
+            [item.id, item.id],
+            [item.label, item.id],
+            [item.text, item.id],
+          ] as Array<[string, string]>),
         );
         const expectedRightIdForLeft = new Map<string, string>();
         for (const pair of expectedPairs) {

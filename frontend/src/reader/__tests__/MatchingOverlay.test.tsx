@@ -93,6 +93,42 @@ describe('MatchingOverlay correction feedback', () => {
     expect(document.querySelectorAll('line.matching-line-err').length).toBe(0);
   });
 
+  it('resolves source-text answer keys as well as printed item labels', () => {
+    renderOverlay({
+      matchingAnswers: { 'matching-1': serializeMatchingAnswer({ l1: 'r1', l2: 'r2', l3: 'r3' }) },
+      verdictByItem: { 'matching-1': CorrectionVerdict.CORRECT },
+      expectedPairsByItem: {
+        'matching-1': [
+          { left: 'item l1', right: 'item r1' },
+          { left: 'item l2', right: 'item r2' },
+          { left: 'item l3', right: 'item r3' },
+        ],
+      },
+    });
+    expect(document.querySelectorAll('line.matching-line-ok').length).toBe(3);
+    expect(document.querySelectorAll('line.matching-line-err').length).toBe(0);
+  });
+
+  it('accepts the normalized item IDs produced by correction resolution', () => {
+    const sourceInteraction = interaction();
+    sourceInteraction.leftItems = sourceInteraction.leftItems.map((item, index) => ({
+      ...item,
+      label: String(index + 1),
+    }));
+    sourceInteraction.rightItems = sourceInteraction.rightItems.map((item, index) => ({
+      ...item,
+      label: String.fromCharCode(65 + index),
+    }));
+    renderOverlay({
+      matchings: [sourceInteraction],
+      matchingAnswers: { 'matching-1': serializeMatchingAnswer({ l1: 'r1', l2: 'r2', l3: 'r3' }) },
+      verdictByItem: { 'matching-1': CorrectionVerdict.CORRECT },
+      expectedPairsByItem: { 'matching-1': EXPECTED_PAIRS },
+    });
+    expect(document.querySelectorAll('line.matching-line-ok').length).toBe(3);
+    expect(document.querySelectorAll('line.matching-line-err').length).toBe(0);
+  });
+
   it('communicates correctness in the accessibility text, not color alone', () => {
     renderOverlay({
       verdictByItem: { 'matching-1': CorrectionVerdict.PARTIALLY_CORRECT },

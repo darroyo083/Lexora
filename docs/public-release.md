@@ -1,16 +1,16 @@
 # Public precomputed demo and private AI runbook
 
-Lexora has two deliberately separate runtime modes. The public portfolio serves a frozen real MiMo dataset with no inference capability. The local/private runtime keeps upload and real OpenCode Go processing available to the owner from the same repository.
+Lexora has two deliberately separate runtime modes. The public portfolio serves a frozen real MiMo dataset; the core reader triggers no inference. An optional, user-triggered Contextual AI Assistance layer can be enabled publicly, and it is the only provider-bound path in the public stack. The local/private runtime keeps upload and real OpenCode Go processing available to the owner from the same repository.
 
 ## Choose the runtime
 
 | Runtime | Services | Provider credential | Upload/process | Default exposure |
-|---|---|---:|---:|---|
-| Public demo | `frontend`, `backend`, `postgres` | Not present | Blocked | `127.0.0.1:8088` |
+|---|---|---|---:|---|
+| Public demo | `frontend`, `backend`, `postgres`, internal `ai-service` | Not required (only for optional AI help) | Blocked | `127.0.0.1:8088` |
 | Local/private AI | Public services plus `ai-service` | Required locally | Enabled | Loopback-only ports |
 | Local OCR development | Four development services | Not required | Enabled | Loopback-only ports |
 
-The public mode is NOT a fake fixture: its committed `PageAnalysis` files are the normalized, validated results of a bounded real OpenCode Go / MiMo V2.5 run over the exact committed PDF. Runtime inference is unnecessary because that work has already happened once.
+The public mode is NOT a fake fixture: its committed `PageAnalysis` files are the normalized, validated results of a bounded real OpenCode Go / MiMo V2.5 run over the exact committed PDF. Runtime inference for document analysis is unnecessary because that work has already happened once.
 
 ## Public demo
 
@@ -24,12 +24,14 @@ Open `http://127.0.0.1:8088` or `http://127.0.0.1:8088/demo`.
 
 Expected boundary:
 
-- `compose.production.yml` contains no `ai-service` and no OpenCode Go environment variable;
+- `compose.production.yml` runs `frontend`, `backend`, `postgres`, and an internal `ai-service` with no published host port and no OpenCode Go environment variable;
+- the internal `ai-service` is reachable only by the backend over the Compose network (its analysis endpoints are not proxied by Nginx);
 - `GET /api/public-demo` reports `precomputed-real-read-only`, `opencode-go`, `mimo-v2.5`, and `analysisTriggering: false`;
 - Classic streams `demo/lexora-synthetic-workbook.pdf`;
 - Interactive reads the four committed `page-analysis-*.json` projections;
 - upload, processing, answer-key extraction, mutations, and non-demo UUIDs are rejected;
-- browsing never creates an outbound provider request.
+- opening or using the demo never creates an outbound provider request;
+- `LEXORA_ASSIST_ENABLED` defaults to `false`, so `Ask Lexora` is absent until explicitly enabled (see below).
 
 Stop only this isolated stack with:
 
@@ -95,10 +97,40 @@ Verify the public stack through its published Nginx port:
 - allowed: landing assets, public metadata, demo book, source PDF, demo pages, correction reads;
 - blocked: upload, page processing/reanalysis, answer-key extraction, deletion/mutation, non-demo UUIDs, encoded non-demo paths, and method override attempts;
 - malformed UUIDs must produce a client error without exposing book data;
-- `docker compose ... config` and container inspection must show no `OPENCODE_GO_API_KEY` in the public service environment;
-- the public project must contain exactly three services and no AI container.
+- `docker compose ... config` and container inspection must show no `OPENCODE_GO_API_KEY` or `LEXORA_ASSIST_API_KEY` in the public frontend service environment;
+- the public project runs the `ai-service` without a published port (internal Compose network only).
 
-Because anonymous inference does not exist, CAPTCHA or Turnstile is unnecessary. Normal Nginx request limits and security headers remain.
+## Optional Contextual AI Assistance
+
+The public demo can expose a compact **Ask Lexora** action. It is opt-in and never runs automatically.
+
+| Property | Value |
+|---|---|
+| Actions | Hint, Explain, Translate (English/Spanish), Check with AI |
+| Trigger | Explicit learner action only; never on load, navigation, or answering |
+| Deterministic precedence | Check with AI is offered only when no source-backed grade exists and never overrides Lexora's own grading |
+| Result labeling | AI review is shown as `AI-assisted review · not source-backed` |
+| Context | Reconstructed server-side from Lexora's own data; client sends only identifiers |
+| Provider | `openai`, `deepseek`, `zai`, or `openai-compatible` via `LEXORA_ASSIST_*` (server-side only) |
+| Human verification | Cloudflare Turnstile with a short-lived anonymous verified session |
+| Cost bounds | Persistent global daily provider cap, per-session daily cap, response cache, kill switch |
+
+Enablement is a single explicit flag; key presence alone never enables it. Production refuses to start AI assistance behind a Cloudflare test secret.
+
+```powershell
+$env:LEXORA_ASSIST_ENABLED = 'true'
+$env:LEXORA_ASSIST_PROVIDER = 'openai-compatible'
+$env:LEXORA_ASSIST_BASE_URL = 'https://provider.example/v1'
+$env:LEXORA_ASSIST_API_KEY = '<authorized key>'
+$env:LEXORA_ASSIST_MODEL = '<model>'
+$env:LEXORA_TURNSTILE_SITE_KEY = '<real site key>'
+$env:LEXORA_TURNSTILE_SECRET_KEY = '<real secret>'
+docker compose -p lexora-public -f compose.production.yml up -d --build --wait
+```
+
+### Edge rate limiting (deployment guidance)
+
+In addition to application-level global and session caps, add a simple path-based Cloudflare WAF rate-limit rule for `/api/ai/assist` (compatible with non-Enterprise plans), for example: a rule matching `(http.request.uri.path eq "/api/ai/assist")` with a low per-IP request rate. The application-level caps work even when no edge rule is configured yet. Do not modify the owner's Cloudflare account during this goal.
 
 ## Verification commands
 

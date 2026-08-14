@@ -1,6 +1,6 @@
 # Lexora Architecture
 
-Lexora has a three-service public topology and a four-service local/private analysis topology. Interactive Mode converts a persisted page analysis into a native lesson. Classic Mode preserves the PDF and geometry-aligned overlays. They share answers and correction; neither duplicates inference nor invents source content.
+Lexora has a public topology (web app, API, database, and an internal-only AI-help service) and a four-service local/private analysis topology. Interactive Mode converts a persisted page analysis into a native lesson. Classic Mode preserves the PDF and geometry-aligned overlays. They share answers and correction; neither duplicates inference nor invents source content.
 
 ## Runtime Topology
 
@@ -9,9 +9,10 @@ flowchart LR
     Browser[React Interactive + lazy Classic PDF.js] -->|REST /api| Backend[Spring Boot]
     Backend -->|JDBC| Postgres[(PostgreSQL 18)]
     Backend -->|read only| Frozen[Frozen PDF + real MiMo PageAnalysis]
+    Backend -. optional explicit AI help .-> Assist[internal ai-service]
 ```
 
-Public Compose runs `frontend`, `backend`, and `postgres`. The backend initializes one fixed demo book from committed resources. No AI container, provider credential, upload action, OCR, or outbound inference is present in this topology.
+Public Compose runs `frontend`, `backend`, `postgres`, and an internal `ai-service` with no published host port. The backend initializes one fixed demo book from committed resources. No provider credential, upload action, OCR, or document-processing inference is present in this topology. The internal `ai-service` is contacted only for optional, user-triggered AI help and is not proxied by Nginx.
 
 The local/private topology adds the analysis boundary:
 
@@ -62,7 +63,7 @@ Spring Boot and FastAPI share `lexora_storage` only in this private workflow, so
 
 ### FastAPI AI Service
 
-The AI service exists only in local/private and development Compose. It selects one `AnalysisProvider` at startup. Private OpenCode Go mode uses MiMo V2.5 through the provider's OpenAI-compatible HTTP API and fails startup when its local credential is unavailable. The provider validates file size/type, sends one bounded page image, requests structured JSON output, validates the complete `PageAnalysis`, normalizes same-row choice markers into semantic questions, and redacts upstream response bodies from application errors. Its lightweight image contains no local OCR dependencies or fallback.
+The AI service runs in local/private and development Compose, and internally (no published port) in the public Compose for optional AI help. It selects one `AnalysisProvider` at startup. Private OpenCode Go mode uses MiMo V2.5 through the provider's OpenAI-compatible HTTP API and fails startup when its local credential is unavailable. The provider validates file size/type, sends one bounded page image, requests structured JSON output, validates the complete `PageAnalysis`, normalizes same-row choice markers into semantic questions, and redacts upstream response bodies from application errors. Its lightweight image contains no local OCR dependencies or fallback. A `disabled` analysis provider lets an assist-only deployment start without PaddleOCR or a Vision key while keeping the analysis endpoints fail-closed.
 
 The optional `local-ocr` development provider:
 
@@ -158,6 +159,12 @@ The browser requests page-scoped correction slots from the backend. The backend 
 
 Interactive Mode is the default native reading experience for analyzed pages. Classic remains available for exact page fidelity, unsupported content, and debugging. `PageViewer` is a lazy chunk, so Interactive startup does not download or initialize PDF.js; changing mode is the explicit boundary that loads it.
 
+## Contextual AI Assistance
+
+`Ask Lexora` is a compact, secondary action that runs only after an explicit learner action. The browser sends a strict request (`action`, `bookId`, `pageNumber`, `exerciseId`, `answer`, `targetLanguage`, `turnstileToken`) to `POST /api/ai/assist`; it never supplies provider URLs, models, keys, system prompts, or arbitrary source text.
+
+The backend reconstructs canonical exercise context from the persisted `PageAnalysis`, enforces the kill switch, Turnstile verification with a short-lived anonymous verified session, the persistent global daily provider cap, the per-session daily cap, and the response cache, then calls the internal ai-service. The ai-service builds an action-scoped prompt (source and learner text are treated strictly as untrusted data), calls the configured OpenAI-style provider profile, and validates structured JSON output with a single bounded repair. Deterministic grading always stays authoritative: `check` is refused when a source-backed answer exists, and AI review is always labeled `AI-assisted review · not source-backed`.
+
 ## Current Boundaries
 
-Interactive Mode covers the interaction types already present in `PageAnalysis`; it does not convert every possible publisher layout. Answer-key gaps stay `UNMAPPED` or `AMBIGUOUS`. Translation, vocabulary storage, RAG, authentication, generated explanations, and background multi-page processing remain outside the MVP.
+Interactive Mode covers the interaction types already present in `PageAnalysis`; it does not convert every possible publisher layout. Answer-key gaps stay `UNMAPPED` or `AMBIGUOUS`. Vocabulary storage, RAG, authentication, book-wide chat, and background multi-page processing remain outside the MVP. AI assistance is optional, explicit, and bounded; it is not a chatbot, does not store conversation history, and never grades over a source-backed answer.

@@ -30,7 +30,8 @@ The public demo serves frozen, validated results. New document analysis is avail
 
 - **Source fidelity:** Interactive exercises retain their connection to the original page, wording, and geometry.
 - **Fail-closed correction:** Only reliable source-backed mappings produce correct or incorrect feedback. Missing or ambiguous answers remain explicitly ungraded.
-- **Zero-inference public demo:** Visitors use precomputed multimodal analysis and cannot trigger document processing or provider requests.
+- **Precomputed public demo:** Visitors use precomputed multimodal analysis and cannot trigger document processing. Opening or using the core demo triggers no AI inference.
+- **Optional contextual AI help:** An explicit **Ask Lexora** action can request a hint, explanation, or translation, and can review an answer only when no source-backed grade exists. It is disabled by default and is never run automatically.
 - **Tested interaction model:** Automated coverage spans all six exercise families, responsive layouts, keyboard operation, accessibility, correction, and the public read-only boundary.
 
 ## Architecture
@@ -44,12 +45,13 @@ flowchart LR
     Page --> Classic[Classic PDF reader<br/>source-faithful overlays]
 ```
 
-Lexora separates document analysis from the public reading experience. The public runtime contains only the web app, API, and database; the private local workflow adds multimodal document analysis.
+Lexora separates document analysis from the public reading experience. The public runtime contains the web app, API, database, and an internal, non-exposed AI service that is only contacted when a learner explicitly triggers optional AI help. The private local workflow adds multimodal document analysis.
 
 | Layer | Stack | Role |
 |---|---|---|
 | Web | React, TypeScript, Vite, PDF.js | Public site, Interactive lessons, browser-local progress, and the lazy-loaded Classic reader |
-| API | Java, Spring Boot, PostgreSQL, PDFBox | Books, page orchestration, correction authority, and public-demo enforcement |
+| API | Java, Spring Boot, PostgreSQL, PDFBox | Books, page orchestration, correction authority, public-demo enforcement, and the bounded AI-help endpoint |
+| AI help | Python, FastAPI | Optional, user-triggered Hint / Explain / Translate / Check with AI; internal-only, provider-agnostic |
 | Analysis | Python, FastAPI, multimodal AI | Private document analysis and strict structure validation; absent from the public runtime |
 
 See [the architecture reference](docs/architecture.md) for both runtime topologies and [the public release runbook](docs/public-release.md) for operational verification.
@@ -105,9 +107,10 @@ Browser suites cover dark and light themes, reduced motion, keyboard-only intera
 The public demo is intentionally narrow:
 
 - It serves one original synthetic workbook with precomputed multimodal analysis.
-- Its production stack contains only `frontend`, `backend`, and `postgres`—no AI service or provider credential.
+- Its production stack contains `frontend`, `backend`, `postgres`, and an internal-only AI service with no published port; no provider credential is required to run it.
 - Upload, processing, reanalysis, mutation, and access to arbitrary books are blocked.
-- Opening the demo cannot trigger inference or create provider spend.
+- Opening or using the demo cannot trigger document processing or provider spend.
+- Optional AI help is the only provider-bound path, runs only after an explicit learner action, and is bounded by Turnstile verification, per-session and global daily caps, and a kill switch.
 - Private documents, derived captures, provider payloads, credentials, and local storage are excluded from public assets.
 
 The private workflow remains available for authorized local PDFs, but it is not part of the public runtime. See the [release runbook](docs/public-release.md) for the complete boundary.
@@ -115,7 +118,7 @@ The private workflow remains available for authorized local PDFs, but it is not 
 ## Current limitations
 
 - Unsupported or ambiguous layouts remain tied to the source rather than being guessed.
-- Free-text responses are saved locally but are not automatically graded without a reliable source answer.
-- Authentication, accounts, cloud progress sync, translation, book chat, and generated explanations are not implemented.
+- Free-text responses are saved locally but are not automatically graded without a reliable source answer; they can be reviewed by the optional AI help as a non-source-backed fallback.
+- Authentication, accounts, cloud progress sync, and book-wide chat are not implemented.
 - Public hosting, domain configuration, TLS, and operational backups remain deployment responsibilities.
 - No license has been selected; until one is added, all rights are reserved.

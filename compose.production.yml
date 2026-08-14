@@ -23,16 +23,28 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lexora}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-lexora}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD for production}
+      AI_SERVICE_BASE_URL: http://ai-service:8000
       LEXORA_STORAGE_PATH: /app/storage
       LEXORA_RASTER_DPI: ${LEXORA_RASTER_DPI:-160}
       LEXORA_PUBLIC_DEMO_ENABLED: "true"
       SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 10MB
       SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 10MB
       SERVER_FORWARD_HEADERS_STRATEGY: framework
+      LEXORA_ASSIST_ENABLED: ${LEXORA_ASSIST_ENABLED:-false}
+      LEXORA_ASSIST_PROVIDER: ${LEXORA_ASSIST_PROVIDER:-}
+      LEXORA_ASSIST_MODEL: ${LEXORA_ASSIST_MODEL:-}
+      LEXORA_ASSIST_GLOBAL_DAILY_PROVIDER_LIMIT: ${LEXORA_ASSIST_GLOBAL_DAILY_PROVIDER_LIMIT:-100}
+      LEXORA_ASSIST_SESSION_DAILY_LIMIT: ${LEXORA_ASSIST_SESSION_DAILY_LIMIT:-10}
+      LEXORA_ASSIST_HUMAN_VERIFICATION_TTL_MINUTES: ${LEXORA_ASSIST_HUMAN_VERIFICATION_TTL_MINUTES:-30}
+      LEXORA_ASSIST_MAX_CONTEXT_CHARS: ${LEXORA_ASSIST_MAX_CONTEXT_CHARS:-8000}
+      LEXORA_TURNSTILE_SITE_KEY: ${LEXORA_TURNSTILE_SITE_KEY:-}
+      LEXORA_TURNSTILE_SECRET_KEY: ${LEXORA_TURNSTILE_SECRET_KEY:-}
     volumes:
       - lexora_storage:/app/storage
     depends_on:
       postgres:
+        condition: service_healthy
+      ai-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8080/api/books"]
@@ -40,6 +52,27 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
+
+  ai-service:
+    build:
+      context: ./ai-service
+      target: production
+    restart: unless-stopped
+    environment:
+      LEXORA_ANALYSIS_PROVIDER: disabled
+      LEXORA_ASSIST_PROVIDER: ${LEXORA_ASSIST_PROVIDER:-}
+      LEXORA_ASSIST_API_KEY: ${LEXORA_ASSIST_API_KEY:-}
+      LEXORA_ASSIST_MODEL: ${LEXORA_ASSIST_MODEL:-}
+      LEXORA_ASSIST_BASE_URL: ${LEXORA_ASSIST_BASE_URL:-}
+      LEXORA_ASSIST_TIMEOUT_SECONDS: ${LEXORA_ASSIST_TIMEOUT_SECONDS:-30}
+      LEXORA_ASSIST_MAX_OUTPUT_TOKENS: ${LEXORA_ASSIST_MAX_OUTPUT_TOKENS:-450}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    stop_grace_period: 5s
+
 
   frontend:
     build:

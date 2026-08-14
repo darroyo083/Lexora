@@ -1,61 +1,62 @@
 # Lexora
 
-Lexora turns scanned language workbooks into focused interactive lessons while keeping the original page one click away. Its trust rule is simple: transform what the source supports, and fail closed when it does not.
+Lexora turns scanned language workbooks into focused, interactive practice while keeping the original page available at any time. Learners can work with native exercises in Interactive Mode or switch to Classic Mode for a source-faithful workbook view.
 
-The read-only public demo is built from validated multimodal AI output. It runs no AI service, holds no provider credential, and makes no inference call. A separate local/private workflow handles owner PDFs, while the four-page public workbook is original synthetic material created for Lexora.
-
-## See it
-
-- **Real precomputed demo:** run the public stack below, then open `http://127.0.0.1:8088/demo`.
-- **Source:** this repository. A real public URL remains a deployment-time decision.
-
-The demo runs the real product against deliberately created content. It cannot upload, process, delete, or expose arbitrary books, and opening it does not call the external provider.
+The repository includes a precomputed public demo using an original four-page synthetic workbook. Run it locally at `http://127.0.0.1:8088/demo`; opening the demo requires no provider credential and triggers no AI inference.
 
 | Interactive lesson | Classic page fidelity |
 |---|---|
-| ![Interactive lesson](frontend/public/release/lexora-interactive.webp) | ![Classic Mode reader](frontend/public/release/lexora-classic.webp) |
+| ![Interactive Mode showing a focused exercise workspace](frontend/public/release/lexora-interactive.webp) | ![Classic Mode showing the original synthetic workbook page](frontend/public/release/lexora-classic.webp) |
 
-## Why two readers?
+## Classic and Interactive
 
-| Mode | Job | Trust boundary |
+| Mode | Best for | How it works |
 |---|---|---|
-| **Interactive** | Projects persisted page analysis into one responsive lesson step at a time. | Supported structures become native controls; correction is authoritative only when the backend resolves a source mapping. |
-| **Classic** | Preserves the original PDF, geometry-aligned overlays, and exercise rail. | Unsupported or ambiguous material remains attached to the source instead of being invented. |
+| **Interactive** | Focused practice | Converts supported source exercises into responsive native controls, with deterministic correction when a reliable answer is available. |
+| **Classic** | Source fidelity | Preserves the original PDF with geometry-aligned interactive overlays. |
 
-Interactive covers context, fill blank, choice, choice grid, sentence ordering, matching, and free text. Answers are stored in the current browser and shared across both modes.
+Interactive Mode supports context, fill blank, choice, choice grid, sentence ordering, matching, and free text. Both modes use the same browser-local answers, so learners can switch views without losing progress.
 
-## What is technically interesting?
+## How it works
 
-- **Multimodal AI once, deterministic public behavior after it.** The synthetic PDF was rasterized with PDFBox, analyzed with Vision AI, validated as `PageAnalysis` v0.2.0, and committed with safe provenance.
-- **No AI component in public production.** Public Compose runs only Nginx/React, Spring Boot, and PostgreSQL. It requires no `OPENCODE_GO_API_KEY` and cannot invoke OCR or external inference.
-- **Source-preserving projection.** The React lesson projector carries page, span, interaction, geometry, confidence, and processor provenance into the learner experience.
-- **Fail-closed correction.** Only resolved backend mappings can produce correct or incorrect feedback. Ambiguous, unmapped, stale, or failed correction remains neutral.
-- **Bounded public cost.** The public demo is pre-analyzed and read-only. Server-side filters block mutations, arbitrary book reads, and any public analysis trigger, so anonymous visitors cannot create provider spend.
-- **A real fallback.** PDF.js is lazy-loaded only when Classic Mode is requested; it is not decorative duplicate UI.
+1. A workbook page is rasterized for multimodal analysis.
+2. The result is validated as a typed page structure with source geometry and interaction identity.
+3. Supported structures become native exercises in Interactive Mode.
+4. The original page remains available in Classic Mode.
+
+The public demo serves frozen, validated results. New document analysis is available only through the private local workflow.
+
+## Engineering highlights
+
+- **Source fidelity:** Interactive exercises retain their connection to the original page, wording, and geometry.
+- **Fail-closed correction:** Only reliable source-backed mappings produce correct or incorrect feedback. Missing or ambiguous answers remain explicitly ungraded.
+- **Zero-inference public demo:** Visitors use precomputed multimodal analysis and cannot trigger document processing or provider requests.
+- **Tested interaction model:** Automated coverage spans all six exercise families, responsive layouts, keyboard operation, accessibility, correction, and the public read-only boundary.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    Page[Synthetic demo PDF] --> Contract[Frozen validated<br/>PageAnalysis]
-    Contract --> Projection[Deterministic lesson projection]
+    Page[Synthetic workbook PDF] --> Structure[Validated page structure]
+    Structure --> Projection[Deterministic lesson projection]
     Projection --> Interactive[Interactive renderer]
-    Interactive --> Correction[Authoritative correction<br/>fail closed]
-    Page --> Classic[Classic PDF.js reader<br/>source-faithful overlays]
+    Interactive --> Correction[Source-backed correction<br/>fail closed]
+    Page --> Classic[Classic PDF reader<br/>source-faithful overlays]
 ```
 
-The public runtime is three containers: Nginx/React, Spring Boot, and PostgreSQL. The local/private workflow adds FastAPI for real provider analysis. See [the architecture reference](docs/architecture.md) for both topologies and [the public release runbook](docs/public-release.md) for exact commands and security proofs.
+Lexora separates document analysis from the public reading experience. The public runtime contains only the web app, API, and database; the private local workflow adds multimodal document analysis.
 
-| Layer | Technology | Responsibility |
+| Layer | Stack | Role |
 |---|---|---|
-| Frontend | React 19, TypeScript 7, Vite 8, PDF.js 6 | Landing, native lessons, browser-local answers, lazy Classic reader |
-| Backend | Java 21, Spring Boot 4.1, PostgreSQL 18, PDFBox | Books, page orchestration, profiles, correction authority, public-demo enforcement |
-| AI service | Python 3.12, FastAPI, external Vision API | Local/private bounded image analysis and strict contract validation; absent publicly |
-| Development analysis | PaddleOCR 3.7, OpenCV 4.10 | Optional local compatibility path; absent from the public runtime |
+| Web | React, TypeScript, Vite, PDF.js | Public site, Interactive lessons, browser-local progress, and the lazy-loaded Classic reader |
+| API | Java, Spring Boot, PostgreSQL, PDFBox | Books, page orchestration, correction authority, and public-demo enforcement |
+| Analysis | Python, FastAPI, multimodal AI | Private document analysis and strict structure validation; absent from the public runtime |
 
-## Quick start: public demo
+See [the architecture reference](docs/architecture.md) for both runtime topologies and [the public release runbook](docs/public-release.md) for operational verification.
 
-Prerequisite: Docker Desktop with Compose. No AI credential is required.
+## Run the public demo
+
+Prerequisite: Docker Desktop with Compose. No AI service or provider credential is required.
 
 ```powershell
 $env:POSTGRES_PASSWORD = '<strong-random-secret>'
@@ -63,86 +64,58 @@ $env:LEXORA_HTTP_PORT = '8088' # optional
 docker compose -p lexora-public -f compose.production.yml up -d --build --wait
 ```
 
-Open `http://127.0.0.1:8088` for the landing or `/demo` for the reader. The default binding is loopback-only. Stop this stack with:
+Open `http://127.0.0.1:8088` for the public site or `http://127.0.0.1:8088/demo` for the reader. The stack binds to loopback by default.
 
 ```powershell
 docker compose -p lexora-public -f compose.production.yml down
 ```
 
-Production Compose enables the precomputed public-demo boundary and contains no `ai-service`, provider variable, upload path, or analysis dependency. It binds to loopback by default. Configure the owner-approved reverse proxy, TLS, and domain before deliberately changing that binding.
+For private local document analysis and development setup, follow [the public/private runtime runbook](docs/public-release.md). Credentials and private documents must never be committed.
 
-## Local/private AI runtime
+## Testing and quality
 
-This workflow keeps arbitrary PDF upload and real Vision AI analysis in the same repository while binding privileged services to `127.0.0.1` by default. The exact provider values below are runtime configuration, not part of the public demo:
-
-```powershell
-Copy-Item .env.example .env
-# Add OPENCODE_GO_API_KEY to .env locally; never commit it.
-$env:LEXORA_ANALYSIS_PROVIDER = 'opencode-go'
-$env:LEXORA_AI_DOCKER_TARGET = 'production'
-$env:LEXORA_PROVIDER_TIMEOUT_SECONDS = '240'
-docker compose -p lexora-private -f docker-compose.yml up -d --build --wait
-```
-
-Open `http://127.0.0.1:5173`. Upload and page processing are enabled here; the owner-provided key is passed only to the private FastAPI container. Stop it with `docker compose -p lexora-private -f docker-compose.yml down`.
-
-## Local development
-
-Development Compose also retains the optional local OCR compatibility provider:
+Lexora tests page structures, correction mapping, every interaction family, responsive behavior, keyboard navigation, accessibility, the production shell, and the precomputed public-demo boundary.
 
 ```powershell
-Copy-Item .env.example .env
-./scripts/dev-up.ps1
-./scripts/dev-status.ps1
-```
-
-Open `http://localhost:5173`. Stop the stack with `./scripts/dev-down.ps1`. Private books belong only in ignored local storage and must never become fixtures, screenshots, logs, or release assets. To attach a page profile to a specific private upload during development, set `LEXORA_BOOK_PROFILE_CHECKSUM` and `LEXORA_BOOK_PROFILE_EDITION_KEY`; the repository itself ships no source-specific profile.
-
-## Verification
-
-```powershell
-# AI service: production-safe suite without PaddleOCR
+# Analysis service
 docker compose --profile test run --rm --build ai-test
 
 # Backend
 cd backend
-./mvnw.cmd test
+.\mvnw.cmd test
 
 # Frontend
-cd ../frontend
+cd ..\frontend
 npm ci
-npm test -- --run
+npm test
 npm run build
 npm run test:e2e
 npm run test:e2e:production
+npm run test:e2e:public-demo
+
+# Public fixture integrity
+cd ..
+python scripts/public_demo_geometry.py --check
 ```
 
-The mocked browser suite uses generated public-safe data. The opt-in full-stack suite accepts book IDs and representative pages only through process-local environment variables; see [the release runbook](docs/public-release.md#verification) rather than committing private identifiers.
+Browser suites cover dark and light themes, reduced motion, keyboard-only interaction, responsive viewports, production-only behavior, and the read-only demo API. The repository's CI runs frontend, backend, analysis-service, and backend/PostgreSQL integration checks.
 
-## Refresh public screenshots
+## Public demo safety
 
-With the production stack at `http://127.0.0.1:18088`:
+The public demo is intentionally narrow:
 
-```powershell
-cd frontend
-$env:LEXORA_CAPTURE_BASE_URL = 'http://127.0.0.1:18088'
-npm run capture:release
-```
+- It serves one original synthetic workbook with precomputed multimodal analysis.
+- Its production stack contains only `frontend`, `backend`, and `postgres`—no AI service or provider credential.
+- Upload, processing, reanalysis, mutation, and access to arbitrary books are blocked.
+- Opening the demo cannot trigger inference or create provider spend.
+- Private documents, derived captures, provider payloads, credentials, and local storage are excluded from public assets.
 
-The capture script first verifies that `/api/public-demo` declares real precomputed provider provenance, is read-only, uses the expected internal provider/model contract, and cannot trigger analysis.
+The private workflow remains available for authorized local PDFs, but it is not part of the public runtime. See the [release runbook](docs/public-release.md) for the complete boundary.
 
-## Public versus private
+## Current limitations
 
-Safe, intentional release material lives in:
-
-- `backend/src/main/resources/demo/` — original synthetic PDF, normalized validated analyses, provenance, and public answer-key data;
-- `frontend/public/release/` — selected current product screenshots and the social image.
-
-The private workbook, derived page captures, OCR dumps, answer-key dumps, provider payloads, local storage, credentials, and temporary browser/render output are not public assets and are not included.
-
-## Current limits
-
-- No authentication, accounts, cloud answer sync, vocabulary system, translation, book chat, or generated explanations.
-- Not every publisher layout or answer-key shape is supported; unresolved content stays explicit.
-- Public deployment, domain/DNS, and TLS remain deployment-time operations.
-- No license has been selected. Adding one is an owner/legal decision; until then, all rights are reserved.
+- Unsupported or ambiguous layouts remain tied to the source rather than being guessed.
+- Free-text responses are saved locally but are not automatically graded without a reliable source answer.
+- Authentication, accounts, cloud progress sync, translation, book chat, and generated explanations are not implemented.
+- Public hosting, domain configuration, TLS, and operational backups remain deployment responsibilities.
+- No license has been selected; until one is added, all rights are reserved.

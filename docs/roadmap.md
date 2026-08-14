@@ -18,12 +18,12 @@ source-derived acceptance data.
 
 ## Public portfolio release
 
-- Real OpenCode Go / MiMo analysis in the local/private runtime; the public
+- Validated multimodal analysis in the local/private runtime; the public
   production topology contains no AI service, credential, OCR, or model download.
 - Read-only synthetic demo initialized server-side with precomputed analysis.
 - No anonymous upload, processing, extraction, or provider-spend path.
-- Public landing, real product evidence, reproducible Remotion film, social
-  preview, recruiter-oriented README, and production runbook.
+- Public landing, current product screenshots, social preview,
+  recruiter-oriented README, and production runbook.
 - Security headers, proxy limits, loopback-only public binding, health checks,
   migration validation, and restart/persistence proof.
 - Public assets and examples generated only from the curated synthetic demo.

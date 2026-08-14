@@ -9,6 +9,10 @@ from app.providers.opencode_go_vision import OpenCodeGoVisionProvider
 @lru_cache(maxsize=1)
 def get_analysis_provider() -> AnalysisProvider:
     provider = os.getenv("LEXORA_ANALYSIS_PROVIDER", "local-ocr").strip().lower()
+    if provider == "disabled":
+        from app.providers.disabled import DisabledAnalysisProvider
+
+        return DisabledAnalysisProvider()
     if provider == "local-ocr":
         if importlib.util.find_spec("paddleocr") is None:
             raise AnalysisProviderError(

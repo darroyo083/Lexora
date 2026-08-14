@@ -10,6 +10,8 @@ from app.schemas.page_analysis import (
     PageAnalysis,
 )
 from app.answer_key.schema import ExtractAnswerKeyRequest, ExtractAnswerKeyResponse
+from app.assist.contract import AssistProviderError, AssistRequest, AssistResponse
+from app.assist.service import run_assist
 from app.providers.base import AnalysisProviderError
 from app.providers.factory import get_analysis_provider
 
@@ -36,6 +38,14 @@ def _page_number_from_raster_path(raster_path: str) -> int:
             ),
         )
     return int(match.group(1))
+
+
+@app.post("/internal/assist", response_model=AssistResponse)
+def assist(request: AssistRequest):
+    try:
+        return run_assist(request)
+    except AssistProviderError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
 
 
 @app.get("/health")

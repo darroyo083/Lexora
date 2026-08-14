@@ -1,0 +1,71 @@
+export type AssistAction = 'hint' | 'explain' | 'translate' | 'check';
+
+export type AssistStatus =
+  | 'success'
+  | 'disabled'
+  | 'verification_required'
+  | 'limit_reached'
+  | 'unavailable'
+  | 'not_applicable'
+  | 'invalid_context';
+
+export type AssistVerdict = 'likely_correct' | 'likely_incorrect' | 'uncertain';
+
+export interface AssistConfig {
+  enabled: boolean;
+  siteKey: string | null;
+}
+
+export interface AssistRequestPayload {
+  action: AssistAction;
+  bookId: string;
+  pageNumber: number;
+  exerciseId: string;
+  answer: string | null;
+  targetLanguage: string | null;
+  turnstileToken: string | null;
+}
+
+export interface AssistResponse {
+  action: AssistAction;
+  status: AssistStatus;
+  content: string | null;
+  verdict: AssistVerdict | null;
+  cached: boolean;
+  siteKey: string | null;
+  message: string | null;
+}
+
+/**
+ * The compact descriptor of the exercise Ask Lexora should act on. It is
+ * derived in the reader from the current/selected interaction; the backend
+ * reconstructs the canonical context from the exerciseId alone.
+ */
+export interface ExerciseContext {
+  exerciseId: string;
+  kind: string;
+  answer: string | null;
+  canCheck: boolean;
+}
+
+export async function fetchAssistConfig(signal?: AbortSignal): Promise<AssistConfig> {
+  const res = await fetch('/api/ai/assist/config', { signal });
+  if (!res.ok) return { enabled: false, siteKey: null };
+  return res.json() as Promise<AssistConfig>;
+}
+
+export async function requestAssist(
+  payload: AssistRequestPayload,
+  signal?: AbortSignal,
+): Promise<AssistResponse> {
+  const res = await fetch('/api/ai/assist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  });
+  if (!res.ok) {
+    throw new Error(`AI assistance failed: ${res.status}`);
+  }
+  return res.json() as Promise<AssistResponse>;
+}

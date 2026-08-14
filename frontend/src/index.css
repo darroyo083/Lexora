@@ -4949,3 +4949,206 @@ html, body, #root {
     -webkit-text-fill-color: currentColor;
   }
 }
+
+/* ==========================================================================
+   ASK LEXORA — contextual AI assistance (secondary, compact)
+   ========================================================================== */
+
+.ask-lexora {
+  position: relative;
+  z-index: 20;
+}
+
+.ask-lexora-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: 600 12px/1 var(--font-sans);
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+
+.ask-lexora-trigger:hover:not(:disabled) {
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+  background: var(--bg-surface-subtle);
+}
+
+.ask-lexora-trigger svg {
+  color: var(--accent-primary);
+}
+
+.ask-lexora-trigger:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ask-lexora-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 40;
+  width: min(340px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-md);
+  outline: none;
+}
+
+.ask-lexora-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ask-lexora-head > span {
+  color: var(--text-primary);
+  font: 650 13px/1 var(--font-sans);
+}
+
+.ask-lexora-close {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.ask-lexora-close:hover {
+  background: var(--bg-surface-subtle);
+  color: var(--text-primary);
+}
+
+.ask-lexora-working {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 2px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.ask-lexora-verifying {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ask-lexora-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ask-lexora-action {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: 600 13px/1 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.ask-lexora-action:hover {
+  border-color: var(--border-focus);
+  background: var(--bg-surface-subtle);
+}
+
+.ask-lexora-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ask-lexora-verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+}
+
+.ask-lexora-verdict > span {
+  color: var(--accent-primary);
+  font: 700 14px/1.2 var(--font-sans);
+}
+
+.ask-lexora-verdict small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.ask-lexora-content {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.ask-lexora-cached {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.ask-lexora-message {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ask-lexora-new {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font: 600 12px/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.ask-lexora-new:hover {
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+}
+
+@media (max-width: 720px) {
+  .ask-lexora-trigger span {
+    display: none;
+  }
+
+  .ask-lexora-trigger {
+    width: 34px;
+    justify-content: center;
+    padding: 0;
+  }
+}

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import BrandMark from './BrandMark';
+import AskLexora from './AskLexora';
+import type { ExerciseContext } from '../api/assist';
 import type { ThemeMode } from '../state/theme';
 import { ZOOM_OPTIONS } from '../reader/zoom';
 import type { ProcessControl, ProcessingTarget } from '../reader/processing';
@@ -36,6 +38,12 @@ interface Props {
   readerMode: ReaderMode;
   onReaderModeChange: (mode: ReaderMode) => void;
   readOnly?: boolean;
+  assist?: {
+    bookId: string | null;
+    pageNumber: number;
+    exercise: ExerciseContext | null;
+    siteKey: string | null;
+  } | null;
 }
 
 function useRepeatPageAction(onStep: () => void, disabled: boolean) {
@@ -117,6 +125,7 @@ export default function ReaderToolbar({
   readerMode,
   onReaderModeChange,
   readOnly = false,
+  assist = null,
 }: Props) {
   const canGoPrev = book ? selectedPage > 1 : false;
   const canGoNext = book ? selectedPage < book.pageCount : false;
@@ -292,6 +301,15 @@ export default function ReaderToolbar({
             )}
             {status === 'uploading' && <span className="status">Uploading...</span>}
           </div>
+        )}
+
+        {assist && (
+          <AskLexora
+            bookId={assist.bookId}
+            pageNumber={assist.pageNumber}
+            exercise={assist.exercise}
+            siteKey={assist.siteKey}
+          />
         )}
 
         <button

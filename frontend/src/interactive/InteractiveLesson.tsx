@@ -63,6 +63,7 @@ interface Props {
   onCheck: (itemIds?: string[]) => void;
   onRetry: (itemId: string) => void;
   onReveal: (itemId: string) => void;
+  onActiveExerciseChange?: (exercise: { exerciseId: string; kind: string; answer: string | null } | null) => void;
 }
 
 const VERDICT_LABEL: Partial<Record<CorrectionVerdict, string>> = {
@@ -533,6 +534,24 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
 
   const activeIndex = Math.max(0, steps.findIndex((step) => step.id === activeStepId));
   const step = steps[activeIndex] ?? steps[0];
+
+  useEffect(() => {
+    const onChange = props.onActiveExerciseChange;
+    if (!onChange) return;
+    if (step.kind !== 'activity') {
+      onChange(null);
+      return;
+    }
+    const block = step.block;
+    const kind = block.kind === 'fill-blank' ? 'fill-in-line' : block.kind;
+    const exerciseId = step.answerItemIds[0];
+    if (!exerciseId) {
+      onChange(null);
+      return;
+    }
+    onChange({ exerciseId, kind, answer: props.answers[exerciseId] ?? null });
+  }, [step, props.answers, props.onActiveExerciseChange]);
+
   const activitySteps = steps.filter((candidate) => candidate.kind === 'activity');
   const activityPosition = step.kind === 'activity'
     ? step.activityIndex + 1

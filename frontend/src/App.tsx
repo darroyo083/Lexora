@@ -70,6 +70,8 @@ import {
   type ThemeMode,
 } from './state/theme';
 import { readReaderMode, writeReaderMode, type ReaderMode } from './state/readerMode';
+import { fetchAssistConfig, type ExerciseContext } from './api/assist';
+import { computeCanCheck, kindOrdinal } from './reader/assistContext';
 
 const PageViewer = lazy(() => import('./reader/PageViewer'));
 
@@ -178,6 +180,13 @@ export default function App() {
   const [correctionDetails, setCorrectionDetails] = useState<Record<string, { correctCount: number; totalCount: number }>>({});
   const [correctionUiState, setCorrectionUiState] = useState<string>('IDLE');
   const [correctionReveal, setCorrectionReveal] = useState<Record<string, boolean>>({});
+  const [assistEnabled, setAssistEnabled] = useState(false);
+  const [assistSiteKey, setAssistSiteKey] = useState<string | null>(null);
+  const [interactiveExercise, setInteractiveExercise] = useState<{
+    exerciseId: string;
+    kind: string;
+    answer: string | null;
+  } | null>(null);
   const activePage = useRef(selectedPage);
   const processingInFlight = useRef(false);
   const bookIdRef = useRef<string | null>(null);
@@ -230,6 +239,20 @@ export default function App() {
 
   useEffect(() => {
     migrateDesignVariantPreference();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchAssistConfig(controller.signal)
+      .then((config) => {
+        setAssistEnabled(config.enabled);
+        setAssistSiteKey(config.siteKey ?? null);
+      })
+      .catch(() => {
+        setAssistEnabled(false);
+        setAssistSiteKey(null);
+      });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -1100,6 +1123,49 @@ export default function App() {
     unit: pageUnitNumber ? { number: pageUnitNumber, title: pageUnitTitle } : null,
   }), [book?.id, page, pageUnitNumber, pageUnitTitle, selectedPage]);
 
+  const currentExercise: ExerciseContext | null = useMemo(() => {
+    if (!book) return null;
+    if (readerMode === 'interactive') {
+      if (!interactiveExercise) return null;
+      const ordinal = kindOrdinal(
+        interactiveExercise.kind, interactiveExercise.exerciseId, interaction,
+      );
+      return {
+        exerciseId: interactiveExercise.exerciseId,
+        kind: interactiveExercise.kind,
+        answer: interactiveExercise.answer,
+        canCheck: computeCanCheck(
+          interactiveExercise.kind, ordinal, interactiveExercise.answer, correctionSlots,
+        ),
+      };
+    }
+    let exerciseId: string | null = null;
+    let kind = '';
+    if (interaction.selectedBlank) {
+      exerciseId = interaction.selectedBlank.id;
+      kind = 'fill-in-line';
+    } else if (interaction.selectedChoice) {
+      exerciseId = interaction.selectedChoice.id;
+      kind = 'choice';
+    } else if (orderingActivePrompt) {
+      exerciseId = orderingActivePrompt;
+      kind = 'sentence-ordering';
+    } else if (matchingSelection?.interactionId) {
+      exerciseId = matchingSelection.interactionId;
+      kind = 'matching';
+    }
+    if (!exerciseId) return null;
+    const answer = interaction.answers[exerciseId] ?? null;
+    const ordinal = kindOrdinal(kind, exerciseId, interaction);
+    return {
+      exerciseId,
+      kind,
+      answer,
+      canCheck: computeCanCheck(kind, ordinal, answer, correctionSlots),
+    };
+  }, [book, readerMode, interactiveExercise, interaction, orderingActivePrompt,
+    matchingSelection, correctionSlots]);
+
   return (
     <div className="app" data-design="stitch" data-theme={theme} data-dev-mode={devMode} data-reader-mode={readerMode}>
       {!publicDemoEntry && <LeftRail devMode={devMode} onToggleDevMode={handleToggleDevMode} />}
@@ -1133,6 +1199,12 @@ export default function App() {
           readerMode={readerMode}
           onReaderModeChange={handleReaderModeChange}
           readOnly={publicDemo}
+          assist={assistEnabled ? {
+            bookId: book?.id ?? null,
+            pageNumber: selectedPage,
+            exercise: currentExercise,
+            siteKey: assistSiteKey,
+          } : null}
         />
 
         {uploadError && (
@@ -1186,6 +1258,7 @@ export default function App() {
                 onCheck={handleCorrectionCheck}
                 onRetry={handleCorrectionRetry}
                 onReveal={handleCorrectionReveal}
+                onActiveExerciseChange={setInteractiveExercise}
               />
             ) : readerMode === 'classic' && sourceLoadError ? (
               <div className="reader-source-error" role="alert">

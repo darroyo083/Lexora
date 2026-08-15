@@ -504,7 +504,7 @@ describe('request recovery and correction isolation', () => {
     render(<App />);
     fireEvent.change(await screen.findByRole('textbox', { name: /answer for/i }), { target: { value: 'answer' } });
     fireEvent.click(await screen.findByRole('button', { name: 'Check answers' }));
-    expect(await screen.findByText(/source answer is ambiguous/i)).toBeTruthy();
+    expect(await screen.findByText(/source answer needs review/i)).toBeTruthy();
     expect(screen.queryByText('Correct')).toBeNull();
   });
 });

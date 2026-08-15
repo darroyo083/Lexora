@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Sparkles, X } from 'lucide-react';
-import { ThinkingOrb } from 'thinking-orbs';
+import { Maximize2, Minimize2, Sparkles, X } from 'lucide-react';
 import {
   requestAssist,
   type AssistAction,
@@ -8,8 +7,8 @@ import {
   type ExerciseContext,
   type SelectionRect,
 } from '../api/assist';
-
-type OrbState = 'working' | 'composing' | 'solving';
+import AiPendingState from './AiPendingState';
+import LimitedMarkdown from './LimitedMarkdown';
 
 interface Props {
   bookId: string | null;
@@ -40,12 +39,6 @@ const VERDICT_LABEL: Record<string, string> = {
   uncertain: 'Uncertain',
 };
 
-function orbStateFor(action: AssistAction): OrbState {
-  if (action === 'check') return 'solving';
-  if (action === 'hint') return 'working';
-  return 'composing';
-}
-
 function statusMessage(response: AssistResponse): string {
   switch (response.status) {
     case 'disabled':
@@ -57,7 +50,7 @@ function statusMessage(response: AssistResponse): string {
     case 'not_applicable':
       return response.message ?? 'AI help is not available for this exercise.';
     case 'invalid_context':
-      return response.message ?? 'This exercise could not be matched to its source.';
+      return response.message ?? 'We could not connect that request to the source. Try another exercise or selection.';
     default:
       return 'AI help is temporarily unavailable. Please try again.';
   }
@@ -81,6 +74,7 @@ export default function AskLexora({
   const [message, setMessage] = useState<string | null>(null);
   const [questionDraft, setQuestionDraft] = useState('');
   const [questionOpen, setQuestionOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const pendingRef = useRef<PendingPayload | null>(null);
   const turnstileRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -103,8 +97,14 @@ export default function AskLexora({
         action,
         bookId,
         pageNumber,
-        exerciseId: exercise?.exerciseId ?? null,
-        answer: action === 'check' ? exercise?.answer ?? null : null,
+        // The mode is a security boundary: never send stale Interactive
+        // exercise state with a Classic selection request.
+        exerciseId: mode === 'interactive'
+          ? exercise?.assistExerciseId ?? exercise?.exerciseId ?? null
+          : null,
+        answer: mode === 'interactive' && action === 'check'
+          ? exercise?.answer ?? null
+          : null,
         targetLanguage,
         question,
         selection: mode === 'classic' ? selection : null,
@@ -172,6 +172,7 @@ export default function AskLexora({
 
   const openPanel = () => {
     setOpen(true);
+    setCollapsed(false);
     setPhase('idle');
     setResult(null);
     setMessage(null);
@@ -224,39 +225,51 @@ export default function AskLexora({
       {open && (
         <div
           ref={panelRef}
-          className="ask-lexora-panel"
+          className={`ask-lexora-panel${collapsed ? ' is-collapsed' : ''}`}
           role="dialog"
           aria-label="Ask Lexora"
+          aria-modal="false"
           tabIndex={-1}
         >
           <div className="ask-lexora-head">
-            <span>{mode === 'classic' ? 'Ask about this selection' : 'Ask about this exercise'}</span>
-            <button
-              type="button"
-              className="ask-lexora-close"
-              aria-label="Close Ask Lexora"
-              onClick={() => {
-                setOpen(false);
-                setPhase('idle');
-                setResult(null);
-                setMessage(null);
-                triggerRef.current?.focus();
-              }}
-            >
-              <X size={16} aria-hidden="true" />
-            </button>
+            <span id="ask-lexora-title">{mode === 'classic' ? 'Ask about this selection' : 'Ask about this exercise'}</span>
+            <div className="ask-lexora-head-actions">
+              <button
+                type="button"
+                className="ask-lexora-close"
+                aria-label={collapsed ? 'Expand Ask Lexora' : 'Collapse Ask Lexora'}
+                title={collapsed ? 'Expand' : 'Collapse'}
+                onClick={() => {
+                  setCollapsed((value) => !value);
+                  panelRef.current?.focus();
+                }}
+              >
+                {collapsed ? <Maximize2 size={15} aria-hidden="true" /> : <Minimize2 size={15} aria-hidden="true" />}
+              </button>
+              <button
+                type="button"
+                className="ask-lexora-close"
+                aria-label="Close Ask Lexora"
+                title="Close"
+                onClick={() => {
+                  setOpen(false);
+                  setCollapsed(false);
+                  setPhase('idle');
+                  setResult(null);
+                  setMessage(null);
+                  triggerRef.current?.focus();
+                }}
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
-          {phase === 'working' && (
-            <div className="ask-lexora-working" role="status">
-              <ThinkingOrb state={orbStateFor(activeAction ?? 'hint')} size={20} />
-              <span>{activeAction === 'check' ? 'Reviewing your answer…' : 'Thinking…'}</span>
-            </div>
-          )}
+          {!collapsed && phase === 'working' && activeAction && <AiPendingState action={activeAction} />}
 
-          {phase === 'verifying' && (
+          {!collapsed && phase === 'verifying' && (
             <div className="ask-lexora-verifying" role="status">
-              <p>Quickly verify you're human to continue.</p>
+              <p>Verify you're human once, then Lexora can continue.</p>
               {siteKey && (
                 <div
                   ref={turnstileRef}
@@ -265,10 +278,11 @@ export default function AskLexora({
                   data-callback={TURNSTILE_CALLBACK}
                 />
               )}
+              {!siteKey && <p className="ask-lexora-verifying-error">Verification is unavailable right now. Please try again later.</p>}
             </div>
           )}
 
-          {(phase === 'idle' || phase === 'done') && result === null && !message && (
+          {!collapsed && (phase === 'idle' || phase === 'done') && result === null && !message && (
             questionOpen ? (
               <form className="ask-lexora-question" onSubmit={(event) => {
                 event.preventDefault();
@@ -320,7 +334,7 @@ export default function AskLexora({
             )
           )}
 
-          {phase === 'done' && result !== null && (
+          {!collapsed && phase === 'done' && result !== null && (
             <div className="ask-lexora-result" aria-live="polite">
               {result.action === 'check' && result.verdict && (
                 <div className="ask-lexora-verdict" data-verdict={result.verdict}>
@@ -328,7 +342,7 @@ export default function AskLexora({
                   <small>AI-assisted review · not source-backed</small>
                 </div>
               )}
-              <p className="ask-lexora-content">{result.content}</p>
+              <LimitedMarkdown content={result.content ?? ''} />
               {result.cached && <small className="ask-lexora-cached">Cached</small>}
               <button
                 type="button"
@@ -346,7 +360,7 @@ export default function AskLexora({
             </div>
           )}
 
-          {phase === 'done' && result === null && message && (
+          {!collapsed && phase === 'done' && result === null && message && (
             <div className="ask-lexora-message" aria-live="polite">
               <p>{message}</p>
               <button

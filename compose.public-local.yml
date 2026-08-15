@@ -1,13 +1,20 @@
 services:
   ai-service:
+    environment:
+      LEXORA_ASSIST_PROVIDER: "openai-compatible"
+      LEXORA_ASSIST_API_KEY: ${OPENCODE_GO_API_KEY:-}
+      LEXORA_ASSIST_MODEL: "mimo-v2.5"
+      LEXORA_ASSIST_BASE_URL: "https://opencode.ai/zen/go/v1"
     ports: !override []
   backend:
     environment:
       LEXORA_PUBLIC_DEMO_ENABLED: "true"
       LEXORA_PUBLIC_DEMO_LOCAL_QA: "true"
       LEXORA_ASSIST_ENABLED: "true"
+      LEXORA_ASSIST_PROVIDER: "openai-compatible"
+      LEXORA_ASSIST_MODEL: "mimo-v2.5"
       LEXORA_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
-      LEXORA_TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+      LEXORA_TURNSTILE_SECRET_KEY: "1x0000000000000000000000000000000AA"
     ports: !override
       - "127.0.0.1:18080:8080"
 

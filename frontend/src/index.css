@@ -5024,11 +5024,14 @@ html, body, #root {
 }
 
 .ask-lexora-panel {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
+  position: fixed;
+  top: 68px;
+  right: max(14px, 1.4vw);
+  bottom: 14px;
   z-index: 40;
-  width: min(340px, calc(100vw - 24px));
+  width: min(360px, calc(33vw - 12px));
+  max-height: calc(100dvh - 82px);
+  overflow: auto;
   padding: 14px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
@@ -5037,11 +5040,28 @@ html, body, #root {
   outline: none;
 }
 
+.app-main-workspace:has(.ask-lexora-panel) .reader-layout {
+  padding-right: clamp(260px, 32vw, 382px);
+}
+
+.ask-lexora-panel.is-collapsed {
+  right: max(14px, 1.4vw);
+  bottom: auto;
+  width: min(270px, calc(33vw - 12px));
+  overflow: hidden;
+}
+
 .ask-lexora-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+}
+
+.ask-lexora-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .ask-lexora-head > span {
@@ -5074,6 +5094,16 @@ html, body, #root {
   padding: 4px 2px;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+.ask-lexora-pending-copy {
+  display: inline-block;
+  animation: ask-pending-copy-in 260ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes ask-pending-copy-in {
+  from { opacity: 0; transform: translateX(5px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 .ask-lexora-verifying {
@@ -5128,13 +5158,14 @@ html, body, #root {
 }
 
 .ask-lexora-question-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
 }
 
 .ask-lexora-question-actions small {
-  margin-right: auto;
+  min-width: 0;
   color: var(--text-tertiary);
   font-size: 11px;
 }
@@ -5154,8 +5185,8 @@ html, body, #root {
 }
 
 .lesson-help-action .ask-lexora-panel {
-  left: 0;
-  right: auto;
+  left: auto;
+  right: max(14px, 1.4vw);
   z-index: 100;
 }
 
@@ -5164,6 +5195,10 @@ html, body, #root {
 }
 
 .ask-lexora-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
   min-height: 38px;
   padding: 0 12px;
   border: 1px solid var(--border-subtle);
@@ -5216,6 +5251,44 @@ html, body, #root {
   overflow-wrap: break-word;
 }
 
+.ask-lexora-markdown {
+  color: var(--text-primary);
+  font-size: 13.5px;
+  line-height: 1.55;
+  overflow-wrap: break-word;
+}
+
+.ask-lexora-markdown p,
+.ask-lexora-markdown ul,
+.ask-lexora-markdown ol {
+  margin: 0;
+}
+
+.ask-lexora-markdown p + p,
+.ask-lexora-markdown p + ul,
+.ask-lexora-markdown p + ol,
+.ask-lexora-markdown ul + p,
+.ask-lexora-markdown ol + p {
+  margin-top: 10px;
+}
+
+.ask-lexora-markdown ul,
+.ask-lexora-markdown ol {
+  padding-left: 21px;
+}
+
+.ask-lexora-markdown li + li {
+  margin-top: 4px;
+}
+
+.ask-lexora-markdown code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--bg-surface-subtle);
+  color: var(--text-primary);
+  font: 500 0.92em/1.2 var(--font-mono);
+}
+
 .ask-lexora-cached {
   color: var(--text-tertiary);
   font-size: 11px;
@@ -5231,8 +5304,11 @@ html, body, #root {
 }
 
 .ask-lexora-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   align-self: flex-start;
-  min-height: 32px;
+  min-height: 38px;
   padding: 0 10px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -5247,7 +5323,33 @@ html, body, #root {
   color: var(--text-primary);
 }
 
+.ask-lexora-verifying-error {
+  margin: 0;
+  color: var(--correction-err);
+}
+
 @media (max-width: 720px) {
+  .app-main-workspace:has(.ask-lexora-panel) .reader-layout {
+    padding-right: 0;
+  }
+
+  .ask-lexora-panel,
+  .ask-lexora-panel.is-collapsed,
+  .lesson-help-action .ask-lexora-panel {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    max-height: min(70dvh, 560px);
+  }
+
+  .ask-lexora-panel.is-collapsed {
+    bottom: 12px;
+    left: auto;
+    width: min(270px, calc(100vw - 24px));
+  }
+
   .ask-lexora-trigger span {
     display: none;
   }

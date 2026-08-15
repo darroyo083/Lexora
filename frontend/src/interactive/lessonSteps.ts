@@ -26,6 +26,12 @@ export interface ActivityLessonStep {
   correctionItemIds: string[];
 }
 
+export function assistExerciseId(block: ActivityBlock): string | undefined {
+  if (block.kind === 'choice-grid') return block.grid.id;
+  if (block.kind === 'sentence-ordering') return block.exerciseId || undefined;
+  return undefined;
+}
+
 export interface CompletionLessonStep {
   id: string;
   kind: 'completion';

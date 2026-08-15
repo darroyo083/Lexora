@@ -52,6 +52,8 @@ export interface AssistResponse {
  */
 export interface ExerciseContext {
   exerciseId: string;
+  /** Canonical source identity when answer storage uses a child id. */
+  assistExerciseId?: string;
   kind: string;
   answer: string | null;
   canCheck: boolean;

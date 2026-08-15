@@ -92,6 +92,77 @@ describe('AskLexora', () => {
     });
   });
 
+  it('keeps Classic requests selection-only even when stale exercise state exists', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        action: 'explain', status: 'success', content: 'Context.',
+        verdict: null, cached: false, siteKey: null, message: null,
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AskLexora
+      {...baseProps}
+      mode="classic"
+      selection={{ x: 0.1, y: 0.2, width: 0.4, height: 0.1 }}
+      selectionHasContext
+    />);
+    fireEvent.click(screen.getByRole('button', { name: 'Explain' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>;
+    const body = JSON.parse(calls[0][1].body as string);
+    expect(body.exerciseId).toBeNull();
+    expect(body.answer).toBeNull();
+    expect(body.selection).toEqual({ x: 0.1, y: 0.2, width: 0.4, height: 0.1 });
+  });
+
+  it('uses the canonical assist id for grouped Interactive exercises', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        action: 'explain', status: 'success', content: 'Context.',
+        verdict: null, cached: false, siteKey: null, message: null,
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AskLexora {...baseProps} exercise={{
+      exerciseId: 'grid-row-1', assistExerciseId: 'grid-1', kind: 'choice-grid',
+      answer: 'option-a', canCheck: false,
+    }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Explain' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>;
+    expect(JSON.parse(calls[0][1].body as string).exerciseId).toBe('grid-1');
+  });
+
+  it('renders limited Markdown as safe semantic content', async () => {
+    stubFetchResponse(200, {
+      action: 'explain', status: 'success',
+      content: '**Use** this.\n\n- <script>alert(1)</script>\n\n1. `der`',
+      verdict: null, cached: false, siteKey: null, message: null,
+    });
+    render(<AskLexora {...baseProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Explain' }));
+    await waitFor(() => expect(screen.getByText('Use')).toBeTruthy());
+    expect(document.querySelector('strong')).not.toBeNull();
+    expect(document.querySelector('ul')).not.toBeNull();
+    expect(document.querySelector('ol')).not.toBeNull();
+    expect(document.querySelector('.ask-lexora-markdown script')).toBeNull();
+  });
+
+  it('provides a keyboard-accessible collapse affordance', () => {
+    render(<AskLexora {...baseProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Ask Lexora' }));
+    expect(screen.getByRole('button', { name: 'Expand Ask Lexora' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Explain' })).toBeNull();
+  });
+
   it('renders the trigger as a secondary action', () => {
     render(<AskLexora {...baseProps} />);
     const trigger = screen.getByRole('button', { name: 'Ask Lexora' });

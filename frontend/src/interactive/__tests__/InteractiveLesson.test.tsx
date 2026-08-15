@@ -105,7 +105,7 @@ describe('InteractiveLesson', () => {
       resolutionByItem: { 'blank-1': AnswerResolutionStatus.AMBIGUOUS },
       expectedByItem: {},
     })} />);
-    expect(screen.getByText(/source answer is ambiguous/i)).toBeTruthy();
+    expect(screen.getByText(/source answer needs review/i)).toBeTruthy();
     expect(screen.queryByText('Correct')).toBeNull();
   });
 

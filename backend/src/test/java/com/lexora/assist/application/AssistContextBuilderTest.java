@@ -51,6 +51,16 @@ class AssistContextBuilderTest {
         }
         """;
 
+    private static final String GRID_ANALYSIS = ANALYSIS.replace(
+        "\"choiceGroups\": [], \"choiceTargets\": [], \"choiceGrids\": [], \"sentenceOrderings\": [],",
+        "\"choiceGroups\": [{\"id\":\"grid-options\",\"options\":[{\"id\":\"a\",\"label\":\"A\"}]}], "
+            + "\"choiceTargets\": [], \"choiceGrids\": [{\"id\":\"grid-01\",\"kind\":\"choice-grid\","
+            + "\"gridBbox\":{\"x\":0.1,\"y\":0.2,\"width\":0.5,\"height\":0.1},"
+            + "\"optionGroupId\":\"grid-options\",\"detectionMethod\":\"test\",\"candidateScore\":1,"
+            + "\"rows\":[{\"id\":\"grid-row-1\",\"rowBbox\":{\"x\":0.1,\"y\":0.2,\"width\":0.5,\"height\":0.03},"
+            + "\"promptBbox\":null,\"nearbyTextSpanIds\":[\"ts-09\"],\"cells\":[]}]}], \"sentenceOrderings\": [],"
+    );
+
     @BeforeEach
     void setUp() {
         bookService = mock(BookService.class);
@@ -114,5 +124,21 @@ class AssistContextBuilderTest {
                 List.of(new CorrectionSlot("free-text", 0, "RESOLVED", null))));
 
         assertThat(builder.build(bookId, 1, "blank-01", null, null).sourceBacked()).isFalse();
+    }
+
+    @Test
+    void resolvesChoiceGridRowIdToCanonicalGridContext() {
+        var page = new BookPage(UUID.randomUUID(), bookId, 1, 1322, 1870,
+            ProcessingStatus.READY, GRID_ANALYSIS, Instant.now(), null);
+        when(bookService.getPage(bookId, 1)).thenReturn(Optional.of(page));
+        when(resolutionService.resolve(bookId, 1))
+            .thenReturn(PageCorrectionResolution.unmapped(bookId, 1, null));
+
+        var built = builder.build(bookId, 1, "grid-row-1", null, null);
+
+        assertThat(built).isNotNull();
+        assertThat(built.context().exerciseKind()).isEqualTo("choice-grid");
+        assertThat(built.context().options()).containsExactly("A");
+        assertThat(built.context().source()).contains("a) Ich");
     }
 }

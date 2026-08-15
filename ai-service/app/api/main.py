@@ -1,4 +1,5 @@
 import re
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -23,6 +24,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Lexora AI Service", version="0.3.0", lifespan=lifespan)
+logger = logging.getLogger(__name__)
 
 RASTER_PAGE_NUMBER_RE = re.compile(r"-page(\d+)-\d+dpi\.png$")
 
@@ -45,6 +47,7 @@ def assist(request: AssistRequest):
     try:
         return run_assist(request)
     except AssistProviderError as error:
+        logger.warning("assist failure action=%s category=%s", request.action, error.category)
         raise HTTPException(status_code=503, detail=str(error)) from error
 
 

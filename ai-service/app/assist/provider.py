@@ -72,14 +72,14 @@ class AssistProvider:
         if not resolved_base:
             raise AssistProviderError(
                 "LEXORA_ASSIST_BASE_URL is required for the "
-                f"{profile} provider profile"
+                f"{profile} provider profile", category="configuration"
             )
         self.profile = profile
         self.model = model or spec["default_model"]
         if not self.model:
             raise AssistProviderError(
                 "LEXORA_ASSIST_MODEL is required for the "
-                f"{profile} provider profile"
+                f"{profile} provider profile", category="configuration"
             )
         self.endpoint = f"{resolved_base}{spec['endpoint_path']}"
         self.api_key = api_key
@@ -88,7 +88,8 @@ class AssistProvider:
         self._sender = sender or self._send
         if not self.api_key:
             raise AssistProviderError(
-                "LEXORA_ASSIST_API_KEY is required to call the assistance provider"
+                "LEXORA_ASSIST_API_KEY is required to call the assistance provider",
+                category="configuration",
             )
 
     def complete(self, messages: list[dict]) -> str:
@@ -131,33 +132,33 @@ class AssistProvider:
                 if error.code >= 500 and attempt == 0:
                     time.sleep(TRANSIENT_RETRY_DELAY_SECONDS)
                     continue
-                raise AssistProviderError("Assistance provider request failed") from error
+                raise AssistProviderError("Assistance provider request failed", category="provider_http") from error
             except (TimeoutError, urllib.error.URLError) as error:
                 if attempt == 0:
                     time.sleep(TRANSIENT_RETRY_DELAY_SECONDS)
                     continue
-                raise AssistProviderError("Assistance provider is unavailable") from error
+                raise AssistProviderError("Assistance provider is unavailable", category="provider_timeout") from error
             except json.JSONDecodeError as error:
-                raise AssistProviderError("Assistance provider returned invalid JSON") from error
-        raise AssistProviderError("Assistance provider is unavailable")
+                raise AssistProviderError("Assistance provider returned invalid JSON", category="provider_invalid_json") from error
+        raise AssistProviderError("Assistance provider is unavailable", category="provider_timeout")
 
 
 def _extract_message_text(response: dict[str, Any]) -> str:
     choices = response.get("choices") or []
     if not choices:
-        raise AssistProviderError("Assistance provider returned no completion")
+        raise AssistProviderError("Assistance provider returned no completion", category="provider_output")
     choice = choices[0]
     if choice.get("finish_reason") == "content_filter":
-        raise AssistProviderError("Assistance provider output was filtered")
+        raise AssistProviderError("Assistance provider output was filtered", category="provider_output")
     message = choice.get("message") or {}
     if message.get("refusal"):
-        raise AssistProviderError("Assistance provider refused the request")
+        raise AssistProviderError("Assistance provider refused the request", category="provider_output")
     content = message.get("content")
     if isinstance(content, list):
         parts = [part.get("text", "") for part in content if isinstance(part, dict)]
         content = "".join(parts)
     if not isinstance(content, str) or not content.strip():
-        raise AssistProviderError("Assistance provider returned no content")
+        raise AssistProviderError("Assistance provider returned no content", category="provider_output")
     return content
 
 

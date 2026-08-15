@@ -187,6 +187,7 @@ export default function App() {
   const [classicSelection, setClassicSelection] = useState<SelectionRect | null>(null);
   const [interactiveExercise, setInteractiveExercise] = useState<{
     exerciseId: string;
+    assistExerciseId?: string;
     kind: string;
     answer: string | null;
   } | null>(null);
@@ -1176,6 +1177,7 @@ export default function App() {
       );
       return {
         exerciseId: interactiveExercise.exerciseId,
+        assistExerciseId: interactiveExercise.assistExerciseId,
         kind: interactiveExercise.kind,
         answer: interactiveExercise.answer,
         canCheck: computeCanCheck(
@@ -1247,7 +1249,9 @@ export default function App() {
           assist={assistEnabled && readerMode === 'classic' ? {
             bookId: book?.id ?? null,
             pageNumber: selectedPage,
-            exercise: currentExercise,
+            // Classic is selection-only. Do not leak the last Interactive
+            // exercise into the request boundary while a rectangle is active.
+            exercise: null,
             siteKey: assistSiteKey,
             mode: 'classic',
             selection: classicSelection,

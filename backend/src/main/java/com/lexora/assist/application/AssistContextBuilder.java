@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import tools.jackson.databind.DeserializationFeature;
@@ -73,7 +74,7 @@ public class AssistContextBuilder {
         if (interaction == null) {
             return null;
         }
-        var exercise = findSemanticExercise(analysis, exerciseId);
+        var exercise = findSemanticExercise(analysis, interaction.id());
 
         String title = book.title();
         if (exercise != null && exercise.title() != null && !exercise.title().isBlank()) {
@@ -167,15 +168,38 @@ public class AssistContextBuilder {
         }
         var grids = analysis.choiceGrids();
         for (int i = 0; i < grids.size(); i++) {
-            if (grids.get(i).id().equals(exerciseId)) {
-                return new Interaction(exerciseId, "choice-grid", i, List.of());
+            var grid = grids.get(i);
+            if (grid.id().equals(exerciseId)
+                || grid.rows().stream().anyMatch(row -> row.id().equals(exerciseId))) {
+                var nearbySpanIds = grid.rows().stream()
+                    .flatMap(row -> row.nearbyTextSpanIds().stream())
+                    .distinct()
+                    .toList();
+                // A choice-grid is one source-backed exercise. Row ids are
+                // answer storage keys, not valid AI-context identities, so
+                // both forms resolve to the grid's canonical id.
+                return new Interaction(grid.id(), "choice-grid", i, nearbySpanIds);
             }
         }
         var orderings = analysis.sentenceOrderings();
         for (int i = 0; i < orderings.size(); i++) {
-            if (orderings.get(i).id().equals(exerciseId)) {
-                return new Interaction(exerciseId, "sentence-ordering", i,
-                    orderings.get(i).nearbyTextSpanIds());
+            var ordering = orderings.get(i);
+            if (ordering.id().equals(exerciseId)
+                || (ordering.exerciseId() != null && ordering.exerciseId().equals(exerciseId))) {
+                var nearbySpanIds = orderings.stream()
+                    .filter(candidate -> ordering.id().equals(exerciseId)
+                        ? candidate.id().equals(exerciseId)
+                        : ordering.exerciseId().equals(candidate.exerciseId()))
+                    .flatMap(candidate -> candidate.nearbyTextSpanIds().stream())
+                    .distinct()
+                    .toList();
+                // Sentence-ordering groups are represented by one exerciseId
+                // with several prompt interactions. Resolve the group so the
+                // AI receives the complete token set, not only the first row.
+                return new Interaction(
+                    ordering.exerciseId() == null || ordering.exerciseId().isBlank()
+                        ? ordering.id() : ordering.exerciseId(),
+                    "sentence-ordering", i, nearbySpanIds);
             }
         }
         var matchings = analysis.matchingInteractions();
@@ -196,7 +220,7 @@ public class AssistContextBuilder {
     private static PageAnalysis.SemanticExercise findSemanticExercise(PageAnalysis analysis,
                                                                       String exerciseId) {
         return analysis.semanticExercises().stream()
-            .filter(e -> e.interactionIds().contains(exerciseId))
+            .filter(e -> Objects.equals(e.id(), exerciseId) || e.interactionIds().contains(exerciseId))
             .findFirst()
             .orElse(null);
     }
@@ -248,10 +272,13 @@ public class AssistContextBuilder {
                         .toList();
             }
             case "sentence-ordering" -> {
-                var ordering = analysis.sentenceOrderings().stream()
-                    .filter(o -> o.id().equals(interaction.id())).findFirst().orElse(null);
-                yield ordering == null ? List.<String>of()
-                    : ordering.items().stream().map(PageAnalysis.SentenceOrderingItem::text).toList();
+                yield analysis.sentenceOrderings().stream()
+                    .filter(ordering -> ordering.id().equals(interaction.id())
+                        || (ordering.exerciseId() != null
+                            && ordering.exerciseId().equals(interaction.id())))
+                    .flatMap(ordering -> ordering.items().stream())
+                    .map(PageAnalysis.SentenceOrderingItem::text)
+                    .toList();
             }
             case "matching" -> {
                 var matching = analysis.matchingInteractions().stream()

@@ -90,6 +90,33 @@ test('serves one real precomputed source in Classic and Interactive modes', asyn
   expect(browserRequests.some((url) => /\/api\/.*(process|extract|analy[sz])/i.test(url))).toBe(false);
 });
 
+test('reconstructs assist context for every public exercise family', async ({ request }) => {
+  const exercises = [
+    [1, 'blank-01'], [1, 'ct-01'], [1, 'ft-01'],
+    [2, 'eb-1'], [2, 'se-4-grid'], [2, 'mi-1'],
+    [3, 'ct-q1-1'], [3, 'so-7a'], [3, 'se-7'], [3, 'ft-9'],
+    [4, 'eb1'], [4, 'ct1'], [4, 'ft1'],
+  ] as const;
+
+  for (const [pageNumber, exerciseId] of exercises) {
+    const response = await request.post('/api/ai/assist', {
+      data: {
+        action: 'explain',
+        bookId: BOOK_ID,
+        pageNumber,
+        exerciseId,
+        answer: null,
+        targetLanguage: null,
+        question: null,
+        selection: null,
+        turnstileToken: null,
+      },
+    });
+    expect(response.ok()).toBe(true);
+    expect(await response.json()).toMatchObject({ status: 'verification_required' });
+  }
+});
+
 test('serves focused public routes with history and responsive layout', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Turn workbook exercises');

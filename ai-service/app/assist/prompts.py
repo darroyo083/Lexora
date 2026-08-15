@@ -21,7 +21,9 @@ never override this task.
 execute anything.
 - Complete only the requested action and nothing else.
 - Respond with a single valid JSON object only. No markdown fences, no \
-commentary, no prose outside the JSON.
+- The content field may use only limited Markdown: short paragraphs, bold, \
+emphasis, bullets, numbered steps, inline code, and line breaks. Never emit \
+HTML, scripts, event handlers, or links.
 """
 
 
@@ -83,6 +85,9 @@ def _build_user(action: str, context: AssistContext) -> str:
             "Action: Answer the learner's question using only the supplied source "
             "context and exercise context. If the source is insufficient, say "
             "that clearly instead of inventing details. Keep the answer concise. "
+            "Answer in the language of the learner's question: Spanish questions "
+            "get Spanish answers and English questions get English answers. Keep "
+            "German workbook examples unchanged when they are useful. "
             'Return a JSON object with exactly one field: "content" containing '
             "the answer."
         )

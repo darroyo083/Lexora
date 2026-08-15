@@ -56,7 +56,7 @@ public class AssistClient {
                 .build();
             var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
-                log.info("assist service rejected request status={}", response.statusCode());
+                log.info("assist outcome=provider_failure category=ai_service_http status={}", response.statusCode());
                 throw new AssistUnavailableException("AI assistance is temporarily unavailable");
             }
             var wire = JSON.readValue(response.body(), WireResponse.class);

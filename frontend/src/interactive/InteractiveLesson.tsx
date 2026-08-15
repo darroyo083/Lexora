@@ -29,6 +29,7 @@ import type { Lesson, LessonProjection } from './lesson';
 import { readLessonStep, writeLessonStep } from './lessonProgress';
 import {
   buildLessonSteps,
+  assistExerciseId,
   stepAnswerComplete,
   type ActivityLessonStep,
   type ContextLessonStep,
@@ -65,7 +66,12 @@ interface Props {
   onCheck: (itemIds?: string[]) => void;
   onRetry: (itemId: string) => void;
   onReveal: (itemId: string) => void;
-  onActiveExerciseChange?: (exercise: { exerciseId: string; kind: string; answer: string | null } | null) => void;
+  onActiveExerciseChange?: (exercise: {
+    exerciseId: string;
+    assistExerciseId?: string;
+    kind: string;
+    answer: string | null;
+  } | null) => void;
   assist?: {
     bookId: string | null;
     pageNumber: number;
@@ -79,21 +85,21 @@ const VERDICT_LABEL: Partial<Record<CorrectionVerdict, string>> = {
   INCORRECT: 'Not quite yet',
   PARTIALLY_CORRECT: 'Partly correct',
   UNANSWERED: 'Add an answer first',
-  NOT_AUTO_GRADABLE: 'Response saved',
+  NOT_AUTO_GRADABLE: 'Open response saved',
 };
 
 const RESOLUTION_LABEL: Partial<Record<AnswerResolutionStatus, string>> = {
-  UNMAPPED: 'This item has no mapped answer in the source key, so it stays ungraded.',
-  AMBIGUOUS: 'The source answer is ambiguous, so Lexora will not grade this item.',
-  MISSING: 'The source does not provide a model answer for this item.',
-  EXTRACTION_UNCERTAIN: 'The source answer is uncertain, so this item stays ungraded.',
+  UNMAPPED: 'Lexora could not map this item to a reliable source answer, so it remains open.',
+  AMBIGUOUS: 'The source answer could not be matched unambiguously, so Lexora leaves it open.',
+  MISSING: 'The source does not provide a model answer for this item, so Lexora leaves it open.',
+  EXTRACTION_UNCERTAIN: 'The source answer is uncertain, so Lexora leaves it open.',
 };
 
 const RESOLUTION_HEADING: Partial<Record<AnswerResolutionStatus, string>> = {
-  UNMAPPED: 'No answer key available',
-  AMBIGUOUS: 'Answer not graded',
+  UNMAPPED: 'No reliable source answer',
+  AMBIGUOUS: 'Source answer needs review',
   MISSING: 'No model answer',
-  EXTRACTION_UNCERTAIN: 'Answer not graded',
+  EXTRACTION_UNCERTAIN: 'Source answer needs review',
 };
 
 const FAMILY_COPY: Record<ActivityLessonStep['block']['kind'], { title: string }> = {
@@ -189,13 +195,16 @@ function CorrectionFeedback({
   const canRetry = Boolean(verdict && verdict !== 'CORRECT' && verdict !== 'NOT_AUTO_GRADABLE');
 
   return (
-    <div className="lesson-feedback-slot">
+      <div className="lesson-feedback-slot">
       {visible && (
         <div className="lesson-feedback" data-verdict={verdict?.toLowerCase() ?? 'neutral'} role="status">
           <div className="lesson-feedback-copy">
-            <strong>{verdict ? VERDICT_LABEL[verdict] : (resolution && RESOLUTION_HEADING[resolution]) ?? 'Answer not graded'}</strong>
+            <strong>{verdict ? VERDICT_LABEL[verdict] : (resolution && RESOLUTION_HEADING[resolution]) ?? 'No reliable source answer'}</strong>
             {detail && <span>{detail.correctCount} of {detail.totalCount} correct.</span>}
             {neutral && <span>{neutral}</span>}
+            {verdict === 'NOT_AUTO_GRADABLE' && (
+              <span>This open response has no single correct wording. Ask Lexora for non-authoritative feedback.</span>
+            )}
             {revealed && expected && <span className="lesson-expected">Answer: {expected}</span>}
           </div>
           {(canRetry || canReveal) && (
@@ -432,7 +441,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
           value={props.answers[block.interaction.id] ?? ''}
           onChange={(event) => props.onAnswerChange(block.interaction.id, event.target.value)}
         />
-        <small>Open response. Your work is saved, but Lexora does not claim an automatic grade.</small>
+          <small>Open response. Your work is saved; Lexora does not claim an automatic grade for this kind of answer.</small>
       </div>
       <p className="lesson-save-status" role="status">{props.answers[block.interaction.id]?.trim() ? 'Saved on this device' : 'Your response is saved automatically.'}</p>
       {feedback(block.interaction.id)}
@@ -557,7 +566,12 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
       onChange(null);
       return;
     }
-    onChange({ exerciseId, kind, answer: props.answers[exerciseId] ?? null });
+    onChange({
+      exerciseId,
+      assistExerciseId: assistExerciseId(block),
+      kind,
+      answer: props.answers[exerciseId] ?? null,
+    });
   }, [step, props.answers, props.onActiveExerciseChange]);
 
   const activitySteps = steps.filter((candidate) => candidate.kind === 'activity');
@@ -683,7 +697,7 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
             <button type="button" onClick={props.onRetryCorrectionLoad}>Correction unavailable. Retry</button>
           ) : (
             <span>{activityStep && !canEvaluate
-              ? 'Your answer is saved; this exercise has no source-backed automatic grade.'
+              ? 'Your response is saved. Open responses stay ungraded automatically; Ask Lexora can offer non-authoritative feedback.'
               : 'Progress is saved on this device.'}</span>
           )}
         </div>

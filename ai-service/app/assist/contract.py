@@ -39,3 +39,7 @@ class AssistResponse(BaseModel):
 
 class AssistProviderError(RuntimeError):
     """Safe, non-sensitive provider failure surfaced to the backend."""
+
+    def __init__(self, message: str, *, category: str = "provider_error") -> None:
+        super().__init__(message)
+        self.category = category

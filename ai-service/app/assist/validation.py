@@ -36,22 +36,22 @@ def _extract_json(text: str) -> Any:
             return json.loads(match.group(0))
         except json.JSONDecodeError:
             pass
-    raise AssistProviderError("Assistance provider output is not valid JSON")
+    raise AssistProviderError("Assistance provider output is not valid JSON", category="invalid_output")
 
 
 def _clean_text(value: Any) -> str:
     if not isinstance(value, str):
-        raise AssistProviderError("Assistance provider content is not text")
+        raise AssistProviderError("Assistance provider content is not text", category="invalid_output")
     text = value.strip()
     if not text:
-        raise AssistProviderError("Assistance provider content is empty")
+        raise AssistProviderError("Assistance provider content is empty", category="invalid_output")
     return text[:_MAX_CONTENT_CHARS]
 
 
 def parse_response(action: str, raw_text: str) -> AssistResponse:
     data = _extract_json(raw_text)
     if not isinstance(data, dict):
-        raise AssistProviderError("Assistance provider output is not a JSON object")
+        raise AssistProviderError("Assistance provider output is not a JSON object", category="invalid_output")
 
     content = _clean_text(data.get("content"))
 
@@ -60,7 +60,8 @@ def parse_response(action: str, raw_text: str) -> AssistResponse:
         raw_verdict = data.get("verdict")
         if raw_verdict not in _VERDICTS:
             raise AssistProviderError(
-                "Assistance provider verdict is missing or invalid"
+                "Assistance provider verdict is missing or invalid",
+                category="invalid_output",
             )
         verdict = raw_verdict
 

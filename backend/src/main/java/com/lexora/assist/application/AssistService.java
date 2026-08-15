@@ -111,7 +111,7 @@ public class AssistService {
                     request.answer(), targetLanguage, request.question());
         if (built == null) {
             return AssistResponse.status(action, AssistContract.STATUS_INVALID_CONTEXT,
-                "This exercise could not be matched to its source. Try again or open another exercise.");
+                "We couldn't connect that request to the source. Try another exercise or selection.");
         }
         if (AssistContract.ACTION_CHECK.equals(action)) {
             if (request.answer() == null || request.answer().isBlank()) {
@@ -128,7 +128,8 @@ public class AssistService {
             && !sessionService.isVerified(sessionId, now)) {
             var token = request.turnstileToken();
             if (token == null || token.isBlank() || !turnstileVerifier.verify(token)) {
-                log.info("assist verification required action={}", action);
+                log.info("assist outcome=verification_required action={} provider={} model={}",
+                    action, configuration.provider(), configuration.model());
                 return AssistResponse.verificationRequired(action, configuration.turnstileSiteKey());
             }
             sessionService.markVerified(sessionId, now);
@@ -140,6 +141,8 @@ public class AssistService {
         var cached = cacheService.get(cacheKey,
             AssistContract.ACTION_CHECK.equals(action) || AssistContract.ACTION_ASK.equals(action), now);
         if (cached.isPresent()) {
+            log.info("assist outcome=cache_hit action={} provider={} model={}",
+                action, configuration.provider(), configuration.model());
             return AssistResponse.success(action, cached.get().content(),
                 cached.get().verdict(), true);
         }
@@ -155,11 +158,16 @@ public class AssistService {
         }
 
         try {
+            long started = System.nanoTime();
             var result = assistClient.assist(action, built.context());
             cacheService.put(cacheKey, action, result.content(), result.verdict());
+            log.info("assist outcome=provider_call action={} provider={} model={} latency_ms={}",
+                action, configuration.provider(), configuration.model(),
+                (System.nanoTime() - started) / 1_000_000);
             return AssistResponse.success(action, result.content(), result.verdict(), false);
         } catch (AssistUnavailableException e) {
-            log.info("assist provider unavailable action={}", action);
+            log.info("assist outcome=provider_failure category=provider_unavailable action={} provider={} model={}",
+                action, configuration.provider(), configuration.model());
             return AssistResponse.status(action, AssistContract.STATUS_UNAVAILABLE,
                 "AI help is temporarily unavailable. Please try again.");
         }

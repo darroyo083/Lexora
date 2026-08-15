@@ -9,7 +9,14 @@ class AssistConfigurationTest {
     private static AssistConfiguration config(boolean enabled, String secret, boolean production) {
         return new AssistConfiguration(
             enabled, "openai", "gpt-4o-mini", 100, 10, 30, 8000,
-            "site-key", secret, production
+            "site-key", secret, production, false
+        );
+    }
+
+    private static AssistConfiguration localQa(boolean enabled, String secret) {
+        return new AssistConfiguration(
+            enabled, "openai", "gpt-4o-mini", 100, 10, 30, 8000,
+            "site-key", secret, true, true
         );
     }
 
@@ -40,6 +47,15 @@ class AssistConfigurationTest {
     @Test
     void productionRejectsMissingSecret() {
         assertThat(config(true, "", true).enabled()).isFalse();
+    }
+
+    @Test
+    void localPublicDemoQaAllowsOfficialTestSecretWithoutBecomingProduction() {
+        var configuration = localQa(true, "1x00000000000000000000AA");
+
+        assertThat(configuration.enabled()).isTrue();
+        assertThat(configuration.production()).isFalse();
+        assertThat(configuration.turnstileConfigured()).isTrue();
     }
 
     @Test

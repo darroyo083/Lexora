@@ -7,6 +7,7 @@ Lexora has two deliberately separate runtime modes. The public portfolio serves 
 | Runtime | Services | Provider credential | Upload/process | Default exposure |
 |---|---|---|---:|---|
 | Public demo | `frontend`, `backend`, `postgres`, internal `ai-service` | Not required (only for optional AI help) | Blocked | `127.0.0.1:8088` |
+| Local public QA | Same public boundary with official test Turnstile values | Not required for core demo | Blocked | `127.0.0.1:8088` |
 | Local/private AI | Public services plus `ai-service` | Required locally | Enabled | Loopback-only ports |
 | Local OCR development | Four development services | Not required | Enabled | Loopback-only ports |
 
@@ -32,6 +33,8 @@ Expected boundary:
 - upload, processing, answer-key extraction, mutations, and non-demo UUIDs are rejected;
 - opening or using the demo never creates an outbound provider request;
 - `LEXORA_ASSIST_ENABLED` defaults to `false`, so `Ask Lexora` is absent until explicitly enabled (see below).
+- `/demo` is always the curated synthetic workbook. It never exposes Upload PDF, DEV, Process, or Update analysis controls.
+- Local/private upload and processing remain available only on the private runtime; Local public QA is a loopback-only boundary test, not a private workflow.
 
 Stop only this isolated stack with:
 
@@ -40,6 +43,16 @@ docker compose -p lexora-public -f compose.production.yml down
 ```
 
 Do not add `-v`; the database and storage volumes are intentionally preserved.
+
+### Local public-boundary QA
+
+Use the development compose file plus the loopback-only public override when the public UI and API boundary need to be tested locally without real Turnstile credentials:
+
+```powershell
+docker compose -f docker-compose.yml -f compose.public-local.yml up -d --build --wait
+```
+
+Open `http://127.0.0.1:8088/demo`. This override uses Cloudflare's documented test keys only, keeps the public runtime read-only, and does not make the private upload/process workflow public. Stop it with `docker compose -f docker-compose.yml -f compose.public-local.yml down`.
 
 ## Local/private AI mode
 
@@ -106,14 +119,16 @@ The public demo can expose a compact **Ask Lexora** action. It is opt-in and nev
 
 | Property | Value |
 |---|---|
-| Actions | Hint, Explain, Translate (English/Spanish), Check with AI |
+| Actions | Interactive Hint, Explain, Translate (English/Spanish), bounded contextual question, and Check with AI fallback; Classic uses explicit rectangular page selection |
 | Trigger | Explicit learner action only; never on load, navigation, or answering |
 | Deterministic precedence | Check with AI is offered only when no source-backed grade exists and never overrides Lexora's own grading |
 | Result labeling | AI review is shown as `AI-assisted review · not source-backed` |
-| Context | Reconstructed server-side from Lexora's own data; client sends only identifiers |
+| Context | Reconstructed server-side from Lexora's own data; client sends only identifiers, a bounded question, or normalized selection geometry |
 | Provider | `openai`, `deepseek`, `zai`, or `openai-compatible` via `LEXORA_ASSIST_*` (server-side only) |
 | Human verification | Cloudflare Turnstile with a short-lived anonymous verified session |
 | Cost bounds | Persistent global daily provider cap, per-session daily cap, response cache, kill switch |
+
+The deterministic Check answers control is intentionally unavailable when no source-backed answer key exists. That state is explained in the UI; Check with AI is a separate, non-authoritative fallback and cannot replace or override deterministic grading. The reader labels Local OCR fallback separately from multimodal analysis so provenance is visible during private development.
 
 Enablement is a single explicit flag; key presence alone never enables it. Production refuses to start AI assistance behind a Cloudflare test secret.
 

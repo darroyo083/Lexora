@@ -1,0 +1,18 @@
+services:
+  ai-service:
+    ports: !override []
+  backend:
+    environment:
+      LEXORA_PUBLIC_DEMO_ENABLED: "true"
+      LEXORA_PUBLIC_DEMO_LOCAL_QA: "true"
+      LEXORA_ASSIST_ENABLED: "true"
+      LEXORA_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+      LEXORA_TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+    ports: !override
+      - "127.0.0.1:18080:8080"
+
+  frontend:
+    ports: !override
+      - "127.0.0.1:8088:5173"
+  postgres:
+    ports: !override []

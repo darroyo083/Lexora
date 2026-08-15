@@ -164,6 +164,41 @@ describe('projectLesson', () => {
     });
   });
 
+  it('reconstructs a complete nearby source line instead of projecting an isolated OCR token', () => {
+    const source = analysis({
+      textSpans: [
+        { id: 'label', text: 'a)', confidence: 0.96, confidenceScope: 'line', parentLineId: 'line-1', bbox: box(0.18, 0.28, 0.035) },
+        { id: 'token', text: 'wir', confidence: 0.94, confidenceScope: 'line', parentLineId: 'line-1', bbox: box(0.24, 0.28, 0.06) },
+        { id: 'continuation', text: 'mehr Zeit hätten', confidence: 0.93, confidenceScope: 'line', parentLineId: 'line-1', bbox: box(0.33, 0.28, 0.2) },
+        { id: 'punctuation', text: '.', confidence: 0.92, confidenceScope: 'line', parentLineId: 'line-1', bbox: box(0.55, 0.28, 0.02) },
+      ],
+      exerciseBlanks: [{
+        id: 'blank-synthetic',
+        kind: 'fill-in-line',
+        lineBbox: box(0.3, 0.3),
+        interactionBbox: box(0.27, 0.29),
+        detectionMethod: 'horizontal-line-v1',
+        candidateScore: 0.9,
+        nearbyTextSpanIds: ['token'],
+      }],
+      choiceTargets: [],
+      choiceGrids: [],
+      sentenceOrderings: [],
+      matchingInteractions: [],
+      freeTextInteractions: [],
+    });
+
+    const result = projectLesson({ bookId: 'book-1', pageNumber: 12, analysis: source });
+    expect(result.status).toBe('AVAILABLE');
+    if (result.status !== 'AVAILABLE') return;
+    const block = result.lesson.sections[0].blocks[0];
+    expect(block).toMatchObject({
+      kind: 'fill-blank',
+      prompt: 'a) wir mehr Zeit hätten.',
+      itemPrompts: { 'blank-synthetic': 'a) wir mehr Zeit hätten.' },
+    });
+  });
+
   it('keeps substantial source-backed theory available without exercises', () => {
     const source = analysis({
       textSpans: [

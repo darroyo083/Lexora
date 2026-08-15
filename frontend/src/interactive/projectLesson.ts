@@ -73,6 +73,7 @@ function localSpanText(
   spanIds: string[],
   interactionBbox: BBox,
   spansById: Map<string, TextSpan>,
+  allSpans: TextSpan[],
 ): string | null {
   const candidates = unique(spanIds)
     .map((id) => spansById.get(id))
@@ -80,8 +81,22 @@ function localSpanText(
     .filter(meaningfulSpan);
   if (candidates.length === 0) return null;
 
-  const interactionTop = interactionBbox.y - 0.012;
-  const interactionBottom = bottom(interactionBbox) + 0.012;
+  const explicitText = spanText(candidates.map((span) => span.id), spansById);
+  const shouldExpand = !explicitText || explicitText.length < 24 || candidates.length === 1;
+  if (!shouldExpand) return explicitText;
+
+  const interactionTop = interactionBbox.y - 0.014;
+  const interactionBottom = bottom(interactionBbox) + 0.014;
+  const anchorLineId = candidates.find((span) => span.parentLineId)?.parentLineId;
+  const sameLineAll = allSpans
+    .filter((span) => meaningfulSpan(span) || /^[,.;:!?]$/u.test(span.text.trim()))
+    .filter((span) => anchorLineId
+      ? span.parentLineId === anchorLineId
+      : bottom(span.bbox) >= interactionTop && span.bbox.y <= interactionBottom)
+    .sort((a, b) => a.bbox.x - b.bbox.x);
+  const expandedText = spanText(sameLineAll.map((span) => span.id), spansById);
+  if (expandedText && expandedText.length > (explicitText?.length ?? 0)) return expandedText;
+
   const sameLine = candidates.filter((span) => (
     bottom(span.bbox) >= interactionTop && span.bbox.y <= interactionBottom
   ));
@@ -178,7 +193,7 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
     const itemPrompts = Object.fromEntries(
       blanks.map((blank) => [
         blank.id,
-        localSpanText(blank.nearbyTextSpanIds, blank.interactionBbox, spansById),
+        localSpanText(blank.nearbyTextSpanIds, blank.interactionBbox, spansById, analysis.textSpans),
       ]),
     );
     const sourceY = Math.min(...blanks.map((blank) => blank.interactionBbox.y));
@@ -211,7 +226,7 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
     const itemPrompts = Object.fromEntries(
       targets.map((target) => [
         target.id,
-        localSpanText(target.nearbyTextSpanIds, target.interactionBbox, spansById),
+        localSpanText(target.nearbyTextSpanIds, target.interactionBbox, spansById, analysis.textSpans),
       ]),
     );
     const sourceY = Math.min(...targets.map((target) => target.interactionBbox.y));
@@ -241,7 +256,7 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
     const rowPrompts = Object.fromEntries(
       grid.rows.map((row) => [
         row.id,
-        localSpanText(row.nearbyTextSpanIds, row.rowBbox, spansById),
+        localSpanText(row.nearbyTextSpanIds, row.rowBbox, spansById, analysis.textSpans),
       ]),
     );
     blocks.push({

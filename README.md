@@ -31,7 +31,7 @@ The public demo serves frozen, validated results. New document analysis is avail
 - **Source fidelity:** Interactive exercises retain their connection to the original page, wording, and geometry.
 - **Fail-closed correction:** Only reliable source-backed mappings produce correct or incorrect feedback. Missing or ambiguous answers remain explicitly ungraded.
 - **Precomputed public demo:** Visitors use precomputed multimodal analysis and cannot trigger document processing. Opening or using the core demo triggers no AI inference.
-- **Optional contextual AI help:** An explicit **Ask Lexora** action can request a hint, explanation, or translation, and can review an answer only when no source-backed grade exists. It is disabled by default and is never run automatically.
+- **Optional contextual AI help:** **Ask Lexora** stays next to the current exercise in Interactive Mode; Classic uses an explicit rectangular page selection. A bounded question, explanation, or translation can be requested, while answer review remains a non-authoritative fallback. It is disabled by default and is never run automatically.
 - **Tested interaction model:** Automated coverage spans all six exercise families, responsive layouts, keyboard operation, accessibility, correction, and the public read-only boundary.
 
 ## Architecture
@@ -71,6 +71,14 @@ Open `http://127.0.0.1:8088` for the public site or `http://127.0.0.1:8088/demo`
 ```powershell
 docker compose -p lexora-public -f compose.production.yml down
 ```
+
+For loopback-only public-boundary QA with the development compose file, use the documented test Turnstile keys:
+
+```powershell
+docker compose -f docker-compose.yml -f compose.public-local.yml up -d --build --wait
+```
+
+Open `http://127.0.0.1:8088/demo`; this remains the curated synthetic workbook and does not expose Upload PDF, DEV, Process, or Update analysis. Stop it with the same files and `down`.
 
 For private local document analysis and development setup, follow [the public/private runtime runbook](docs/public-release.md). Credentials and private documents must never be committed.
 

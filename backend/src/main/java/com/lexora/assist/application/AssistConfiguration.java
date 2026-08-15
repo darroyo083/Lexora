@@ -48,9 +48,11 @@ public class AssistConfiguration {
         @Value("${lexora.assist.max-context-chars:8000}") int maxContextChars,
         @Value("${lexora.turnstile.site-key:}") String turnstileSiteKey,
         @Value("${lexora.turnstile.secret-key:}") String turnstileSecretKey,
-        @Value("${lexora.public-demo.enabled:false}") boolean production
+        @Value("${lexora.public-demo.enabled:false}") boolean publicDemo,
+        @Value("${lexora.public-demo.local-qa:false}") boolean localPublicDemoQa
     ) {
-        this.enabled = effectiveEnabled(enabled, production, turnstileSecretKey);
+        this.production = publicDemo && !localPublicDemoQa;
+        this.enabled = effectiveEnabled(enabled, this.production, turnstileSecretKey);
         this.provider = provider == null ? "" : provider.trim();
         this.model = model == null ? "" : model.trim();
         this.globalDailyProviderLimit = globalDailyProviderLimit;
@@ -59,7 +61,6 @@ public class AssistConfiguration {
         this.maxContextChars = maxContextChars;
         this.turnstileSiteKey = turnstileSiteKey == null ? "" : turnstileSiteKey.trim();
         this.turnstileSecretKey = turnstileSecretKey == null ? "" : turnstileSecretKey.trim();
-        this.production = production;
     }
 
     private static boolean effectiveEnabled(boolean enabled, boolean production,

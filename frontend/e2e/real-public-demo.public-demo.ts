@@ -75,6 +75,10 @@ test('serves one real precomputed source in Classic and Interactive modes', asyn
   await expect(page.locator('.interactive-lesson')).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Mein Morgen');
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.getByText('Upload PDF', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Process page', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Update analysis', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('DEV', { exact: true })).toHaveCount(0);
 
   await page.locator('.lesson-classic-link').click();
   await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
@@ -83,7 +87,7 @@ test('serves one real precomputed source in Classic and Interactive modes', asyn
   await expect(page.locator('.interactive-lesson')).toBeVisible();
 
   expect(browserRequests.some((url) => url.includes('opencode.ai'))).toBe(false);
-  expect(browserRequests.some((url) => /\/process|\/extract|\/analy[sz]e/i.test(url))).toBe(false);
+  expect(browserRequests.some((url) => /\/api\/.*(process|extract|analy[sz])/i.test(url))).toBe(false);
 });
 
 test('serves focused public routes with history and responsive layout', async ({ page }) => {
@@ -96,8 +100,18 @@ test('serves focused public routes with history and responsive layout', async ({
   await expect(page).toHaveURL(/\/$/);
 
   await page.goto('/how-it-works');
-  await expect(page.getByAltText(/Current Lexora Interactive Mode/i)).toBeVisible();
-  await expect(page.locator('video')).toHaveCount(0);
+  await expect(page.locator('.static-product-preview video')).toBeVisible();
+  const video = page.locator('video').last();
+  await expect(video).toHaveCount(1);
+  await expect(video).toHaveAttribute('autoplay', '');
+  await expect(video).toHaveAttribute('loop', '');
+  await expect(video).toHaveAttribute('playsinline', '');
+  await expect(video).not.toHaveAttribute('controls');
+  expect(await video.evaluate((element) => (element as HTMLVideoElement).muted)).toBe(true);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await expect(video).toHaveCSS('display', 'none');
 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/product');

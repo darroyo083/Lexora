@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import InteractionShowcase from './InteractionShowcase';
 import BrandMark from '../components/BrandMark';
+import { resolveRoute } from '../routing';
 import { readThemeModePreference, writeThemeModePreference, type ThemeMode } from '../state/theme';
 import './landing.css';
 
@@ -18,12 +19,10 @@ const routes: Array<{ href: PublicRoute; label: string }> = [
 ];
 
 function currentRoute(): PublicRoute {
-  const path = window.location.pathname.replace(/\/$/, '') || '/';
-  if (path === '/engineering') {
-    window.history.replaceState({}, '', '/inside-lexora');
-    return '/inside-lexora';
-  }
-  return routes.some((route) => route.href === path) ? path as PublicRoute : '/';
+  const resolved = resolveRoute(window.location.pathname);
+  if (resolved.surface === 'reader') return '/';
+  if (resolved.replace) window.history.replaceState({}, '', resolved.pathname);
+  return resolved.pathname as PublicRoute;
 }
 
 function RouteLink({ href, children, className, onNavigate }: {

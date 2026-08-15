@@ -2,13 +2,17 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import Landing from './landing/Landing';
+import { resolveRoute } from './routing';
 import './index.css';
 
-const isDemo = window.location.pathname.startsWith('/demo');
-document.documentElement.dataset.surface = isDemo ? 'reader' : 'landing';
+const initialRoute = resolveRoute(window.location.pathname);
+if (initialRoute.replace) {
+  window.history.replaceState({}, '', initialRoute.pathname);
+}
+document.documentElement.dataset.surface = initialRoute.surface;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isDemo ? <App /> : <Landing />}
+    {initialRoute.surface === 'reader' ? <App /> : <Landing />}
   </StrictMode>
 );

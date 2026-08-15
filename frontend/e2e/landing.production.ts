@@ -40,6 +40,14 @@ test('public routes explain the product with real evidence and keyboard-safe act
     .toHaveAttribute('href', 'https://github.com/darroyo083/Lexora');
 });
 
+test('redirects unknown direct navigations to the landing page', async ({ page }) => {
+  for (const unknownPath of ['/does-not-exist', '/foo/bar']) {
+    await page.goto(unknownPath);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('link', { name: 'Try the demo' })).toBeVisible();
+  }
+});
+
 test('product showcase stays complete without hover at a touch viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/product');

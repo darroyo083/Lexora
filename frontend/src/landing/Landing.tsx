@@ -102,7 +102,7 @@ function ProductMicroLoop({ alt, className = '' }: { alt: string; className?: st
         loop
         playsInline
         preload="metadata"
-        poster="/release/lexora-interactive.webp"
+        poster="/release/lexora-loop-poster.webp"
         aria-label={alt}
         tabIndex={-1}
       >
@@ -110,7 +110,7 @@ function ProductMicroLoop({ alt, className = '' }: { alt: string; className?: st
       </video>
       <img
         className="product-micro-loop-fallback"
-        src="/release/lexora-interactive.webp"
+        src="/release/lexora-loop-poster.webp"
         width="1440"
         height="900"
         alt={alt}

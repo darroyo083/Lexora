@@ -13,7 +13,8 @@
     "test:e2e:full-stack": "playwright test --config playwright.full-stack.config.ts",
     "test:e2e:production": "playwright test --config playwright.production.config.ts",
     "test:e2e:public-demo": "playwright test --config playwright.public-demo.config.ts",
-    "capture:release": "node scripts/capture-release-assets.mjs"
+    "capture:release": "node scripts/capture-release-assets.mjs",
+    "render:micro-loop": "remotion render remotion/index.tsx LexoraMicroLoop public/release/lexora-micro-loop.webm --codec=vp8 --width=1280 --height=720 --frames=0-299 --fps=30"
   },
   "dependencies": {
     "lucide-react": "^1.30.0",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.62.1",
+    "@remotion/cli": "^4.0.512",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^26.1.2",
@@ -33,6 +35,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.4",
     "jsdom": "^29.1.1",
+    "remotion": "^4.0.512",
     "typescript": "7.0.2",
     "vite": "8.1.5",
     "vitest": "4.1.10"

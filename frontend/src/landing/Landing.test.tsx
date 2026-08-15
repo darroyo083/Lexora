@@ -105,7 +105,7 @@ describe('Lexora public site', () => {
     expect(preview.hasAttribute('controls')).toBe(false);
     expect((preview as HTMLVideoElement).muted).toBe(true);
     expect(document.querySelector('video source')?.getAttribute('src')).toBe('/release/lexora-micro-loop.webm');
-    expect(screen.getByAltText(/Current Lexora Interactive Mode/i).getAttribute('src')).toBe('/release/lexora-interactive.webp');
+    expect(screen.getByAltText(/Current Lexora Interactive Mode/i).getAttribute('src')).toBe('/release/lexora-loop-poster.webp');
     expect(screen.getByRole('link', { name: /Open the live demo/ }).getAttribute('href')).toBe('/demo');
   });
 });

@@ -39,11 +39,32 @@ try {
   const page = await desktop.newPage();
   await openCleanDemo(page);
 
+  await page.getByRole('textbox', { name: /answer for/i }).first().fill('stehe');
+
   await page.screenshot({
     path: resolve(output, 'lexora-interactive.webp'),
     type: 'webp',
     quality: 90,
   });
+  await page.screenshot({
+    path: resolve(output, 'lexora-loop-interactive.webp'),
+    type: 'webp',
+    quality: 90,
+  });
+  await page.screenshot({
+    path: resolve(output, 'lexora-loop-poster.webp'),
+    type: 'webp',
+    quality: 90,
+  });
+
+  await page.getByRole('button', { name: 'Ask Lexora' }).click();
+  await page.locator('.ask-lexora-panel').waitFor();
+  await page.screenshot({
+    path: resolve(output, 'lexora-loop-ask.webp'),
+    type: 'webp',
+    quality: 90,
+  });
+  await page.getByRole('button', { name: 'Close Ask Lexora' }).click();
 
   await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
   await page.locator('canvas').first().waitFor({ state: 'visible' });
@@ -52,6 +73,12 @@ try {
     type: 'webp',
     quality: 90,
   });
+  await page.screenshot({
+    path: resolve(output, 'lexora-loop-classic.webp'),
+    type: 'webp',
+    quality: 90,
+  });
+
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: /Turn workbook exercises/i }).waitFor();

@@ -93,13 +93,19 @@ describe('Lexora public site', () => {
     expect(screen.getByRole('button', { name: 'Brot' }).hasAttribute('disabled')).toBe(true);
   });
 
-  it('presents the current product statically without a video player', () => {
+  it('presents the current product as a quiet micro-loop with a static fallback', () => {
     window.history.replaceState({}, '', '/how-it-works');
     render(<Landing />);
 
-    const preview = screen.getByAltText(/Current Lexora Interactive Mode/i);
-    expect(preview.getAttribute('src')).toBe('/release/lexora-interactive.webp');
-    expect(document.querySelector('video')).toBeNull();
+    const preview = screen.getByLabelText(/Current Lexora Interactive Mode/i);
+    expect(preview.tagName).toBe('VIDEO');
+    expect(preview.hasAttribute('autoplay')).toBe(true);
+    expect(preview.hasAttribute('loop')).toBe(true);
+    expect(preview.hasAttribute('playsinline')).toBe(true);
+    expect(preview.hasAttribute('controls')).toBe(false);
+    expect((preview as HTMLVideoElement).muted).toBe(true);
+    expect(document.querySelector('video source')?.getAttribute('src')).toBe('/release/lexora-micro-loop.webm');
+    expect(screen.getByAltText(/Current Lexora Interactive Mode/i).getAttribute('src')).toBe('/release/lexora-interactive.webp');
     expect(screen.getByRole('link', { name: /Open the live demo/ }).getAttribute('href')).toBe('/demo');
   });
 });

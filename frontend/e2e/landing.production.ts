@@ -12,9 +12,13 @@ test('public routes explain the product with real evidence and keyboard-safe act
   await expect(primary).toHaveAttribute('href', '/demo');
   await expect(page.locator('.site-shell')).not.toContainText(/OpenCode Go|MiMo/i);
 
-  const evidence = page.getByAltText(/source-backed German exercise/i);
+  const evidence = page.locator('.product-frame video');
   await expect(evidence).toBeVisible();
-  expect(await evidence.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1440);
+  expect(await evidence.evaluate((video: HTMLVideoElement) => ({
+    muted: video.muted,
+    controls: video.controls,
+    width: video.videoWidth,
+  }))).toMatchObject({ muted: true, controls: false });
 
   await primary.focus();
   await expect(primary).toBeFocused();
@@ -27,9 +31,9 @@ test('public routes explain the product with real evidence and keyboard-safe act
   await expect(page.getByText(/Saved locally.*stays ungraded/i)).toBeVisible();
 
   await page.goto('/how-it-works');
-  await expect(page.getByAltText(/Current Lexora Interactive Mode/i)).toBeVisible();
+  await expect(page.locator('.static-product-preview video')).toBeVisible();
   await expect(page.getByRole('link', { name: /Open the live demo/ })).toHaveAttribute('href', '/demo');
-  await expect(page.locator('video')).toHaveCount(0);
+  await expect(page.locator('video')).toHaveCount(1);
 
   await page.goto('/inside-lexora');
   await expect(page.getByRole('link', { name: /View source/ }))
@@ -61,8 +65,8 @@ test('keeps essential presentation complete across release viewports', async ({ 
     await page.goto('/');
     await expect(page.getByRole('link', { name: 'Try the demo' })).toBeVisible();
     await page.goto('/how-it-works');
-    await expect(page.getByAltText(/Current Lexora Interactive Mode/i)).toBeVisible();
-    await expect(page.locator('video')).toHaveCount(0);
+    await expect(page.locator('.static-product-preview video')).toBeVisible();
+    await expect(page.locator('video')).toHaveCount(1);
     await page.goto('/inside-lexora');
     await expect(page.getByRole('link', { name: /View source/ })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))

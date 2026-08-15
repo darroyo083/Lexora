@@ -94,12 +94,39 @@ function SiteHeader({ route, theme, onToggleTheme }: {
   );
 }
 
+function ProductMicroLoop({ alt, className = '' }: { alt: string; className?: string }) {
+  return (
+    <div className={`product-micro-loop${className ? ` ${className}` : ''}`}>
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        poster="/release/lexora-interactive.webp"
+        aria-label={alt}
+        tabIndex={-1}
+      >
+        <source src="/release/lexora-micro-loop.webm" type="video/webm" />
+      </video>
+      <img
+        className="product-micro-loop-fallback"
+        src="/release/lexora-interactive.webp"
+        width="1440"
+        height="900"
+        alt={alt}
+      />
+    </div>
+  );
+}
+
 function ProductFrame({ compact = false }: { compact?: boolean }) {
   return (
     <figure className={`product-frame${compact ? ' product-frame-compact' : ''}`}>
-      <img src="/release/lexora-interactive.webp" width="1440" height="900"
+      <ProductMicroLoop
         alt="Lexora Interactive mode presenting a source-backed German exercise"
-        fetchPriority={compact ? undefined : 'high'} />
+        className={compact ? 'product-micro-loop-compact' : ''}
+      />
     </figure>
   );
 }
@@ -189,7 +216,7 @@ function HowItWorksPage() {
           <a className="site-button site-button-primary" href="/demo">Open the live demo <ArrowRight size={17} aria-hidden="true" /></a>
         </div>
         <figure className="static-product-preview">
-          <img src="/release/lexora-interactive.webp" width="1440" height="900" alt="Current Lexora Interactive Mode presenting a source-backed German exercise" />
+          <ProductMicroLoop alt="Current Lexora Interactive Mode presenting a source-backed German exercise" />
           <figcaption><span>Interactive</span><span>Current public demo</span></figcaption>
         </figure>
       </section>

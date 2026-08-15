@@ -70,7 +70,7 @@ import {
   type ThemeMode,
 } from './state/theme';
 import { readReaderMode, writeReaderMode, type ReaderMode } from './state/readerMode';
-import { fetchAssistConfig, type ExerciseContext } from './api/assist';
+import { fetchAssistConfig, type ExerciseContext, type SelectionRect } from './api/assist';
 import { computeCanCheck, kindOrdinal } from './reader/assistContext';
 
 const PageViewer = lazy(() => import('./reader/PageViewer'));
@@ -113,13 +113,14 @@ const SHOW_FREE_TEXT_DETECTION_KEY = 'lexora.showFreeTextDetection';
 export default function App() {
   const publicDemoEntry = window.location.pathname.startsWith('/demo');
   const [devMode, setDevMode] = useState<boolean>(() => (
-    import.meta.env.DEV && readDevModePreference()
+    import.meta.env.DEV && !publicDemoEntry && readDevModePreference()
   ));
 
   const [status, setStatus] = useState<Status>(() => (
     localStorage.getItem(CURRENT_BOOK_KEY) || publicDemoEntry ? 'restoring' : 'idle'
   ));
   const [publicDemo, setPublicDemo] = useState(false);
+  const publicRuntime = publicDemoEntry || publicDemo;
   const [book, setBook] = useState<BookInfo | null>(null);
   const [selectedPage, setSelectedPage] = useState(() => {
     const storedPage = Number(localStorage.getItem(CURRENT_PAGE_KEY));
@@ -182,6 +183,8 @@ export default function App() {
   const [correctionReveal, setCorrectionReveal] = useState<Record<string, boolean>>({});
   const [assistEnabled, setAssistEnabled] = useState(false);
   const [assistSiteKey, setAssistSiteKey] = useState<string | null>(null);
+  const [classicSelectionMode, setClassicSelectionMode] = useState(false);
+  const [classicSelection, setClassicSelection] = useState<SelectionRect | null>(null);
   const [interactiveExercise, setInteractiveExercise] = useState<{
     exerciseId: string;
     kind: string;
@@ -221,11 +224,43 @@ export default function App() {
 
   const handleReaderModeChange = useCallback((mode: ReaderMode) => {
     setReaderMode(mode);
+    setClassicSelectionMode(false);
+    setClassicSelection(null);
     writeReaderMode(mode);
   }, []);
 
+  const handleStartClassicSelection = useCallback(() => {
+    setClassicSelection(null);
+    setClassicSelectionMode(true);
+  }, []);
+
+  const handleClassicSelectionComplete = useCallback((nextSelection: SelectionRect) => {
+    setClassicSelection(nextSelection);
+    setClassicSelectionMode(false);
+  }, []);
+
+  const handleClassicSelectionCancel = useCallback(() => {
+    setClassicSelectionMode(false);
+  }, []);
+
+  const handleClearClassicSelection = useCallback(() => {
+    setClassicSelection(null);
+    setClassicSelectionMode(true);
+  }, []);
+
+  const selectionHasContext = useMemo(() => {
+    if (!classicSelection) return false;
+    return interaction.spans.some((span) => (
+      span.bbox.x < classicSelection.x + classicSelection.width
+      && span.bbox.x + span.bbox.width > classicSelection.x
+      && span.bbox.y < classicSelection.y + classicSelection.height
+      && span.bbox.y + span.bbox.height > classicSelection.y
+      && span.text.trim().length > 0
+    ));
+  }, [classicSelection, interaction.spans]);
+
   const handleToggleDevMode = useCallback(() => {
-    if (!import.meta.env.DEV) return;
+    if (!import.meta.env.DEV || publicDemoEntry) return;
     setDevMode((curr) => {
       const next = !curr;
       writeDevModePreference(next);
@@ -464,6 +499,10 @@ export default function App() {
             writeReaderMode('interactive');
           } else if (demoRes.status !== 404) {
             throw new Error('Public demo is unavailable');
+          } else {
+            // A public route must never fall through to a private local book.
+            nextBookId = null;
+            localStorage.removeItem(CURRENT_BOOK_KEY);
           }
         }
 
@@ -1122,6 +1161,11 @@ export default function App() {
     analysis: page?.processingStatus === 'READY' ? page.analysis : null,
     unit: pageUnitNumber ? { number: pageUnitNumber, title: pageUnitTitle } : null,
   }), [book?.id, page, pageUnitNumber, pageUnitTitle, selectedPage]);
+  const analysisProviderLabel = page?.analysis?.processor?.engine === 'local-ocr'
+    ? 'Analysis: Local OCR fallback'
+    : page?.analysis?.processor?.engine
+      ? 'Analysis: Multimodal analysis'
+      : null;
 
   const currentExercise: ExerciseContext | null = useMemo(() => {
     if (!book) return null;
@@ -1167,8 +1211,8 @@ export default function App() {
     matchingSelection, correctionSlots]);
 
   return (
-    <div className="app" data-design="stitch" data-theme={theme} data-dev-mode={devMode} data-reader-mode={readerMode}>
-      {!publicDemoEntry && <LeftRail devMode={devMode} onToggleDevMode={handleToggleDevMode} />}
+    <div className="app" data-design="stitch" data-theme={theme} data-dev-mode={publicRuntime ? false : devMode} data-reader-mode={readerMode}>
+      {!publicRuntime && <LeftRail devMode={devMode} onToggleDevMode={handleToggleDevMode} />}
 
       <div className="app-main-workspace">
         <ReaderToolbar
@@ -1198,12 +1242,18 @@ export default function App() {
           onToggleTheme={handleToggleTheme}
           readerMode={readerMode}
           onReaderModeChange={handleReaderModeChange}
-          readOnly={publicDemo}
-          assist={assistEnabled ? {
+          analysisProviderLabel={analysisProviderLabel}
+          readOnly={publicRuntime}
+          assist={assistEnabled && readerMode === 'classic' ? {
             bookId: book?.id ?? null,
             pageNumber: selectedPage,
             exercise: currentExercise,
             siteKey: assistSiteKey,
+            mode: 'classic',
+            selection: classicSelection,
+            selectionHasContext,
+            onStartSelection: handleStartClassicSelection,
+            onClearSelection: handleClearClassicSelection,
           } : null}
         />
 
@@ -1225,6 +1275,17 @@ export default function App() {
             {status === 'restoring' ? (
               <div className="restoration-skeleton" aria-label="Restoring PDF">
                 <Skeleton width="100%" height="100%" />
+              </div>
+            ) : publicRuntime && !book ? (
+              <div className="empty-state public-demo-error" role="status">
+                <div className="empty-hero">
+                  <div className="empty-hero-icon"><FileText size={36} strokeWidth={1.5} /></div>
+                  <h2>Public demo unavailable</h2>
+                  <p>{uploadError ?? 'The curated workbook could not be loaded. Try again shortly.'}</p>
+                  <button type="button" className="lesson-secondary-action" onClick={() => window.location.reload()}>
+                    Retry public demo
+                  </button>
+                </div>
               </div>
             ) : readerMode === 'interactive' && book ? (
               <InteractiveLesson
@@ -1259,6 +1320,12 @@ export default function App() {
                 onRetry={handleCorrectionRetry}
                 onReveal={handleCorrectionReveal}
                 onActiveExerciseChange={setInteractiveExercise}
+                assist={assistEnabled ? {
+                  bookId: book.id,
+                  pageNumber: selectedPage,
+                  exercise: currentExercise,
+                  siteKey: assistSiteKey,
+                } : null}
               />
             ) : readerMode === 'classic' && sourceLoadError ? (
               <div className="reader-source-error" role="alert">
@@ -1330,8 +1397,23 @@ export default function App() {
                 expectedChoiceLabels={expectedChoiceLabels}
                 expectedSequencesByItem={orderingExpectedByItem}
                 expectedPairsByItem={expectedPairsByItem}
+                selectionMode={classicSelectionMode}
+                selection={classicSelection}
+                onSelectionComplete={handleClassicSelectionComplete}
+                onSelectionCancel={handleClassicSelectionCancel}
               />
               </Suspense>
+            ) : publicRuntime ? (
+              <div className="empty-state public-demo-error" role="status">
+                <div className="empty-hero">
+                  <div className="empty-hero-icon"><FileText size={36} strokeWidth={1.5} /></div>
+                  <h2>Public demo unavailable</h2>
+                  <p>{uploadError ?? 'The curated workbook could not be loaded. Try again shortly.'}</p>
+                  <button type="button" className="lesson-secondary-action" onClick={() => window.location.reload()}>
+                    Retry public demo
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="empty-state">
                 <div className="empty-hero">
@@ -1375,7 +1457,7 @@ export default function App() {
             </div>
           )}
 
-          {readerMode === 'classic' && import.meta.env.DEV && devMode && <RightRail
+          {readerMode === 'classic' && !publicRuntime && import.meta.env.DEV && devMode && <RightRail
             devMode={devMode}
             spans={interaction.spans}
             blanks={interaction.blanks}

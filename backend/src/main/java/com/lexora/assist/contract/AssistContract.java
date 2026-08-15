@@ -18,10 +18,13 @@ public final class AssistContract {
     public static final String ACTION_EXPLAIN = "explain";
     public static final String ACTION_TRANSLATE = "translate";
     public static final String ACTION_CHECK = "check";
+    public static final String ACTION_ASK = "ask";
 
     public static final List<String> ACTIONS = List.of(
-        ACTION_HINT, ACTION_EXPLAIN, ACTION_TRANSLATE, ACTION_CHECK
+        ACTION_HINT, ACTION_EXPLAIN, ACTION_TRANSLATE, ACTION_CHECK, ACTION_ASK
     );
+
+    public static final int MAX_QUESTION_CHARS = 400;
 
     public static final String STATUS_SUCCESS = "success";
     public static final String STATUS_DISABLED = "disabled";
@@ -39,8 +42,19 @@ public final class AssistContract {
         String exerciseId,
         String answer,
         String targetLanguage,
+        String question,
+        SelectionRect selection,
         String turnstileToken
-    ) {}
+    ) {
+        public AssistRequest(String action, String bookId, int pageNumber, String exerciseId,
+                             String answer, String targetLanguage, String turnstileToken) {
+            this(action, bookId, pageNumber, exerciseId, answer, targetLanguage,
+                null, null, turnstileToken);
+        }
+    }
+
+    /** Normalized page-space selection supplied by the Classic reader. */
+    public record SelectionRect(double x, double y, double width, double height) {}
 
     /** Outbound response body. */
     public record AssistResponse(

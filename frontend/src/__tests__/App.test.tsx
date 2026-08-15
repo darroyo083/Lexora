@@ -131,6 +131,27 @@ describe('curated public demo entry', () => {
     expect(screen.getByRole('button', { name: 'Classic' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Interactive' })).toBeTruthy();
   });
+
+  it('never falls through to a private stored book when the public demo is unavailable', async () => {
+    window.history.replaceState({}, '', '/demo');
+    localStorage.setItem('lexora.currentBookId', 'private-book');
+    const requested: string[] = [];
+
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      requested.push(url);
+      if (url === '/api/public-demo') return Promise.resolve(jsonResponse({}, 404));
+      if (url === '/api/ai/assist/config') return Promise.resolve(jsonResponse({ enabled: false, siteKey: null }));
+      return Promise.reject(new Error(`Unexpected fetch: GET ${url}`));
+    }));
+
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Public demo unavailable' })).toBeTruthy());
+    expect(requested).not.toContain('/api/books/private-book');
+    expect(screen.queryByText('Upload PDF')).toBeNull();
+    expect(localStorage.getItem('lexora.currentBookId')).toBeNull();
+  });
 });
 
 describe('document selection races', () => {

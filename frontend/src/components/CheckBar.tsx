@@ -34,7 +34,7 @@ export default function CheckBar({
         <span className="check-bar-hint">
           {hasAnswerKey
             ? (anyRevealed ? 'Try the revealed exercises again' : 'Check answers on this page')
-            : 'No answer key is available for this page'}
+            : 'No source-backed answer key is available. Use Ask Lexora for non-authoritative feedback.'}
         </span>
       )}
       <button
@@ -42,7 +42,9 @@ export default function CheckBar({
         className="check-bar-btn"
         onClick={onCheck}
         disabled={checkDisabled}
-        aria-label={checkDisabled ? 'Answers cannot be checked right now' : 'Check answers (Ctrl+Enter)'}
+        aria-label={checkDisabled
+          ? 'Answers cannot be checked because no source-backed answer key is available'
+          : 'Check answers (Ctrl+Enter)'}
       >
         <Check size={15} />
         <span>Check answers</span>

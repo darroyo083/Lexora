@@ -135,6 +135,58 @@ test('hint happy path renders a mocked provider response', async ({ page }) => {
   await expect(page.getByText('Think about the verb form.')).toBeVisible();
 });
 
+test('Classic Ask Lexora uses an explicit bounded page selection', async ({ page }) => {
+  await mockWorkbook(page);
+  await mockAssist(page, { enabled: true, siteKey: null }, {
+    ask: { action: 'ask', status: 'success', content: 'The selected sentence uses a present-tense verb.', verdict: null, cached: false, siteKey: null, message: null },
+  });
+  let requestBody: Record<string, unknown> | null = null;
+  await page.route('**/api/ai/assist', async (route) => {
+    requestBody = route.request().postDataJSON();
+    return json(route, {
+      action: 'ask', status: 'success', content: 'The selected sentence uses a present-tense verb.',
+      verdict: null, cached: false, siteKey: null, message: null,
+    });
+  });
+
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Ask Lexora' }).click();
+  await expect(page.locator('.page-selection-layer')).toBeVisible();
+
+  const selectionLayer = page.locator('.page-selection-layer');
+  const box = await selectionLayer.boundingBox();
+  if (!box) throw new Error('Selection layer has no measurable page bounds');
+  await page.mouse.move(box.x + box.width * 0.08, box.y + box.height * 0.20);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.72, box.y + box.height * 0.34);
+  await page.mouse.up();
+
+  await expect(page.getByRole('dialog', { name: 'Ask Lexora' })).toBeVisible();
+  await page.getByRole('button', { name: 'Ask a question…' }).click();
+  await page.getByRole('textbox', { name: 'Ask about this selection' }).fill('What verb form is used here?');
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(page.getByText(/present-tense verb/i)).toBeVisible();
+
+  expect(requestBody).toMatchObject({
+    action: 'ask',
+    exerciseId: null,
+    question: 'What verb form is used here?',
+    selection: {
+      x: expect.any(Number),
+      y: expect.any(Number),
+      width: expect.any(Number),
+      height: expect.any(Number),
+    },
+  });
+  const selection = requestBody?.selection as { x: number; y: number; width: number; height: number };
+  expect(selection.x).toBeGreaterThanOrEqual(0);
+  expect(selection.y).toBeGreaterThanOrEqual(0);
+  expect(selection.x + selection.width).toBeLessThanOrEqual(1);
+  expect(selection.y + selection.height).toBeLessThanOrEqual(1);
+});
+
 test('Check with AI is a fallback only for genuinely ungraded answers', async ({ page }) => {
   await mockWorkbook(page);
   await mockAssist(page, { enabled: true, siteKey: null }, {

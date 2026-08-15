@@ -1,6 +1,7 @@
 package com.lexora.assist.application;
 
 import com.lexora.assist.contract.AssistContext;
+import com.lexora.assist.contract.AssistContract.SelectionRect;
 import com.lexora.book.application.BookService;
 import com.lexora.correction.application.CorrectionResolutionService;
 import com.lexora.correction.domain.PageCorrectionResolution;
@@ -48,6 +49,11 @@ public class AssistContextBuilder {
 
     public BuiltContext build(UUID bookId, int pageNumber, String exerciseId,
                               String answer, String targetLanguage) {
+        return build(bookId, pageNumber, exerciseId, answer, targetLanguage, null);
+    }
+
+    public BuiltContext build(UUID bookId, int pageNumber, String exerciseId,
+                              String answer, String targetLanguage, String question) {
         var book = bookService.getBook(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
         if (pageNumber < 1 || pageNumber > book.pageCount()) {
             throw new PageNotFoundException(bookId, pageNumber);
@@ -82,9 +88,66 @@ public class AssistContextBuilder {
 
         return new BuiltContext(
             new AssistContext(title, instruction, source, interaction.kind(),
-                options, answer, orEmpty(book.sourceLanguage()), targetLanguage),
+                options, answer, orEmpty(book.sourceLanguage()), targetLanguage, question),
             sourceBacked
         );
+    }
+
+    public BuiltContext buildSelection(UUID bookId, int pageNumber, SelectionRect selection,
+                                       String question, String targetLanguage) {
+        var book = bookService.getBook(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
+        if (pageNumber < 1 || pageNumber > book.pageCount()) {
+            throw new PageNotFoundException(bookId, pageNumber);
+        }
+        if (!validSelection(selection)) return null;
+        var page = bookService.getPage(bookId, pageNumber).orElse(null);
+        if (page == null || page.analysis() == null || page.analysis().isBlank()) return null;
+        PageAnalysis analysis;
+        try {
+            analysis = JSON.readValue(page.analysis(), PageAnalysis.class);
+        } catch (Exception e) {
+            return null;
+        }
+        var source = selectedText(analysis, selection);
+        if (source.isBlank()) return null;
+        return new BuiltContext(
+            new AssistContext(book.title() + " — selected page region", "", source,
+                "selection", List.of(), null, orEmpty(book.sourceLanguage()), targetLanguage, question),
+            false
+        );
+    }
+
+    private String selectedText(PageAnalysis analysis, SelectionRect selection) {
+        return analysis.textSpans().stream()
+            .filter(span -> span != null && span.text() != null && !span.text().isBlank())
+            .filter(span -> intersects(span.bbox(), selection))
+            .sorted(java.util.Comparator
+                .comparingDouble((PageAnalysis.TextSpan span) -> span.bbox() == null ? 1 : span.bbox().y())
+                .thenComparingDouble(span -> span.bbox() == null ? 1 : span.bbox().x()))
+            .map(PageAnalysis.TextSpan::text)
+            .reduce((left, right) -> left + " " + right)
+            .map(this::bound)
+            .orElse("");
+    }
+
+    private static boolean validSelection(SelectionRect selection) {
+        if (selection == null) return false;
+        double x = selection.x();
+        double y = selection.y();
+        double width = selection.width();
+        double height = selection.height();
+        return Double.isFinite(x) && Double.isFinite(y)
+            && Double.isFinite(width) && Double.isFinite(height)
+            && x >= 0 && y >= 0 && width > 0 && height > 0
+            && x + width <= 1 && y + height <= 1;
+    }
+
+    private static boolean intersects(PageAnalysis.BBox bbox, SelectionRect selection) {
+        if (bbox == null) return false;
+        return bbox.x() < selection.x() + selection.width()
+            && bbox.x() + bbox.width() > selection.x()
+            && bbox.y() < selection.y() + selection.height()
+            && bbox.y() + bbox.height() > selection.y();
     }
 
     private record Interaction(String id, String kind, int ordinal, List<String> nearbySpanIds) {}

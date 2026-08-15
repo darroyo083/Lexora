@@ -15,8 +15,16 @@ public record AssistContext(
     List<String> options,
     String answer,
     String sourceLanguage,
-    String targetLanguage
+    String targetLanguage,
+    String question
 ) {
+    public AssistContext(String title, String instruction, String source, String exerciseKind,
+                         List<String> options, String answer, String sourceLanguage,
+                         String targetLanguage) {
+        this(title, instruction, source, exerciseKind, options, answer, sourceLanguage,
+            targetLanguage, null);
+    }
+
     public AssistContext {
         options = options == null ? List.of() : List.copyOf(options);
     }

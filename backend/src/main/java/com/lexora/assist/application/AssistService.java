@@ -77,9 +77,38 @@ public class AssistService {
         }
         String targetLanguage = resolveTargetLanguage(action, request.targetLanguage());
 
-        var built = contextBuilder.build(
-            bookId, request.pageNumber(), request.exerciseId(),
-            request.answer(), targetLanguage);
+        boolean hasSelection = request.selection() != null;
+        if (hasSelection && request.exerciseId() != null) {
+            return AssistResponse.status(action, AssistContract.STATUS_INVALID_CONTEXT,
+                "Choose either an exercise or a page selection, not both.");
+        }
+        if (hasSelection && AssistContract.ACTION_HINT.equals(action)) {
+            return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                "Hints are available for the active exercise. Ask about the selected region instead.");
+        }
+        if (hasSelection && AssistContract.ACTION_CHECK.equals(action)) {
+            return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                "Check with AI applies to an exercise answer, not a page selection.");
+        }
+        if (AssistContract.ACTION_ASK.equals(action)
+            && (request.question() == null || request.question().isBlank())) {
+            return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                "Write a question first.");
+        }
+        if (request.question() != null
+            && request.question().length() > AssistContract.MAX_QUESTION_CHARS) {
+            return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                "Keep the question under 400 characters.");
+        }
+
+        var built = hasSelection
+            ? contextBuilder.buildSelection(bookId, request.pageNumber(), request.selection(),
+                request.question(), targetLanguage)
+            : request.question() == null
+                ? contextBuilder.build(bookId, request.pageNumber(), request.exerciseId(),
+                    request.answer(), targetLanguage)
+                : contextBuilder.build(bookId, request.pageNumber(), request.exerciseId(),
+                    request.answer(), targetLanguage, request.question());
         if (built == null) {
             return AssistResponse.status(action, AssistContract.STATUS_INVALID_CONTEXT,
                 "This exercise could not be matched to its source. Try again or open another exercise.");
@@ -106,8 +135,10 @@ public class AssistService {
         }
 
         String cacheKey = cacheKey(action, bookId, request.pageNumber(),
-            request.exerciseId(), targetLanguage, request.answer(), built.context());
-        var cached = cacheService.get(cacheKey, AssistContract.ACTION_CHECK.equals(action), now);
+            request.exerciseId(), targetLanguage, request.answer(), request.question(),
+            request.selection());
+        var cached = cacheService.get(cacheKey,
+            AssistContract.ACTION_CHECK.equals(action) || AssistContract.ACTION_ASK.equals(action), now);
         if (cached.isPresent()) {
             return AssistResponse.success(action, cached.get().content(),
                 cached.get().verdict(), true);
@@ -149,10 +180,17 @@ public class AssistService {
     }
 
     private String cacheKey(String action, UUID bookId, int pageNumber, String exerciseId,
-                            String targetLanguage, String answer, AssistContext context) {
+                            String targetLanguage, String answer, String question,
+                            AssistContract.SelectionRect selection) {
         var answerHash = AssistContract.ACTION_CHECK.equals(action)
             ? sha256(answer == null ? "" : answer.trim().toLowerCase(Locale.ROOT))
             : "";
+        var questionHash = AssistContract.ACTION_ASK.equals(action)
+            ? sha256(question == null ? "" : question.trim())
+            : "";
+        var selectionKey = selection == null ? "" : String.join(",",
+            Double.toString(selection.x()), Double.toString(selection.y()),
+            Double.toString(selection.width()), Double.toString(selection.height()));
         var raw = String.join("|",
             configuration.provider(),
             configuration.model(),
@@ -162,7 +200,9 @@ public class AssistService {
             String.valueOf(pageNumber),
             exerciseId == null ? "" : exerciseId,
             targetLanguage == null ? "" : targetLanguage,
-            answerHash
+            answerHash,
+            questionHash,
+            selectionKey
         );
         return sha256(raw);
     }

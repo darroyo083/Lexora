@@ -1058,6 +1058,40 @@ html, body, #root {
   height: 100%;
 }
 
+.page-stack {
+  position: relative;
+}
+
+.page-selection-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  cursor: crosshair;
+  touch-action: none;
+  background: rgba(42, 62, 49, 0.08);
+}
+
+.page-selection-instruction {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 5px;
+  background: rgba(15, 24, 18, 0.8);
+  color: #fff;
+  font: 600 11px/1.2 var(--font-sans);
+  pointer-events: none;
+}
+
+.page-selection-rectangle {
+  position: absolute;
+  border: 2px solid var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 16%, transparent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72);
+  pointer-events: none;
+}
+
 /* ==========================================================================
    RIGHT CONTEXTUAL RAIL
    ========================================================================== */
@@ -5055,6 +5089,78 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.ask-lexora-context-note {
+  margin: 0 0 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ask-lexora-question {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ask-lexora-question label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ask-lexora-question textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-subtle);
+  color: var(--text-primary);
+  font: 400 13px/1.45 var(--font-sans);
+  resize: vertical;
+}
+
+.ask-lexora-question textarea:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.ask-lexora-question-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ask-lexora-question-actions small {
+  margin-right: auto;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.lesson-help-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  grid-column: 1 / -1;
+  color: var(--lesson-text-soft);
+  font-size: 12px;
+}
+
+.lesson-player-header {
+  position: relative;
+  z-index: 50;
+}
+
+.lesson-help-action .ask-lexora-panel {
+  left: 0;
+  right: auto;
+  z-index: 100;
+}
+
+.lesson-help-action .ask-lexora {
+  z-index: 10;
 }
 
 .ask-lexora-action {

@@ -1,4 +1,4 @@
-export type AssistAction = 'hint' | 'explain' | 'translate' | 'check';
+export type AssistAction = 'hint' | 'explain' | 'translate' | 'check' | 'ask';
 
 export type AssistStatus =
   | 'success'
@@ -20,10 +20,19 @@ export interface AssistRequestPayload {
   action: AssistAction;
   bookId: string;
   pageNumber: number;
-  exerciseId: string;
+  exerciseId: string | null;
   answer: string | null;
   targetLanguage: string | null;
+  question?: string | null;
+  selection?: SelectionRect | null;
   turnstileToken: string | null;
+}
+
+export interface SelectionRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface AssistResponse {
@@ -61,7 +70,11 @@ export async function requestAssist(
   const res = await fetch('/api/ai/assist', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      question: payload.question ?? null,
+      selection: payload.selection ?? null,
+    }),
     signal,
   });
   if (!res.ok) {

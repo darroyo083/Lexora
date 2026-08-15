@@ -9,7 +9,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-AssistAction = Literal["hint", "explain", "translate", "check"]
+AssistAction = Literal["hint", "explain", "translate", "check", "ask"]
 AssistVerdict = Literal["likely_correct", "likely_incorrect", "uncertain"]
 TargetLanguage = Literal["en", "es"]
 
@@ -23,6 +23,7 @@ class AssistContext(BaseModel):
     answer: Optional[str] = None
     sourceLanguage: str = "de"
     targetLanguage: Optional[TargetLanguage] = None
+    question: Optional[str] = Field(default=None, max_length=400)
 
 
 class AssistRequest(BaseModel):

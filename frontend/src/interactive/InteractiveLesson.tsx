@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import type { MatchingSelection } from '../reader/matching';
 import { parseMatchingAnswer } from '../reader/matching';
+import AskLexora from '../components/AskLexora';
+import type { ExerciseContext } from '../api/assist';
 import { parseOrderedAnswer } from '../reader/ordering';
 import {
   isProcessingStage,
@@ -64,6 +66,12 @@ interface Props {
   onRetry: (itemId: string) => void;
   onReveal: (itemId: string) => void;
   onActiveExerciseChange?: (exercise: { exerciseId: string; kind: string; answer: string | null } | null) => void;
+  assist?: {
+    bookId: string | null;
+    pageNumber: number;
+    exercise: ExerciseContext | null;
+    siteKey: string | null;
+  } | null;
 }
 
 const VERDICT_LABEL: Partial<Record<CorrectionVerdict, string>> = {
@@ -585,7 +593,6 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
     && props.canCheck
     && !props.correctionLoadError,
   );
-
   const handlePrimaryAction = () => {
     if (step.kind === 'completion') {
       if (props.pageNumber < props.pageCount) props.onSelectPage(props.pageNumber + 1);
@@ -622,6 +629,18 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
         <button type="button" className="lesson-classic-link" onClick={props.onUseClassic}>
           <BookOpen size={16} aria-hidden="true" /> Classic
         </button>
+        {props.assist && (
+          <div className="lesson-help-action">
+            <span>Help for this exercise</span>
+            <AskLexora
+              bookId={props.assist.bookId}
+              pageNumber={props.assist.pageNumber}
+              exercise={props.assist.exercise}
+              siteKey={props.assist.siteKey}
+              mode="interactive"
+            />
+          </div>
+        )}
         <div className="lesson-progress" aria-label={`Lesson progress, exercise ${activityPosition} of ${activitySteps.length}`}>
           <div className="lesson-progress-copy">
             <span>{stepLabel}</span>
@@ -663,7 +682,9 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
           {props.correctionLoadError ? (
             <button type="button" onClick={props.onRetryCorrectionLoad}>Correction unavailable. Retry</button>
           ) : (
-            <span>{activityStep && !props.canCheck ? 'Your answer is saved without an automatic grade.' : 'Progress is saved on this device.'}</span>
+            <span>{activityStep && !canEvaluate
+              ? 'Your answer is saved; this exercise has no source-backed automatic grade.'
+              : 'Progress is saved on this device.'}</span>
           )}
         </div>
         <button

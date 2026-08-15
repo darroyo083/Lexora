@@ -3,6 +3,7 @@ import { Sun, Moon } from 'lucide-react';
 import BrandMark from './BrandMark';
 import AskLexora from './AskLexora';
 import type { ExerciseContext } from '../api/assist';
+import type { SelectionRect } from '../api/assist';
 import type { ThemeMode } from '../state/theme';
 import { ZOOM_OPTIONS } from '../reader/zoom';
 import type { ProcessControl, ProcessingTarget } from '../reader/processing';
@@ -37,12 +38,18 @@ interface Props {
   onToggleTheme: () => void;
   readerMode: ReaderMode;
   onReaderModeChange: (mode: ReaderMode) => void;
+  analysisProviderLabel?: string | null;
   readOnly?: boolean;
   assist?: {
     bookId: string | null;
     pageNumber: number;
     exercise: ExerciseContext | null;
     siteKey: string | null;
+    mode?: 'interactive' | 'classic';
+    selection?: SelectionRect | null;
+    selectionHasContext?: boolean;
+    onStartSelection?: () => void;
+    onClearSelection?: () => void;
   } | null;
 }
 
@@ -124,6 +131,7 @@ export default function ReaderToolbar({
   onToggleTheme,
   readerMode,
   onReaderModeChange,
+  analysisProviderLabel = null,
   readOnly = false,
   assist = null,
 }: Props) {
@@ -303,12 +311,23 @@ export default function ReaderToolbar({
           </div>
         )}
 
+        {!readOnly && import.meta.env.DEV && devMode && analysisProviderLabel && (
+          <span className="dev-analysis-status" title="Development-only analysis path">
+            {analysisProviderLabel}
+          </span>
+        )}
+
         {assist && (
           <AskLexora
             bookId={assist.bookId}
             pageNumber={assist.pageNumber}
             exercise={assist.exercise}
             siteKey={assist.siteKey}
+            mode={assist.mode ?? 'classic'}
+            selection={assist.selection}
+            selectionHasContext={assist.selectionHasContext}
+            onStartSelection={assist.onStartSelection}
+            onClearSelection={assist.onClearSelection}
           />
         )}
 
@@ -322,10 +341,10 @@ export default function ReaderToolbar({
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
 
-        {import.meta.env.DEV && <button
+        {!readOnly && import.meta.env.DEV && <button
           type="button"
           className={`dev-toggle-btn ${devMode ? 'active' : ''}`}
-          title={`Developer Mode (${devMode ? 'ON' : 'OFF'}) — Ctrl+Shift+D`}
+          title={`Developer Mode (${devMode ? 'ON' : 'OFF'}) - Ctrl+Shift+D`}
           aria-label="Toggle Developer Mode"
           onClick={onToggleDevMode}
         >

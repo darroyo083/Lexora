@@ -6,6 +6,7 @@ import {
   type AssistAction,
   type AssistResponse,
   type ExerciseContext,
+  type SelectionRect,
 } from '../api/assist';
 
 type OrbState = 'working' | 'composing' | 'solving';
@@ -15,6 +16,11 @@ interface Props {
   pageNumber: number;
   exercise: ExerciseContext | null;
   siteKey: string | null;
+  mode?: 'interactive' | 'classic';
+  selection?: SelectionRect | null;
+  selectionHasContext?: boolean;
+  onStartSelection?: () => void;
+  onClearSelection?: () => void;
 }
 
 type Phase = 'idle' | 'working' | 'verifying' | 'done';
@@ -22,6 +28,7 @@ type Phase = 'idle' | 'working' | 'verifying' | 'done';
 interface PendingPayload {
   action: AssistAction;
   targetLanguage: string | null;
+  question: string | null;
 }
 
 const TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
@@ -50,18 +57,30 @@ function statusMessage(response: AssistResponse): string {
     case 'not_applicable':
       return response.message ?? 'AI help is not available for this exercise.';
     case 'invalid_context':
-      return 'This exercise could not be matched to its source.';
+      return response.message ?? 'This exercise could not be matched to its source.';
     default:
       return 'AI help is temporarily unavailable. Please try again.';
   }
 }
 
-export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Props) {
+export default function AskLexora({
+  bookId,
+  pageNumber,
+  exercise,
+  siteKey,
+  mode = 'interactive',
+  selection = null,
+  selectionHasContext = false,
+  onStartSelection,
+  onClearSelection,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [activeAction, setActiveAction] = useState<AssistAction | null>(null);
   const [result, setResult] = useState<AssistResponse | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [questionDraft, setQuestionDraft] = useState('');
+  const [questionOpen, setQuestionOpen] = useState(false);
   const pendingRef = useRef<PendingPayload | null>(null);
   const turnstileRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -71,21 +90,24 @@ export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Pro
     action: AssistAction,
     targetLanguage: string | null,
     turnstileToken: string | null,
+    question: string | null = null,
   ) => {
-    if (!bookId || !exercise) return;
+    if (!bookId || (mode === 'interactive' && !exercise) || (mode === 'classic' && !selection)) return;
     setPhase('working');
     setActiveAction(action);
     setResult(null);
     setMessage(null);
-    pendingRef.current = { action, targetLanguage };
+    pendingRef.current = { action, targetLanguage, question };
     try {
       const response = await requestAssist({
         action,
         bookId,
         pageNumber,
-        exerciseId: exercise.exerciseId,
-        answer: action === 'check' ? exercise.answer : null,
+        exerciseId: exercise?.exerciseId ?? null,
+        answer: action === 'check' ? exercise?.answer ?? null : null,
         targetLanguage,
+        question,
+        selection: mode === 'classic' ? selection : null,
         turnstileToken,
       });
       if (response.status === 'verification_required') {
@@ -103,12 +125,12 @@ export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Pro
       setMessage('AI help is temporarily unavailable. Please try again.');
       setPhase('done');
     }
-  }, [bookId, pageNumber, exercise]);
+  }, [bookId, mode, pageNumber, exercise, selection]);
 
   const onTurnstileToken = useCallback((token: string) => {
     const pending = pendingRef.current;
     if (!pending) return;
-    void runAction(pending.action, pending.targetLanguage, token);
+    void runAction(pending.action, pending.targetLanguage, token, pending.question);
   }, [runAction]);
 
   useEffect(() => {
@@ -139,6 +161,8 @@ export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Pro
         setPhase('idle');
         setResult(null);
         setMessage(null);
+        setQuestionDraft('');
+        setQuestionOpen(false);
         triggerRef.current?.focus();
       }
     };
@@ -151,16 +175,25 @@ export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Pro
     setPhase('idle');
     setResult(null);
     setMessage(null);
+    setQuestionDraft('');
+    setQuestionOpen(false);
   };
 
-  const hasContext = Boolean(bookId && exercise);
+  useEffect(() => {
+    if (mode === 'classic' && selection) openPanel();
+  }, [mode, selection]);
+
+  const hasContext = mode === 'classic'
+    ? Boolean(bookId)
+    : Boolean(bookId && exercise);
   const canCheck = Boolean(exercise?.canCheck && exercise.answer);
 
   const items: Array<{ action: AssistAction; label: string; target?: string }> = [
-    { action: 'hint', label: 'Hint' },
+    ...(mode === 'interactive' ? [{ action: 'hint' as AssistAction, label: 'Hint' }] : []),
     { action: 'explain', label: 'Explain' },
     { action: 'translate', label: 'Translate to English', target: 'en' },
     { action: 'translate', label: 'Translate to Spanish', target: 'es' },
+    { action: 'ask', label: 'Ask a question…' },
     ...(canCheck ? [{ action: 'check' as AssistAction, label: 'Check with AI' }] : []),
   ];
 
@@ -173,8 +206,16 @@ export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Pro
         aria-haspopup="dialog"
         aria-expanded={open}
         disabled={!hasContext}
-        title={hasContext ? 'Ask Lexora for contextual AI help' : 'Select an exercise first'}
-        onClick={() => (open ? setOpen(false) : openPanel())}
+        title={mode === 'classic' && !selection
+          ? 'Select a region of the source page'
+          : hasContext ? 'Ask Lexora for contextual AI help' : 'Select an exercise first'}
+        onClick={() => {
+          if (mode === 'classic' && !selection) {
+            onStartSelection?.();
+            return;
+          }
+          open ? setOpen(false) : openPanel();
+        }}
       >
         <Sparkles size={15} aria-hidden="true" />
         <span>Ask Lexora</span>
@@ -189,7 +230,7 @@ export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Pro
           tabIndex={-1}
         >
           <div className="ask-lexora-head">
-            <span>Ask Lexora</span>
+            <span>{mode === 'classic' ? 'Ask about this selection' : 'Ask about this exercise'}</span>
             <button
               type="button"
               className="ask-lexora-close"
@@ -228,18 +269,55 @@ export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Pro
           )}
 
           {(phase === 'idle' || phase === 'done') && result === null && !message && (
-            <div className="ask-lexora-menu" role="group" aria-label="AI help actions">
-              {items.map((item) => (
-                <button
-                  key={`${item.action}:${item.target ?? ''}`}
-                  type="button"
-                  className="ask-lexora-action"
-                  onClick={() => void runAction(item.action, item.target ?? null, null)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            questionOpen ? (
+              <form className="ask-lexora-question" onSubmit={(event) => {
+                event.preventDefault();
+                const question = questionDraft.trim();
+                if (!question || question.length > 400) return;
+                void runAction('ask', null, null, question);
+              }}>
+                <label htmlFor="lexora-ask-question">{mode === 'classic' ? 'Ask about this selection' : 'Ask about this exercise'}</label>
+                <textarea
+                  id="lexora-ask-question"
+                  value={questionDraft}
+                  maxLength={400}
+                  rows={3}
+                  onChange={(event) => setQuestionDraft(event.target.value)}
+                  placeholder="What should I look for here?"
+                />
+                <div className="ask-lexora-question-actions">
+                  <small>{questionDraft.length}/400</small>
+                  <button type="button" className="ask-lexora-new" onClick={() => setQuestionOpen(false)}>Cancel</button>
+                  <button type="submit" className="ask-lexora-action" disabled={!questionDraft.trim()}>Ask</button>
+                </div>
+              </form>
+            ) : (
+              <div className="ask-lexora-menu" role="group" aria-label="AI help actions">
+                {mode === 'classic' && !selectionHasContext && (
+                  <p className="ask-lexora-context-note">Select a readable source region to continue.</p>
+                )}
+                {items.map((item) => (
+                  <button
+                    key={`${item.action}:${item.target ?? ''}`}
+                    type="button"
+                    className="ask-lexora-action"
+                    onClick={() => {
+                      if (item.action === 'ask') {
+                        setQuestionOpen(true);
+                        return;
+                      }
+                      void runAction(item.action, item.target ?? null, null);
+                    }}
+                    disabled={mode === 'classic' && !selectionHasContext}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+                {mode === 'classic' && onClearSelection && (
+                  <button type="button" className="ask-lexora-new" onClick={onClearSelection}>Choose another region</button>
+                )}
+              </div>
+            )
           )}
 
           {phase === 'done' && result !== null && (
@@ -259,6 +337,8 @@ export default function AskLexora({ bookId, pageNumber, exercise, siteKey }: Pro
                   setPhase('idle');
                   setResult(null);
                   setMessage(null);
+                  setQuestionDraft('');
+                  setQuestionOpen(false);
                 }}
               >
                 Try another action

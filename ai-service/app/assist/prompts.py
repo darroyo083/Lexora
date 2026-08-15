@@ -77,6 +77,17 @@ def _build_user(action: str, context: AssistContext) -> str:
         )
         return "\n\n".join([*sections, task])
 
+    if action == "ask":
+        question = _quoted("Learner question", context.question or "")
+        task = (
+            "Action: Answer the learner's question using only the supplied source "
+            "context and exercise context. If the source is insufficient, say "
+            "that clearly instead of inventing details. Keep the answer concise. "
+            'Return a JSON object with exactly one field: "content" containing '
+            "the answer."
+        )
+        return "\n\n".join([*sections, question, task])
+
     # explain
     task = (
         "Action: Briefly explain the grammar, vocabulary, or reasoning behind "

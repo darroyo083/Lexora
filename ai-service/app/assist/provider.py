@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_MAX_OUTPUT_TOKENS = 450
+TRANSIENT_RETRY_DELAY_SECONDS = 0.05
 
 # Each profile is an OpenAI-compatible chat/completions endpoint. base_url may
 # be None for profiles that require an explicit LEXORA_ASSIST_BASE_URL.
@@ -121,14 +122,24 @@ class AssistProvider:
                 "User-Agent": "lexora-ai-service/0.3",
             },
         )
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
-                return json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as error:
-            logger.warning("assist provider request failed status=%s", error.code)
-            raise AssistProviderError("Assistance provider request failed") from error
-        except (TimeoutError, urllib.error.URLError, json.JSONDecodeError) as error:
-            raise AssistProviderError("Assistance provider is unavailable") from error
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
+                    return json.loads(response.read().decode("utf-8"))
+            except urllib.error.HTTPError as error:
+                logger.warning("assist provider request failed status=%s", error.code)
+                if error.code >= 500 and attempt == 0:
+                    time.sleep(TRANSIENT_RETRY_DELAY_SECONDS)
+                    continue
+                raise AssistProviderError("Assistance provider request failed") from error
+            except (TimeoutError, urllib.error.URLError) as error:
+                if attempt == 0:
+                    time.sleep(TRANSIENT_RETRY_DELAY_SECONDS)
+                    continue
+                raise AssistProviderError("Assistance provider is unavailable") from error
+            except json.JSONDecodeError as error:
+                raise AssistProviderError("Assistance provider returned invalid JSON") from error
+        raise AssistProviderError("Assistance provider is unavailable")
 
 
 def _extract_message_text(response: dict[str, Any]) -> str:

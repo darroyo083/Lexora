@@ -56,7 +56,7 @@ class AssistContextBuilderTest {
         bookService = mock(BookService.class);
         resolutionService = mock(CorrectionResolutionService.class);
         var config = new AssistConfiguration(true, "openai", "m", 100, 10, 30, 8000,
-            "site", "secret", false);
+            "site", "secret", false, false);
         builder = new AssistContextBuilder(bookService, resolutionService, config);
 
         var book = new Book(bookId, "Synthetic Workbook", "workbook.pdf", "application/pdf",

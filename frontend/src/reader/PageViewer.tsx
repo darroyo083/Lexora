@@ -3,7 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
 import type { ChoiceGrid, ChoiceGroup, ChoiceTarget, ExerciseBlank, FreeTextInteraction, MatchingInteraction, SentenceOrderingInteraction, TextSpan } from './types';
 import { bboxPercentageStyle, blankInputStyle, choiceHitStyle, choiceValueStyle, gridCellHitStyle, gridMarkStyle } from './overlay';
-import { normalizeRotation, type PageRotation } from './rotation';
+import { normalizeRotation, rotateBBox, type PageRotation } from './rotation';
 import ChoiceSelector from './ChoiceSelector';
 import SentenceOrderingOverlay from './SentenceOrderingOverlay';
 import OrderingFloatingLayer from './OrderingFloatingLayer';
@@ -22,6 +22,7 @@ import {
   visibleIntersection,
 } from './processing';
 import type { PageProcessingStatus } from '../api/client';
+import type { SelectionRect } from '../api/assist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
@@ -128,6 +129,10 @@ interface Props {
   expectedChoiceLabels: Record<string, string>;
   expectedSequencesByItem: Record<string, string[]>;
   expectedPairsByItem: Record<string, Array<{ left: string; right: string }>>;
+  selectionMode?: boolean;
+  selection?: SelectionRect | null;
+  onSelectionComplete?: (selection: SelectionRect) => void;
+  onSelectionCancel?: () => void;
 }
 
 export default function PageViewer({
@@ -174,6 +179,10 @@ export default function PageViewer({
   expectedChoiceLabels,
   expectedSequencesByItem,
   expectedPairsByItem,
+  selectionMode = false,
+  selection = null,
+  onSelectionComplete,
+  onSelectionCancel,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pageStackRef = useRef<HTMLDivElement>(null);
@@ -183,6 +192,8 @@ export default function PageViewer({
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(readPrefersReducedMotion);
+  const selectionStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [draftSelection, setDraftSelection] = useState<SelectionRect | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -241,6 +252,71 @@ export default function PageViewer({
       renderTask?.cancel();
     };
   }, [pdfDoc, pageNumber, zoom, rotation]);
+
+  useEffect(() => {
+    if (!selectionMode) {
+      selectionStartRef.current = null;
+      setDraftSelection(null);
+      return;
+    }
+    const cancel = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      selectionStartRef.current = null;
+      setDraftSelection(null);
+      onSelectionCancel?.();
+    };
+    window.addEventListener('keydown', cancel);
+    return () => window.removeEventListener('keydown', cancel);
+  }, [onSelectionCancel, selectionMode]);
+
+  const pointerPosition = (event: React.PointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
+    };
+  };
+
+  const screenSelection = (start: { x: number; y: number }, end: { x: number; y: number }) => ({
+    x: Math.min(start.x, end.x),
+    y: Math.min(start.y, end.y),
+    width: Math.abs(end.x - start.x),
+    height: Math.abs(end.y - start.y),
+  });
+
+  const canonicalSelection = (screenRect: SelectionRect): SelectionRect => {
+    const inverseRotation = rotation === 90 ? 270 : rotation === 270 ? 90 : rotation;
+    const rotated = rotateBBox(screenRect, inverseRotation);
+    return rotated;
+  };
+
+  const handleSelectionPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!selectionMode || event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const start = pointerPosition(event);
+    selectionStartRef.current = start;
+    setDraftSelection({ x: start.x, y: start.y, width: 0, height: 0 });
+  };
+
+  const handleSelectionPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = selectionStartRef.current;
+    if (!selectionMode || !start) return;
+    setDraftSelection(screenSelection(start, pointerPosition(event)));
+  };
+
+  const handleSelectionPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = selectionStartRef.current;
+    if (!selectionMode || !start) return;
+    const screenRect = screenSelection(start, pointerPosition(event));
+    selectionStartRef.current = null;
+    setDraftSelection(null);
+    if (screenRect.width < 0.015 || screenRect.height < 0.015) {
+      onSelectionCancel?.();
+      return;
+    }
+    onSelectionComplete?.(canonicalSelection(screenRect));
+  };
 
   useLayoutEffect(() => {
     setIsCanvasReady(false);
@@ -695,6 +771,24 @@ export default function PageViewer({
             )));
           })()}
         </div>
+        {selectionMode && (
+          <div
+            className="page-selection-layer"
+            role="region"
+            aria-label="Select a rectangular source region"
+            onPointerDown={handleSelectionPointerDown}
+            onPointerMove={handleSelectionPointerMove}
+            onPointerUp={handleSelectionPointerUp}
+          >
+            <div className="page-selection-instruction">Drag across readable source text</div>
+            {(draftSelection ?? selection) && (
+              <div
+                className="page-selection-rectangle"
+                style={bboxPercentageStyle(draftSelection ?? selection!, rotation)}
+              />
+            )}
+          </div>
+        )}
         {processing && processingCopy && (
           <div
             className="page-processing"

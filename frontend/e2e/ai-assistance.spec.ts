@@ -57,7 +57,11 @@ async function mockWorkbook(page: Page) {
     localStorage.setItem('lexora.readerMode.v1', 'interactive');
   }, { bookId: BOOK_ID });
 
-  await page.route('**/api/public-demo', (route) => route.fulfill({ status: 404, contentType: 'application/json', body: '{}' }));
+  await page.route('**/api/public-demo', (route) => json(route, {
+    bookId: BOOK_ID,
+    pageCount: 1,
+    mode: 'precomputed-real-read-only',
+  }));
 
   await page.route('**/api/books/**', async (route) => {
     const url = new URL(route.request().url());

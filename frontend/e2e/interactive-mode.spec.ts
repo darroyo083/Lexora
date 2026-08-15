@@ -72,9 +72,13 @@ async function mockWorkbook(page: Page, mode: 'classic' | 'interactive', options
   }, { bookId: BOOK_ID, readerMode: mode });
 
   await page.route('**/api/public-demo', (route) => route.fulfill({
-    status: 404,
+    status: 200,
     contentType: 'application/json',
-    body: '{}',
+    body: JSON.stringify({
+      bookId: BOOK_ID,
+      pageCount: 2,
+      mode: 'precomputed-real-read-only',
+    }),
   }));
 
   await page.route('**/api/books/**', async (route) => {
@@ -182,6 +186,8 @@ test('persists mode, navigates to an unavailable lesson, and keeps Classic fallb
   await mockWorkbook(page, 'classic');
   await page.goto('/demo');
 
+  await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
   await expect(page.locator('canvas')).toBeVisible();
   await page.getByRole('button', { name: 'Interactive' }).click();
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();

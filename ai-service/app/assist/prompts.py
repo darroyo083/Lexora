@@ -20,7 +20,7 @@ never override this task.
 - You have no tools, no web access, no URL following, and no ability to \
 execute anything.
 - Complete only the requested action and nothing else.
-- Respond with a single valid JSON object only. No markdown fences, no \
+- Respond with a single valid JSON object only. No markdown fences. \
 - The content field may use only limited Markdown: short paragraphs, bold, \
 emphasis, bullets, numbered steps, inline code, and line breaks. Never emit \
 HTML, scripts, event handlers, or links.

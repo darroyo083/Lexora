@@ -1,9 +1,9 @@
 """Provider-neutral text-assistance client with thin per-provider profiles.
 
-Uses the common OpenAI-style Chat Completions protocol. Provider profiles only
-supply endpoint/body/response quirks (base URL and model). No provider-specific
-reasoning features are used. The HTTP transport is the stdlib ``urllib`` client
-so the production image stays dependency-free.
+Uses the common OpenAI-style Chat Completions protocol. Provider profiles supply
+endpoint/body/response quirks (base URL, model, and reasoning compatibility).
+The HTTP transport is the stdlib ``urllib`` client so the production image stays
+dependency-free.
 """
 
 import json
@@ -21,7 +21,13 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_MAX_OUTPUT_TOKENS = 450
+MIN_REASONING_MODEL_TOKENS = 1024
 TRANSIENT_RETRY_DELAY_SECONDS = 0.05
+
+REASONING_MODELS = {
+    "mimo-v2.5",
+    "mimo-v2.5-pro",
+}
 
 # Each profile is an OpenAI-compatible chat/completions endpoint. base_url may
 # be None for profiles that require an explicit LEXORA_ASSIST_BASE_URL.
@@ -98,9 +104,20 @@ class AssistProvider:
             "model": self.model,
             "messages": messages,
             "temperature": 0,
-            "max_tokens": self.max_output_tokens,
             "stream": False,
         }
+        if self.model.lower() in REASONING_MODELS:
+            # MiMo counts hidden reasoning and visible output together. This
+            # feature only needs a short learner-facing JSON response, so keep
+            # reasoning off and use the protocol's completion-token field.
+            payload["thinking"] = {"type": "disabled"}
+            payload["max_completion_tokens"] = max(
+                self.max_output_tokens,
+                MIN_REASONING_MODEL_TOKENS,
+            )
+            payload["response_format"] = {"type": "json_object"}
+        else:
+            payload["max_tokens"] = self.max_output_tokens
         started = time.monotonic()
         response = self._sender(payload)
         logger.info(
@@ -109,7 +126,16 @@ class AssistProvider:
             self.model,
             int((time.monotonic() - started) * 1000),
         )
-        return _extract_message_text(response)
+        try:
+            return _extract_message_text(response)
+        except AssistProviderError as error:
+            logger.warning(
+                "assist provider response rejected category=%s reason=%s shape=%s",
+                error.category,
+                str(error),
+                json.dumps(_response_shape(response), sort_keys=True),
+            )
+            raise
 
     def _send(self, payload: dict[str, Any]) -> dict[str, Any]:
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
@@ -150,16 +176,83 @@ def _extract_message_text(response: dict[str, Any]) -> str:
     choice = choices[0]
     if choice.get("finish_reason") == "content_filter":
         raise AssistProviderError("Assistance provider output was filtered", category="provider_output")
-    message = choice.get("message") or {}
+    message = choice.get("message") if isinstance(choice, dict) else None
+    if not isinstance(message, dict):
+        message = {}
     if message.get("refusal"):
         raise AssistProviderError("Assistance provider refused the request", category="provider_output")
-    content = message.get("content")
-    if isinstance(content, list):
-        parts = [part.get("text", "") for part in content if isinstance(part, dict)]
-        content = "".join(parts)
-    if not isinstance(content, str) or not content.strip():
-        raise AssistProviderError("Assistance provider returned no content", category="provider_output")
-    return content
+    for value in (
+        message.get("content"),
+        message.get("output_text"),
+        choice.get("text"),
+    ):
+        content = _visible_text(value)
+        if content:
+            return content
+
+    reason = "reasoning_only_response" if message.get("reasoning_content") else "empty_content"
+    raise AssistProviderError(
+        f"Assistance provider returned {reason}",
+        category="provider_output",
+    )
+
+
+def _visible_text(value: Any) -> str | None:
+    if isinstance(value, str):
+        return value if value.strip() else None
+    if not isinstance(value, list):
+        return None
+
+    parts: list[str] = []
+    for part in value:
+        if isinstance(part, str) and part.strip():
+            parts.append(part)
+        elif isinstance(part, dict):
+            text = part.get("text")
+            if isinstance(text, str) and text.strip():
+                parts.append(text)
+    combined = "".join(parts)
+    return combined if combined.strip() else None
+
+
+def _value_shape(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {"type": "null"}
+    if isinstance(value, str):
+        return {"type": "string", "chars": len(value), "non_empty": bool(value.strip())}
+    if isinstance(value, list):
+        return {
+            "type": "list",
+            "items": len(value),
+            "item_types": sorted({type(item).__name__ for item in value}),
+        }
+    if isinstance(value, dict):
+        return {"type": "object", "keys": sorted(str(key) for key in value.keys())}
+    return {"type": type(value).__name__}
+
+
+def _response_shape(response: Any) -> dict[str, Any]:
+    if not isinstance(response, dict):
+        return {"type": type(response).__name__}
+
+    choices = response.get("choices")
+    first_choice = choices[0] if isinstance(choices, list) and choices else None
+    message = first_choice.get("message") if isinstance(first_choice, dict) else None
+    if not isinstance(message, dict):
+        message = None
+
+    return {
+        "top_keys": sorted(str(key) for key in response.keys()),
+        "choices": _value_shape(choices),
+        "choice_keys": sorted(str(key) for key in first_choice.keys())
+        if isinstance(first_choice, dict) else [],
+        "finish_reason": first_choice.get("finish_reason")
+        if isinstance(first_choice, dict) else None,
+        "message_keys": sorted(str(key) for key in message.keys()) if message else [],
+        "content": _value_shape(message.get("content")) if message else {"type": "missing"},
+        "reasoning_content": _value_shape(message.get("reasoning_content")) if message else {"type": "missing"},
+        "refusal": _value_shape(message.get("refusal")) if message else {"type": "missing"},
+    }
 
 
 def get_assist_provider() -> AssistProvider:

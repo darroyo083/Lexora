@@ -85,6 +85,25 @@ def test_openai_compatible_uses_custom_base_url():
     assert captured["payload"]["model"] == "custom-model"
 
 
+def test_mimo_uses_visible_json_budget_without_reasoning():
+    sender, captured = _capture(None)
+    provider = AssistProvider(
+        profile="openai-compatible",
+        api_key="test-key",
+        model="mimo-v2.5",
+        base_url="https://provider.example/v1",
+        sender=sender,
+    )
+
+    provider.complete([{"role": "user", "content": "hi"}])
+
+    payload = captured["payload"]
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["max_completion_tokens"] == 1024
+    assert payload["response_format"] == {"type": "json_object"}
+    assert "max_tokens" not in payload
+
+
 def test_provider_requires_api_key():
     with pytest.raises(AssistProviderError):
         AssistProvider(
@@ -126,6 +145,52 @@ def test_list_content_parts_are_joined():
         profile="openai", api_key="k", model="m", base_url=None, sender=sender
     )
     assert provider.complete([{"role": "user", "content": "hi"}]) == "partial"
+
+
+def test_content_parts_ignore_null_and_non_text_parts():
+    def sender(payload):
+        return {
+            "choices": [{
+                "finish_reason": "stop",
+                "message": {
+                    "role": "assistant",
+                    "content": [None, {"type": "reasoning", "text": None}, {"type": "text", "text": "visible"}],
+                },
+            }]
+        }
+
+    provider = AssistProvider(
+        profile="openai", api_key="k", model="m", base_url=None, sender=sender
+    )
+    assert provider.complete([{"role": "user", "content": "hi"}]) == "visible"
+
+
+def test_reasoning_only_response_fails_closed_without_logging_reasoning(caplog):
+    reasoning = "private internal reasoning that must never be surfaced"
+
+    def sender(payload):
+        return {
+            "choices": [{
+                "finish_reason": "length",
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "reasoning_content": reasoning,
+                },
+            }]
+        }
+
+    provider = AssistProvider(
+        profile="openai", api_key="k", model="m", base_url=None, sender=sender
+    )
+    caplog.set_level("WARNING", logger="app.assist.provider")
+
+    with pytest.raises(AssistProviderError, match="reasoning_only_response"):
+        provider.complete([{"role": "user", "content": "hi"}])
+
+    assert "reasoning_only_response" in caplog.text
+    assert "reasoning_content" in caplog.text
+    assert reasoning not in caplog.text
 
 
 def test_filtered_response_fails_closed():

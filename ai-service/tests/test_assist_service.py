@@ -94,6 +94,30 @@ def test_run_assist_hint_returns_validated_response(monkeypatch):
     assert result.verdict is None
 
 
+@pytest.mark.parametrize(
+    "action,context_overrides",
+    [
+        ("explain", {}),
+        ("translate", {"targetLanguage": "es"}),
+        ("ask", {"question": "¿Qué significa este verbo?"}),
+    ],
+)
+def test_run_assist_text_actions_return_validated_response(monkeypatch, action, context_overrides):
+    class FakeProvider:
+        def complete(self, messages):
+            return '{"content": "A concise learner-facing response."}'
+
+    monkeypatch.setattr(
+        "app.assist.service.get_assist_provider", lambda: FakeProvider()
+    )
+    result = run_assist(
+        AssistRequest(action=action, context=_context(**context_overrides))
+    )
+    assert result.action == action
+    assert result.content == "A concise learner-facing response."
+    assert result.verdict is None
+
+
 def test_run_assist_check_returns_verdict(monkeypatch):
     class FakeProvider:
         def complete(self, messages):

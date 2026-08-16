@@ -261,8 +261,11 @@ def _response_shape(response: Any) -> dict[str, Any]:
         if isinstance(first_choice, dict) else [],
         "finish_reason": first_choice.get("finish_reason")
         if isinstance(first_choice, dict) else None,
+        "choice_text": _value_shape(first_choice.get("text"))
+        if isinstance(first_choice, dict) else {"type": "missing"},
         "message_keys": sorted(str(key) for key in message.keys()) if message else [],
         "content": _value_shape(message.get("content")) if message else {"type": "missing"},
+        "output_text": _value_shape(message.get("output_text")) if message else {"type": "missing"},
         "reasoning_content": _value_shape(message.get("reasoning_content")) if message else {"type": "missing"},
         "refusal": _value_shape(message.get("refusal")) if message else {"type": "missing"},
     }

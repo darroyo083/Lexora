@@ -165,6 +165,25 @@ def test_content_parts_ignore_null_and_non_text_parts():
     assert provider.complete([{"role": "user", "content": "hi"}]) == "visible"
 
 
+def test_null_content_falls_back_to_visible_output_text():
+    def sender(payload):
+        return {
+            "choices": [{
+                "finish_reason": "stop",
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "output_text": "visible fallback",
+                },
+            }]
+        }
+
+    provider = AssistProvider(
+        profile="openai", api_key="k", model="m", base_url=None, sender=sender
+    )
+    assert provider.complete([{"role": "user", "content": "hi"}]) == "visible fallback"
+
+
 def test_reasoning_content_parts_are_not_treated_as_visible_text():
     def sender(payload):
         return {

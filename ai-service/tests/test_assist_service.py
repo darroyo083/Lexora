@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.api.main import app
 from app.assist.contract import AssistContext, AssistProviderError, AssistRequest
+from app.assist.provider import AssistProvider
 from app.assist.service import run_assist
 from app.assist.validation import parse_response
 
@@ -115,6 +116,47 @@ def test_run_assist_text_actions_return_validated_response(monkeypatch, action, 
     )
     assert result.action == action
     assert result.content == "A concise learner-facing response."
+    assert result.verdict is None
+
+
+@pytest.mark.parametrize(
+    "action,context_overrides",
+    [
+        ("explain", {}),
+        ("translate", {"targetLanguage": "es"}),
+        ("ask", {"question": "¿Qué significa este verbo?"}),
+    ],
+)
+def test_run_assist_text_actions_round_trip_provider_adapter(
+    monkeypatch, action, context_overrides
+):
+    def sender(payload):
+        return {
+            "choices": [{
+                "finish_reason": "stop",
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "output_text": '{"content": "A provider-backed response."}',
+                },
+            }]
+        }
+
+    provider = AssistProvider(
+        profile="openai-compatible",
+        api_key="test-key",
+        model="mimo-v2.5",
+        base_url="https://provider.example/v1",
+        sender=sender,
+    )
+    monkeypatch.setattr("app.assist.service.get_assist_provider", lambda: provider)
+
+    result = run_assist(
+        AssistRequest(action=action, context=_context(**context_overrides))
+    )
+
+    assert result.action == action
+    assert result.content == "A provider-backed response."
     assert result.verdict is None
 
 

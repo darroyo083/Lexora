@@ -28,6 +28,7 @@ REASONING_MODELS = {
     "mimo-v2.5",
     "mimo-v2.5-pro",
 }
+VISIBLE_CONTENT_TYPES = {None, "text", "output_text"}
 
 # Each profile is an OpenAI-compatible chat/completions endpoint. base_url may
 # be None for profiles that require an explicit LEXORA_ASSIST_BASE_URL.
@@ -170,13 +171,23 @@ class AssistProvider:
 
 
 def _extract_message_text(response: dict[str, Any]) -> str:
-    choices = response.get("choices") or []
-    if not choices:
+    if not isinstance(response, dict):
+        raise AssistProviderError(
+            "Assistance provider returned an invalid completion envelope",
+            category="provider_output",
+        )
+    choices = response.get("choices")
+    if not isinstance(choices, list) or not choices:
         raise AssistProviderError("Assistance provider returned no completion", category="provider_output")
     choice = choices[0]
+    if not isinstance(choice, dict):
+        raise AssistProviderError(
+            "Assistance provider returned an invalid completion choice",
+            category="provider_output",
+        )
     if choice.get("finish_reason") == "content_filter":
         raise AssistProviderError("Assistance provider output was filtered", category="provider_output")
-    message = choice.get("message") if isinstance(choice, dict) else None
+    message = choice.get("message")
     if not isinstance(message, dict):
         message = {}
     if message.get("refusal"):
@@ -208,6 +219,8 @@ def _visible_text(value: Any) -> str | None:
         if isinstance(part, str) and part.strip():
             parts.append(part)
         elif isinstance(part, dict):
+            if part.get("type") not in VISIBLE_CONTENT_TYPES:
+                continue
             text = part.get("text")
             if isinstance(text, str) and text.strip():
                 parts.append(text)

@@ -165,6 +165,46 @@ def test_content_parts_ignore_null_and_non_text_parts():
     assert provider.complete([{"role": "user", "content": "hi"}]) == "visible"
 
 
+def test_reasoning_content_parts_are_not_treated_as_visible_text():
+    def sender(payload):
+        return {
+            "choices": [{
+                "finish_reason": "stop",
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "reasoning", "text": "private reasoning"},
+                        {"type": "text", "text": "visible answer"},
+                    ],
+                },
+            }]
+        }
+
+    provider = AssistProvider(
+        profile="openai", api_key="k", model="m", base_url=None, sender=sender
+    )
+    assert provider.complete([{"role": "user", "content": "hi"}]) == "visible answer"
+
+
+@pytest.mark.parametrize(
+    "response",
+    [None, {"choices": [None]}, {"choices": "not-a-list"}],
+)
+def test_malformed_provider_envelope_fails_as_provider_output(response):
+    provider = AssistProvider(
+        profile="openai",
+        api_key="k",
+        model="m",
+        base_url=None,
+        sender=lambda payload: response,
+    )
+
+    with pytest.raises(AssistProviderError) as error:
+        provider.complete([{"role": "user", "content": "hi"}])
+
+    assert error.value.category == "provider_output"
+
+
 def test_reasoning_only_response_fails_closed_without_logging_reasoning(caplog):
     reasoning = "private internal reasoning that must never be surfaced"
 
@@ -190,6 +230,8 @@ def test_reasoning_only_response_fails_closed_without_logging_reasoning(caplog):
 
     assert "reasoning_only_response" in caplog.text
     assert "reasoning_content" in caplog.text
+    assert '"content": {"type": "null"}' in caplog.text
+    assert '"finish_reason": "length"' in caplog.text
     assert reasoning not in caplog.text
 
 

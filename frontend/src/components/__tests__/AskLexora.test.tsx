@@ -14,7 +14,8 @@ function stubFetchResponse(status: number, body: unknown) {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
-  delete (window as unknown as Record<string, unknown>).__lexoraTurnstile;
+  delete (window as unknown as Record<string, unknown>).turnstile;
+  document.querySelectorAll('script[src*="challenges.cloudflare.com/turnstile"]').forEach((script) => script.remove());
 });
 
 const baseProps = {
@@ -61,7 +62,13 @@ describe('AskLexora', () => {
     expect(screen.getByText('AI-assisted review · not source-backed')).toBeTruthy();
   });
 
-  it('shows the Turnstile widget when verification is required', async () => {
+  it('explicitly renders Turnstile when verification is required', async () => {
+    const renderWidget = vi.fn(() => 'widget-1');
+    const removeWidget = vi.fn();
+    (window as unknown as Record<string, unknown>).turnstile = {
+      render: renderWidget,
+      remove: removeWidget,
+    };
     stubFetchResponse(200, {
       action: 'hint', status: 'verification_required', content: null,
       verdict: null, cached: false, siteKey: 'site-key', message: null,
@@ -75,7 +82,47 @@ describe('AskLexora', () => {
     });
     const widget = document.querySelector('.cf-turnstile');
     expect(widget).not.toBeNull();
-    expect(widget?.getAttribute('data-sitekey')).toBe('site-key');
+    expect(renderWidget).toHaveBeenCalledWith(widget, expect.objectContaining({
+      sitekey: 'site-key',
+      callback: expect.any(Function),
+    }));
+  });
+
+  it('renders a fresh Turnstile widget after the Classic selection changes', async () => {
+    const renderWidget = vi.fn()
+      .mockReturnValueOnce('widget-1')
+      .mockReturnValueOnce('widget-2');
+    const removeWidget = vi.fn();
+    (window as unknown as Record<string, unknown>).turnstile = {
+      render: renderWidget,
+      remove: removeWidget,
+    };
+    stubFetchResponse(200, {
+      action: 'explain', status: 'verification_required', content: null,
+      verdict: null, cached: false, siteKey: 'site-key', message: null,
+    });
+    const selectionA = { x: 0.1, y: 0.2, width: 0.4, height: 0.1 };
+    const selectionB = { x: 0.1, y: 0.5, width: 0.4, height: 0.1 };
+    const view = render(<AskLexora
+      {...baseProps}
+      mode="classic"
+      siteKey="site-key"
+      selection={selectionA}
+      selectionHasContext
+    />);
+    fireEvent.click(screen.getByRole('button', { name: 'Explain' }));
+    await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(1));
+
+    view.rerender(<AskLexora
+      {...baseProps}
+      mode="classic"
+      siteKey="site-key"
+      selection={selectionB}
+      selectionHasContext
+    />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Explain' }));
+    await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(2));
+    expect(removeWidget).toHaveBeenCalledWith('widget-1');
   });
 
   it('shows a clean message when the provider is unavailable', async () => {

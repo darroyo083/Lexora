@@ -30,8 +30,19 @@ interface PendingPayload {
   question: string | null;
 }
 
-const TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-const TURNSTILE_CALLBACK = '__lexoraTurnstile';
+const TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+
+interface TurnstileApi {
+  render: (container: HTMLElement, options: {
+    sitekey: string;
+    callback: (token: string) => void;
+  }) => string;
+  remove: (widgetId: string) => void;
+}
+
+function turnstileApi(): TurnstileApi | null {
+  return (window as unknown as { turnstile?: TurnstileApi }).turnstile ?? null;
+}
 
 const VERDICT_LABEL: Record<string, string> = {
   likely_correct: 'Likely correct',
@@ -165,19 +176,30 @@ export default function AskLexora({
 
   useEffect(() => {
     if (phase !== 'verifying' || !siteKey) return;
-    (window as unknown as Record<string, unknown>)[TURNSTILE_CALLBACK] = onTurnstileToken;
-    const existing = document.querySelector(
-      `script[src="${TURNSTILE_SCRIPT}"]`,
-    );
-    if (!existing) {
-      const script = document.createElement('script');
+    let cancelled = false;
+    let widgetId: string | null = null;
+    const renderWidget = () => {
+      const api = turnstileApi();
+      if (cancelled || !api || !turnstileRef.current || widgetId) return;
+      widgetId = api.render(turnstileRef.current, {
+        sitekey: siteKey,
+        callback: onTurnstileToken,
+      });
+    };
+    let script = document.querySelector<HTMLScriptElement>(`script[src="${TURNSTILE_SCRIPT}"]`);
+    if (!script) {
+      script = document.createElement('script');
       script.src = TURNSTILE_SCRIPT;
       script.async = true;
       script.defer = true;
       document.head.appendChild(script);
     }
+    if (turnstileApi()) renderWidget();
+    else script.addEventListener('load', renderWidget);
     return () => {
-      delete (window as unknown as Record<string, unknown>)[TURNSTILE_CALLBACK];
+      cancelled = true;
+      script?.removeEventListener('load', renderWidget);
+      if (widgetId) turnstileApi()?.remove(widgetId);
     };
   }, [phase, siteKey, onTurnstileToken]);
 
@@ -207,8 +229,11 @@ export default function AskLexora({
   const canGoBack = questionOpen || phase !== 'idle';
 
   useEffect(() => {
-    if (mode === 'classic' && selection) openPanel();
-  }, [mode, selection]);
+    if (mode !== 'classic' || !selection) return;
+    resetToMenu();
+    setOpen(true);
+    setCollapsed(false);
+  }, [mode, resetToMenu, selection]);
 
   const hasContext = mode === 'classic'
     ? Boolean(bookId)
@@ -306,8 +331,6 @@ export default function AskLexora({
                 <div
                   ref={turnstileRef}
                   className="cf-turnstile"
-                  data-sitekey={siteKey}
-                  data-callback={TURNSTILE_CALLBACK}
                 />
               )}
               {!siteKey && <p className="ask-lexora-verifying-error">Verification is unavailable right now. Please try again later.</p>}

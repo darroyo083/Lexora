@@ -5223,7 +5223,7 @@ html, body, #root {
 .lesson-help-action .ask-lexora-panel {
   position: fixed;
   top: 123px;
-  right: max(14px, 1.4vw);
+  right: 14px;
   left: auto;
   z-index: 100;
   max-height: calc(100dvh - 139px);

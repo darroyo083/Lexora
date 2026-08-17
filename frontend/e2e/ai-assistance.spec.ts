@@ -100,6 +100,19 @@ async function openAskLexora(page: Page) {
   await page.getByRole('button', { name: 'Ask Lexora' }).click();
 }
 
+async function selectClassicRegion(page: Page, startY = 0.20, endY = 0.34) {
+  await page.getByRole('button', { name: /Ask Lexora|Select a region of the source page/ }).click();
+  const selectionLayer = page.locator('.page-selection-layer');
+  await expect(selectionLayer).toBeVisible();
+  const box = await selectionLayer.boundingBox();
+  if (!box) throw new Error('Selection layer has no measurable page bounds');
+  await page.mouse.move(box.x + box.width * 0.08, box.y + box.height * startY);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.72, box.y + box.height * endY, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByRole('dialog', { name: 'Ask Lexora' })).toBeVisible();
+}
+
 async function advanceToKind(page: Page, kind: string) {
   for (let index = 0; index < 20; index += 1) {
     const target = page.locator(`.lesson-step[data-kind="${kind}"]`);
@@ -227,6 +240,81 @@ test('Classic Ask Lexora uses an explicit bounded page selection', async ({ page
   expect(selection.y + selection.height).toBeLessThanOrEqual(1);
 });
 
+for (const scenario of [
+  { name: 'Explain', action: 'explain' },
+  { name: 'Translate', action: 'translate' },
+  { name: 'Ask', action: 'ask' },
+] as const) {
+  test(`fresh Classic selection starts ${scenario.name} without visiting Interactive`, async ({ page }) => {
+    await mockWorkbook(page);
+    await mockAssist(page, { enabled: true, siteKey: null }, {});
+    const requests: Record<string, unknown>[] = [];
+    await page.route('**/api/ai/assist', (route) => {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      requests.push(body);
+      return json(route, {
+        action: scenario.action, status: 'success', content: `Classic ${scenario.name} succeeded.`,
+        verdict: null, cached: false, siteKey: null, message: null,
+      });
+    });
+
+    await page.goto('/demo');
+    await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
+    await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
+    await selectClassicRegion(page);
+    if (scenario.action === 'ask') {
+      await page.getByRole('button', { name: 'Ask a question…' }).click();
+      await page.getByRole('textbox', { name: 'Ask about this selection' }).fill('What is shown here?');
+      await page.getByRole('button', { name: 'Ask', exact: true }).click();
+    } else if (scenario.action === 'translate') {
+      await page.getByRole('button', { name: 'Translate to Spanish' }).click();
+    } else {
+      await page.getByRole('button', { name: 'Explain', exact: true }).click();
+    }
+
+    await expect(page.getByText(`Classic ${scenario.name} succeeded.`)).toBeVisible();
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ action: scenario.action, exerciseId: null });
+  });
+}
+
+test('Classic region replacement starts a new action without visiting Interactive', async ({ page }) => {
+  await mockWorkbook(page);
+  await mockAssist(page, { enabled: true, siteKey: null }, {});
+  const requests: Record<string, unknown>[] = [];
+  await page.route('**/api/ai/assist', (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    requests.push(body);
+    return json(route, {
+      action: body.action, status: 'success', content: `Region ${requests.length} succeeded.`,
+      verdict: null, cached: false, siteKey: null, message: null,
+    });
+  });
+
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
+  await selectClassicRegion(page, 0.20, 0.34);
+  await page.getByRole('button', { name: 'Explain', exact: true }).click();
+  await expect(page.getByText('Region 1 succeeded.')).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Ask Lexora actions' }).click();
+  await page.getByRole('button', { name: 'Choose another region' }).click();
+
+  const selectionLayer = page.locator('.page-selection-layer');
+  const box = await selectionLayer.boundingBox();
+  if (!box) throw new Error('Selection layer has no measurable page bounds');
+  await page.mouse.move(box.x + box.width * 0.08, box.y + box.height * 0.74);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.72, box.y + box.height * 0.86, { steps: 8 });
+  await page.mouse.up();
+  await page.getByRole('button', { name: 'Translate to Spanish' }).click();
+  await expect(page.getByText('Region 2 succeeded.')).toBeVisible();
+
+  expect(requests).toHaveLength(2);
+  expect(requests[0].selection).not.toEqual(requests[1].selection);
+  expect(requests.every((body) => body.exerciseId === null)).toBe(true);
+});
+
 test('Ask Lexora reserves a non-overlapping desktop rail across target widths', async ({ page }) => {
   await mockWorkbook(page);
   await mockAssist(page, { enabled: true, siteKey: null }, {});
@@ -318,7 +406,7 @@ test('shows the Turnstile widget when verification is required', async ({ page }
   await openAskLexora(page);
   await page.getByRole('button', { name: 'Hint' }).click();
   await expect(page.getByText(/verify you're human/i)).toBeVisible();
-  await expect(page.locator('.cf-turnstile')).toHaveAttribute('data-sitekey', 'test-site-key');
+  await expect(page.locator('.cf-turnstile')).toBeVisible();
 });
 
 test('Ask Lexora panel has no axe WCAG A/AA violations', async ({ page }) => {

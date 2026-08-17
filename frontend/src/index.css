@@ -5130,8 +5130,11 @@ html, body, #root {
 }
 
 .ask-lexora-loading-orb {
+  display: grid;
   width: 20px;
   height: 20px;
+  flex: none;
+  place-items: center;
 }
 
 @keyframes ask-pending-copy-in {
@@ -5218,9 +5221,28 @@ html, body, #root {
 }
 
 .lesson-help-action .ask-lexora-panel {
-  left: auto;
+  position: fixed;
+  top: 123px;
   right: max(14px, 1.4vw);
+  left: auto;
   z-index: 100;
+  max-height: calc(100dvh - 139px);
+}
+
+.lesson-help-action .ask-lexora-panel.is-collapsed {
+  top: 123px;
+  right: 16px;
+}
+
+@media (min-width: 1181px) {
+  .lesson-help-action .ask-lexora-panel {
+    top: 94px;
+    max-height: calc(100dvh - 110px);
+  }
+
+  .lesson-help-action .ask-lexora-panel.is-collapsed {
+    top: 94px;
+  }
 }
 
 .lesson-help-action .ask-lexora {
@@ -5391,6 +5413,7 @@ html, body, #root {
   .ask-lexora-panel,
   .ask-lexora-panel.is-collapsed,
   .lesson-help-action .ask-lexora-panel {
+    position: fixed;
     top: auto;
     right: 12px;
     bottom: 12px;

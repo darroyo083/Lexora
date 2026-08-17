@@ -11,6 +11,7 @@ import com.lexora.correction.domain.ResolvedAnswerEntry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -140,5 +141,28 @@ class AssistContextBuilderTest {
         assertThat(built.context().exerciseKind()).isEqualTo("choice-grid");
         assertThat(built.context().options()).containsExactly("A");
         assertThat(built.context().source()).contains("a) Ich");
+    }
+
+    @Test
+    void classicSelectionExcludesTextOwnedByExerciseOutsideRectangle() throws Exception {
+        try (var stream = getClass().getClassLoader()
+            .getResourceAsStream("demo/page-analysis-2.json")) {
+            assertThat(stream).isNotNull();
+            var publicDemoAnalysis = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            var page = new BookPage(UUID.randomUUID(), bookId, 2, 1322, 1870,
+                ProcessingStatus.READY, publicDemoAnalysis, Instant.now(), null);
+            when(bookService.getPage(bookId, 2)).thenReturn(Optional.of(page));
+
+            var built = builder.buildSelection(bookId, 2,
+                new com.lexora.assist.contract.AssistContract.SelectionRect(
+                    0.05, 0.17959, 0.90, 0.245154),
+                null, "en");
+
+            assertThat(built).isNotNull();
+            assertThat(built.context().source())
+                .contains("Artikel wählen", "Bahnhof", "Markt")
+                .doesNotContain("Wo findet man das?", "Ordne jedem Ort",
+                    "die Bäckerei", "Medikamente");
+        }
     }
 }

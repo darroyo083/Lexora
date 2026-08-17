@@ -11,8 +11,10 @@ import com.lexora.shared.error.PageNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import tools.jackson.databind.DeserializationFeature;
@@ -28,6 +30,8 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @Component
 public class AssistContextBuilder {
+
+    private static final double LINE_EDGE_TOLERANCE = 0.003;
 
     private static final JsonMapper JSON = JsonMapper.builder()
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -119,9 +123,32 @@ public class AssistContextBuilder {
     }
 
     private String selectedText(PageAnalysis analysis, SelectionRect selection) {
+        var selectedExercises = analysis.semanticExercises().stream()
+            .filter(exercise -> selectsExercise(exercise.bbox(), selection))
+            .toList();
+        Set<String> exerciseOwnedSpanIds = new HashSet<>();
+        Set<String> selectedExerciseSpanIds = new HashSet<>();
+        for (var exercise : analysis.semanticExercises()) {
+            exerciseOwnedSpanIds.addAll(exercise.contextSpanIds());
+        }
+        for (var exercise : selectedExercises) {
+            selectedExerciseSpanIds.addAll(exercise.contextSpanIds());
+        }
+        var selectedTextRanges = selectedExercises.stream()
+            .map(exercise -> textRange(analysis, exercise))
+            .filter(Objects::nonNull)
+            .toList();
+
         return analysis.textSpans().stream()
             .filter(span -> span != null && span.text() != null && !span.text().isBlank())
-            .filter(span -> intersects(span.bbox(), selection))
+            .filter(span -> intersects(span.bbox(), selection, LINE_EDGE_TOLERANCE))
+            // OCR/text extraction boxes can drift across an exercise boundary.
+            // When the rectangle clearly identifies semantic exercise regions,
+            // admit only their owned spans and unowned spans within their text range.
+            .filter(span -> selectedExercises.isEmpty()
+                || selectedExerciseSpanIds.contains(span.id())
+                || (!exerciseOwnedSpanIds.contains(span.id())
+                    && selectedTextRanges.stream().anyMatch(range -> range.contains(span.bbox()))))
             .sorted(java.util.Comparator
                 .comparingDouble((PageAnalysis.TextSpan span) -> span.bbox() == null ? 1 : span.bbox().y())
                 .thenComparingDouble(span -> span.bbox() == null ? 1 : span.bbox().x()))
@@ -129,6 +156,29 @@ public class AssistContextBuilder {
             .reduce((left, right) -> left + " " + right)
             .map(this::bound)
             .orElse("");
+    }
+
+    private record VerticalRange(double top, double bottom) {
+        boolean contains(PageAnalysis.BBox bbox) {
+            if (bbox == null) return false;
+            double center = bbox.y() + bbox.height() / 2;
+            return center >= top - LINE_EDGE_TOLERANCE
+                && center <= bottom + LINE_EDGE_TOLERANCE;
+        }
+    }
+
+    private static VerticalRange textRange(PageAnalysis analysis,
+                                           PageAnalysis.SemanticExercise exercise) {
+        var spanIds = new HashSet<>(exercise.contextSpanIds());
+        var boxes = analysis.textSpans().stream()
+            .filter(span -> span != null && spanIds.contains(span.id()) && span.bbox() != null)
+            .map(PageAnalysis.TextSpan::bbox)
+            .toList();
+        if (boxes.isEmpty()) return null;
+        double top = boxes.stream().mapToDouble(PageAnalysis.BBox::y).min().orElse(0);
+        double bottom = boxes.stream()
+            .mapToDouble(box -> box.y() + box.height()).max().orElse(top);
+        return new VerticalRange(top, bottom);
     }
 
     private static boolean validSelection(SelectionRect selection) {
@@ -143,12 +193,33 @@ public class AssistContextBuilder {
             && x + width <= 1 && y + height <= 1;
     }
 
-    private static boolean intersects(PageAnalysis.BBox bbox, SelectionRect selection) {
+    private static boolean selectsExercise(PageAnalysis.BBox bbox, SelectionRect selection) {
         if (bbox == null) return false;
-        return bbox.x() < selection.x() + selection.width()
-            && bbox.x() + bbox.width() > selection.x()
-            && bbox.y() < selection.y() + selection.height()
-            && bbox.y() + bbox.height() > selection.y();
+        double selectionCenterX = selection.x() + selection.width() / 2;
+        double selectionCenterY = selection.y() + selection.height() / 2;
+        double exerciseCenterX = bbox.x() + bbox.width() / 2;
+        double exerciseCenterY = bbox.y() + bbox.height() / 2;
+        return contains(bbox, selectionCenterX, selectionCenterY)
+            || contains(selection, exerciseCenterX, exerciseCenterY);
+    }
+
+    private static boolean contains(PageAnalysis.BBox bbox, double x, double y) {
+        return x >= bbox.x() && x <= bbox.x() + bbox.width()
+            && y >= bbox.y() && y <= bbox.y() + bbox.height();
+    }
+
+    private static boolean contains(SelectionRect selection, double x, double y) {
+        return x >= selection.x() && x <= selection.x() + selection.width()
+            && y >= selection.y() && y <= selection.y() + selection.height();
+    }
+
+    private static boolean intersects(PageAnalysis.BBox bbox, SelectionRect selection,
+                                      double tolerance) {
+        if (bbox == null) return false;
+        return bbox.x() < selection.x() + selection.width() + tolerance
+            && bbox.x() + bbox.width() > selection.x() - tolerance
+            && bbox.y() < selection.y() + selection.height() + tolerance
+            && bbox.y() + bbox.height() > selection.y() - tolerance;
     }
 
     private record Interaction(String id, String kind, int ordinal, List<String> nearbySpanIds) {}

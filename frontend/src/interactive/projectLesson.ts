@@ -58,10 +58,59 @@ function spanText(spanIds: string[], spansById: Map<string, TextSpan>): string |
     .filter(Boolean)
     .join(' ')
     .replace(/\s+/g, ' ')
-    .replace(/\s+([,.;:!?])/g, '$1')
-    .replace(/([.!?])(?:\s*\1)+/g, '$1')
+    .replace(/\s+([,;:!?])/g, '$1')
+    .replace(/\s+\.(?!\.)/g, '.')
+    .replace(/([!?])(?:\s*\1)+/g, '$1')
     .trim();
   return text || null;
+}
+
+function spanTextWithBlank(
+  spans: TextSpan[],
+  blank: BBox,
+  spansById: Map<string, TextSpan>,
+  allSpans: TextSpan[],
+): string | null {
+  const anchorY = average(spans.map((span) => span.bbox.y + span.bbox.height / 2));
+  const sameRow = anchorY === null ? [] : allSpans
+    .filter((span) => meaningfulSpan(span) || /^[,.;:!?]$/u.test(span.text.trim()))
+    .filter((span) => Math.abs(span.bbox.y + span.bbox.height / 2 - anchorY) <= 0.012)
+    .sort((a, b) => a.bbox.x - b.bbox.x);
+  const sourceSpans = sameRow.length > spans.length ? sameRow : spans;
+  const explicit = spanText(sourceSpans.map((span) => span.id), spansById);
+  if (!explicit || /_{2,}/u.test(explicit)) return explicit;
+  if (sourceSpans.some((span) => (
+    span.bbox.x < blank.x + blank.width && span.bbox.x + span.bbox.width > blank.x
+  ))) {
+    return spans.some((span) => Boolean(span.parentLineId)) ? null : explicit;
+  }
+
+  const left = sourceSpans
+    .filter((span) => span.bbox.x + span.bbox.width <= blank.x + 0.006)
+    .sort((a, b) => a.bbox.x - b.bbox.x);
+  const right = sourceSpans
+    .filter((span) => span.bbox.x >= blank.x + blank.width - 0.006)
+    .sort((a, b) => a.bbox.x - b.bbox.x);
+  if (left.length === 0 || right.length === 0) {
+    return spans.some((span) => Boolean(span.parentLineId)) ? null : explicit;
+  }
+
+  const leftText = spanText(left.map((span) => span.id), spansById);
+  const rightText = spanText(right.map((span) => span.id), spansById);
+  if (!leftText || !rightText) return explicit;
+  return `${leftText} _____ ${rightText}`.replace(/\s+([,.;:!?])/g, '$1').trim();
+}
+
+function fillPromptParts(prompt: string | null): { label: string | null; text: string | null } {
+  if (!prompt) return { label: null, text: null };
+  let text = prompt.trim();
+  const match = text.match(/^((?:[A-Za-z]|\d+)[.)])\s*/u);
+  if (!match) return { label: null, text };
+
+  const label = match[1];
+  text = text.slice(match[0].length).trimStart();
+  while (text.startsWith(label)) text = text.slice(label.length).trimStart();
+  return { label, text: text || null };
 }
 
 function commonPrompt(prompts: Array<string | null>): string | null {
@@ -82,7 +131,10 @@ function localSpanText(
   if (candidates.length === 0) return null;
 
   const explicitText = spanText(candidates.map((span) => span.id), spansById);
-  const shouldExpand = !explicitText || explicitText.length < 24 || candidates.length === 1;
+  const shouldExpand = Boolean(
+    (!explicitText || explicitText.length < 24 || candidates.length === 1)
+      && candidates.some((span) => Boolean(span.parentLineId)),
+  );
   if (!shouldExpand) return explicitText;
 
   const interactionTop = interactionBbox.y - 0.014;
@@ -190,11 +242,19 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
 
   for (const blanks of clusterByVerticalGap(analysis.exerciseBlanks, (blank) => blank.interactionBbox)) {
     const spanIds = blanks.flatMap((blank) => blank.nearbyTextSpanIds);
+    const promptParts = Object.fromEntries(blanks.map((blank) => {
+      const candidates = unique(blank.nearbyTextSpanIds)
+        .map((id) => spansById.get(id))
+        .filter((span): span is TextSpan => span !== undefined && meaningfulSpan(span));
+      const rawPrompt = spanTextWithBlank(candidates, blank.interactionBbox, spansById, analysis.textSpans)
+        ?? localSpanText(blank.nearbyTextSpanIds, blank.interactionBbox, spansById, analysis.textSpans);
+      return [blank.id, fillPromptParts(rawPrompt)];
+    }));
     const itemPrompts = Object.fromEntries(
-      blanks.map((blank) => [
-        blank.id,
-        localSpanText(blank.nearbyTextSpanIds, blank.interactionBbox, spansById, analysis.textSpans),
-      ]),
+      Object.entries(promptParts).map(([id, parts]) => [id, parts.text]),
+    );
+    const itemLabels = Object.fromEntries(
+      Object.entries(promptParts).map(([id, parts]) => [id, parts.label]),
     );
     const sourceY = Math.min(...blanks.map((blank) => blank.interactionBbox.y));
     blocks.push({
@@ -206,6 +266,7 @@ function interactionBlocks(analysis: PageAnalysis): PositionedBlock[] {
         prompt: commonPrompt(Object.values(itemPrompts)),
         blanks,
         itemPrompts,
+        itemLabels,
         evidence: evidence(
           spanIds,
           blanks.map((blank) => blank.id),
@@ -470,6 +531,14 @@ function applySemanticExercises(
       semantic.instruction,
       `${semantic.number} ${semantic.title}`,
     ].filter((value): value is string => Boolean(value)).map((value) => value.trim().toLocaleLowerCase()));
+    const semanticInteractionIds = new Set(semantic.interactionIds);
+    const semanticOptionLabels = new Set(
+      analysis.choiceTargets
+        .filter((target) => semanticInteractionIds.has(target.id))
+        .flatMap((target) => analysis.choiceGroups.find((group) => group.id === target.optionGroupId)?.options ?? [])
+        .map((option) => option.label.trim().toLocaleLowerCase())
+        .filter(Boolean),
+    );
     if ((block.kind === 'choice' || block.kind === 'choice-grid') && block.group) {
       for (const option of block.group.options) repeatedCopy.add(option.label.trim().toLocaleLowerCase());
     }
@@ -480,6 +549,7 @@ function applySemanticExercises(
         && meaningfulSpan(span)
         && !interactionSpanIds.has(span.id)
         && !repeatedCopy.has(span.text.trim().toLocaleLowerCase())
+        && !semanticOptionLabels.has(span.text.trim().toLocaleLowerCase())
         && !/^\([^)]{1,30}\)$/.test(span.text.trim())
       ))
       .sort((a, b) => a.bbox.y - b.bbox.y || a.bbox.x - b.bbox.x);
@@ -488,12 +558,18 @@ function applySemanticExercises(
     if (block.kind === 'choice') {
       const itemPrompts = { ...block.itemPrompts };
       for (const target of block.targets) {
-        const preceding = semanticContextSpans
-          .filter((span) => span.bbox.y <= target.interactionBbox.y)
-          .sort((a, b) => b.bbox.y - a.bbox.y)[0];
-        if (preceding) {
-          itemPrompts[target.id] = preceding.text.trim();
-          assignedContextIds.add(preceding.id);
+        const targetCenterY = target.interactionBbox.y + target.interactionBbox.height / 2;
+        const nearest = semanticContextSpans
+          .filter((span) => !assignedContextIds.has(span.id))
+          .sort((a, b) => {
+            const distance = (span: TextSpan) => Math.abs(
+              span.bbox.y + span.bbox.height / 2 - targetCenterY,
+            );
+            return distance(a) - distance(b) || a.bbox.y - b.bbox.y || a.bbox.x - b.bbox.x;
+          })[0];
+        if (nearest) {
+          itemPrompts[target.id] = nearest.text.trim();
+          assignedContextIds.add(nearest.id);
         }
       }
       semanticBlock = { ...block, itemPrompts };
@@ -546,9 +622,14 @@ function coalesceSemanticChoiceExercises(blocks: PositionedBlock[]): PositionedB
     const promptCopy = new Set(Object.values(itemPrompts)
       .filter((value): value is string => Boolean(value))
       .map((value) => value.trim().toLocaleLowerCase()));
+    const optionCopy = new Set(choices.flatMap((choice) => [
+      ...(choice.group?.options ?? []),
+      ...Object.values(choice.groupsByTarget ?? {}).flatMap((group) => group?.options ?? []),
+    ]).map((option) => option.label.trim().toLocaleLowerCase()));
     const contextParagraphs = choices
       .flatMap((choice) => choice.contextParagraphs ?? [])
       .filter((paragraph) => !promptCopy.has(paragraph.text.trim().toLocaleLowerCase()))
+      .filter((paragraph) => !optionCopy.has(paragraph.text.trim().toLocaleLowerCase()))
       .filter((paragraph, index, all) => all.findIndex((item) => item.text === paragraph.text) === index);
     const sharedGroup = choices.every((choice) => choice.group?.id === first.group?.id)
       ? first.group : null;

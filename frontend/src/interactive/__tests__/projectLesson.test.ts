@@ -194,8 +194,9 @@ describe('projectLesson', () => {
     const block = result.lesson.sections[0].blocks[0];
     expect(block).toMatchObject({
       kind: 'fill-blank',
-      prompt: 'a) wir mehr Zeit hätten.',
-      itemPrompts: { 'blank-synthetic': 'a) wir mehr Zeit hätten.' },
+      prompt: 'wir mehr Zeit hätten.',
+      itemPrompts: { 'blank-synthetic': 'wir mehr Zeit hätten.' },
+      itemLabels: { 'blank-synthetic': 'a)' },
     });
   });
 

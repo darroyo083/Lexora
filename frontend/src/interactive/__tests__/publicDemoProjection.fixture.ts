@@ -1,0 +1,116 @@
+export const publicDemoProjectionFixture = [
+  {
+    pageNumber: 1,
+    number: '1',
+    title: 'Lücken ergänzen',
+    kind: 'fill-blank',
+    itemLabels: ['a)', 'b)', 'c)'],
+    itemPrompts: [
+      'Jeden Morgen _____ ich um sieben Uhr auf. (aufstehen)',
+      'Danach _____ ich Tee in der Küche. (trinken)',
+      'Um acht Uhr _____ ich mit dem Fahrrad zur Arbeit. (fahren)',
+    ],
+  },
+  {
+    pageNumber: 1,
+    number: '2',
+    title: 'Die passende Antwort',
+    kind: 'choice',
+    prompts: ['Wann stehst du auf?', 'Was trinkst du morgens?'],
+    options: [
+      ['Um sieben Uhr', 'Im Park', 'Mit Anna'],
+      ['Einen Tee', 'Nach Berlin', 'Sehr langsam'],
+    ],
+  },
+  {
+    pageNumber: 1,
+    number: '3',
+    title: 'Kurz schreiben',
+    kind: 'free-text',
+    prompt: 'Am Morgen ...',
+  },
+  {
+    pageNumber: 2,
+    number: '4',
+    title: 'Artikel wählen',
+    kind: 'choice-grid',
+    rowPrompts: ['Bahnhof', 'Apotheke', 'Museum', 'Markt'],
+  },
+  {
+    pageNumber: 2,
+    number: '5',
+    title: 'Wo findet man das?',
+    kind: 'matching',
+    leftItems: ['die Bäckerei', 'die Bibliothek', 'der Bahnhof', 'die Apotheke'],
+    rightItems: ['Medikamente', 'Züge', 'Brot', 'Bücher'],
+  },
+  {
+    pageNumber: 2,
+    number: '6',
+    title: 'Ein Satz',
+    kind: 'fill-blank',
+    itemLabels: [null],
+    itemPrompts: [
+      'Ich brauche ein Buch. Ich gehe in die _________________.'
+    ],
+  },
+  {
+    pageNumber: 3,
+    number: '7',
+    title: 'Satzpuzzle',
+    kind: 'sentence-ordering',
+    orderingItems: [
+      ['Samstag', 'am', 'uns', 'treffen', 'Wir'],
+      ['um', 'Kommst', 'drei', 'du', 'halb'],
+    ],
+  },
+  {
+    pageNumber: 3,
+    number: '8',
+    title: 'Welche Nachricht passt?',
+    kind: 'choice',
+    prompts: ['Hast du am Samstag Zeit?', 'Wo treffen wir uns?'],
+    options: [
+      ['Ja, gern!', 'Zwei Kaffee.', 'Links nebenan.'],
+      ['Vor dem Kino.', 'Am Montag.', 'Sehr gut.'],
+    ],
+  },
+  {
+    pageNumber: 3,
+    number: '9',
+    title: 'Deine Nachricht',
+    kind: 'free-text',
+    prompt: 'Hallo! Hast du ...',
+  },
+  {
+    pageNumber: 4,
+    number: '10',
+    title: 'Verbformen',
+    kind: 'fill-blank',
+    itemLabels: [null, null, null],
+    itemPrompts: [
+      'Mira: Wann _______________ du heute? (arbeiten)',
+      'Noah: Ich _______________ bis vier Uhr. (arbeiten)',
+      'Mira: Danach _______________ wir uns im Cafe. (treffen)',
+    ],
+  },
+  {
+    pageNumber: 4,
+    number: '11',
+    title: 'Richtig oder falsch?',
+    kind: 'choice',
+    prompts: [
+      'Noah arbeitet am Abend.',
+      'Mira und Noah treffen sich nach der Arbeit.',
+    ],
+    options: [['richtig', 'falsch'], ['richtig', 'falsch']],
+    context: ['Noah arbeitet bis 16 Uhr. Danach trifft er Mira vor dem Cafe.'],
+  },
+  {
+    pageNumber: 4,
+    number: '12',
+    title: 'Mein Lernziel',
+    kind: 'free-text',
+    prompt: 'Diese Woche möchte ich ...',
+  },
+] as const;

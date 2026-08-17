@@ -303,8 +303,9 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
         <div className="lesson-exercise-items lesson-fill-items">
           {block.blanks.map((blank, index) => {
             const prompt = block.itemPrompts[blank.id] || `Item ${index + 1}`;
+            const label = block.itemLabels?.[blank.id];
             return <div className="lesson-fill-item" key={blank.id}>
-              <label htmlFor={`${blank.id}-answer`}><span>{String.fromCharCode(97 + index)}) {prompt}</span><input id={`${blank.id}-answer`} value={props.answers[blank.id] ?? ''} onChange={(event) => props.onAnswerChange(blank.id, event.target.value)} autoComplete="off" aria-label={`Answer for ${prompt}`} /></label>
+              <label htmlFor={`${blank.id}-answer`}><span>{label ? `${label} ` : ''}{prompt}</span><input id={`${blank.id}-answer`} value={props.answers[blank.id] ?? ''} onChange={(event) => props.onAnswerChange(blank.id, event.target.value)} autoComplete="off" aria-label={`Answer for ${prompt}`} /></label>
               {feedback(blank.id)}
             </div>;
           })}

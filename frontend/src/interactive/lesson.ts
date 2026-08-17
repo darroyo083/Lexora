@@ -54,6 +54,7 @@ export interface FillBlankLessonBlock extends LessonBlockBase {
   kind: 'fill-blank';
   blanks: ExerciseBlank[];
   itemPrompts: Record<string, string | null>;
+  itemLabels?: Record<string, string | null>;
 }
 
 export interface ChoiceLessonBlock extends LessonBlockBase {

@@ -310,8 +310,21 @@ test('Classic region replacement starts a new action without visiting Interactiv
   await page.getByRole('button', { name: 'Translate to Spanish' }).click();
   await expect(page.getByText('Region 2 succeeded.')).toBeVisible();
 
-  expect(requests).toHaveLength(2);
+  await page.getByRole('button', { name: 'Back to Ask Lexora actions' }).click();
+  await page.getByRole('button', { name: 'Choose another region' }).click();
+  const thirdSelectionLayer = page.locator('.page-selection-layer');
+  const thirdBox = await thirdSelectionLayer.boundingBox();
+  if (!thirdBox) throw new Error('Third selection layer has no measurable page bounds');
+  await page.mouse.move(thirdBox.x + thirdBox.width * 0.12, thirdBox.y + thirdBox.height * 0.40);
+  await page.mouse.down();
+  await page.mouse.move(thirdBox.x + thirdBox.width * 0.70, thirdBox.y + thirdBox.height * 0.56, { steps: 8 });
+  await page.mouse.up();
+  await page.getByRole('button', { name: 'Explain', exact: true }).click();
+  await expect(page.getByText('Region 3 succeeded.')).toBeVisible();
+
+  expect(requests).toHaveLength(3);
   expect(requests[0].selection).not.toEqual(requests[1].selection);
+  expect(requests[1].selection).not.toEqual(requests[2].selection);
   expect(requests.every((body) => body.exerciseId === null)).toBe(true);
 });
 

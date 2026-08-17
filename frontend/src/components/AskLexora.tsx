@@ -25,6 +25,8 @@ interface Props {
 type Phase = 'idle' | 'working' | 'verifying' | 'done';
 
 interface PendingPayload {
+  requestId: number;
+  contextKey: string;
   action: AssistAction;
   targetLanguage: string | null;
   question: string | null;
@@ -42,6 +44,11 @@ interface TurnstileApi {
 
 function turnstileApi(): TurnstileApi | null {
   return (window as unknown as { turnstile?: TurnstileApi }).turnstile ?? null;
+}
+
+function selectionKey(selection: SelectionRect | null | undefined): string {
+  if (!selection) return '';
+  return [selection.x, selection.y, selection.width, selection.height].join(',');
 }
 
 const VERDICT_LABEL: Record<string, string> = {
@@ -88,11 +95,24 @@ export default function AskLexora({
   const [collapsed, setCollapsed] = useState(false);
   const pendingRef = useRef<PendingPayload | null>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
+  const phaseRef = useRef<Phase>('idle');
   const turnstileRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
+  phaseRef.current = phase;
+  const contextKey = [
+    mode,
+    bookId ?? '',
+    pageNumber,
+    mode === 'classic' ? selectionKey(selection) : exercise?.assistExerciseId ?? exercise?.exerciseId ?? '',
+  ].join('|');
+  const contextKeyRef = useRef(contextKey);
+  contextKeyRef.current = contextKey;
+
   const resetToMenu = useCallback(() => {
+    requestIdRef.current += 1;
     requestControllerRef.current?.abort();
     requestControllerRef.current = null;
     pendingRef.current = null;
@@ -132,10 +152,16 @@ export default function AskLexora({
     setActiveAction(action);
     setResult(null);
     setMessage(null);
-    pendingRef.current = { action, targetLanguage, question };
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const requestContextKey = contextKeyRef.current;
+    pendingRef.current = { requestId, contextKey: requestContextKey, action, targetLanguage, question };
     requestControllerRef.current?.abort();
     const controller = new AbortController();
     requestControllerRef.current = controller;
+    let awaitingVerification = false;
+    const isCurrentRequest = () => requestIdRef.current === requestId
+      && contextKeyRef.current === requestContextKey;
     try {
       const response = await requestAssist({
         action,
@@ -154,10 +180,13 @@ export default function AskLexora({
         selection: mode === 'classic' ? selection : null,
         turnstileToken,
       }, controller.signal);
+      if (!isCurrentRequest()) return;
       if (response.status === 'verification_required') {
+        awaitingVerification = true;
         setPhase('verifying');
         return;
       }
+      pendingRef.current = null;
       if (response.status === 'success') {
         setResult(response);
         setPhase('done');
@@ -166,19 +195,29 @@ export default function AskLexora({
       setMessage(statusMessage(response));
       setPhase('done');
     } catch (error) {
+      if (!isCurrentRequest()) return;
       if (error instanceof DOMException && error.name === 'AbortError') return;
+      pendingRef.current = null;
       setMessage('AI help is temporarily unavailable. Please try again.');
       setPhase('done');
     } finally {
       if (requestControllerRef.current === controller) {
         requestControllerRef.current = null;
       }
+      if (!awaitingVerification && pendingRef.current?.requestId === requestId) {
+        pendingRef.current = null;
+      }
     }
-  }, [bookId, mode, pageNumber, exercise, selection]);
+  }, [bookId, contextKey, mode, pageNumber, exercise, selection]);
 
   const onTurnstileToken = useCallback((token: string) => {
     const pending = pendingRef.current;
-    if (!pending) return;
+    if (!pending
+      || pending.contextKey !== contextKeyRef.current
+      || phaseRef.current !== 'verifying') {
+      if (pending?.contextKey !== contextKeyRef.current) pendingRef.current = null;
+      return;
+    }
     void runAction(pending.action, pending.targetLanguage, token, pending.question);
   }, [runAction]);
 
@@ -225,6 +264,7 @@ export default function AskLexora({
   }, [closePanel, open]);
 
   const openPanel = () => {
+    resetToMenu();
     setOpen(true);
     setCollapsed(false);
     setPhase('idle');
@@ -241,7 +281,7 @@ export default function AskLexora({
     resetToMenu();
     setOpen(true);
     setCollapsed(false);
-  }, [mode, resetToMenu, selection]);
+  }, [mode, resetToMenu, contextKey]);
 
   const hasContext = mode === 'classic'
     ? Boolean(bookId)
@@ -421,13 +461,7 @@ export default function AskLexora({
               <button
                 type="button"
                 className="ask-lexora-new"
-                onClick={() => {
-                  setPhase('idle');
-                  setResult(null);
-                  setMessage(null);
-                  setQuestionDraft('');
-                  setQuestionOpen(false);
-                }}
+                onClick={resetToMenu}
               >
                 Try another action
               </button>
@@ -440,10 +474,7 @@ export default function AskLexora({
               <button
                 type="button"
                 className="ask-lexora-new"
-                onClick={() => {
-                  setPhase('idle');
-                  setMessage(null);
-                }}
+                onClick={resetToMenu}
               >
                 Try another action
               </button>

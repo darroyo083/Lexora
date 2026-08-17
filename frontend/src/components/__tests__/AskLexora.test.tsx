@@ -125,6 +125,66 @@ describe('AskLexora', () => {
     expect(removeWidget).toHaveBeenCalledWith('widget-1');
   });
 
+  it('ignores late Turnstile callbacks after success and accepts the next Classic region', async () => {
+    const renderWidget = vi.fn().mockReturnValue('widget-1');
+    const removeWidget = vi.fn();
+    (window as unknown as Record<string, unknown>).turnstile = {
+      render: renderWidget,
+      remove: removeWidget,
+    };
+    let callNumber = 0;
+    const fetchMock = vi.fn(() => {
+      callNumber += 1;
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(callNumber === 1
+          ? {
+            action: 'explain', status: 'verification_required', content: null,
+            verdict: null, cached: false, siteKey: 'site-key', message: null,
+          }
+          : {
+            action: 'explain', status: 'success', content: `Region ${callNumber} success.`,
+            verdict: null, cached: false, siteKey: null, message: null,
+          }),
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const selectionA = { x: 0.1, y: 0.2, width: 0.4, height: 0.1 };
+    const selectionB = { x: 0.1, y: 0.5, width: 0.4, height: 0.1 };
+    const view = render(<AskLexora
+      {...baseProps}
+      mode="classic"
+      siteKey="site-key"
+      selection={selectionA}
+      selectionHasContext
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Explain' }));
+    await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(1));
+    const tokenCallback = renderWidget.mock.calls[0][1].callback as (token: string) => void;
+    tokenCallback('valid-token');
+    await waitFor(() => expect(screen.getByText('Region 2 success.')).toBeTruthy());
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    tokenCallback('late-token');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    view.rerender(<AskLexora
+      {...baseProps}
+      mode="classic"
+      siteKey="site-key"
+      selection={selectionB}
+      selectionHasContext
+    />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Explain' }));
+    await waitFor(() => expect(screen.getByText('Region 3 success.')).toBeTruthy());
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const calls = fetchMock.mock.calls as unknown as Array<[string, RequestInit]>;
+    expect(JSON.parse(calls[2][1].body as string).selection).toEqual(selectionB);
+  });
+
   it('shows a clean message when the provider is unavailable', async () => {
     stubFetchResponse(200, {
       action: 'hint', status: 'unavailable', content: null,

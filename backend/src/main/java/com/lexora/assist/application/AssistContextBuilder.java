@@ -113,19 +113,64 @@ public class AssistContextBuilder {
         } catch (Exception e) {
             return null;
         }
-        var source = selectedText(analysis, selection);
+        var selectedExercises = selectedSemanticExercises(analysis, selection);
+        var source = selectedText(analysis, selection, selectedExercises);
         if (source.isBlank()) return null;
+
+        var title = book.title() + " — selected page region";
+        var instruction = "";
+        var exerciseKind = "selection";
+        if (selectedExercises.size() == 1) {
+            var exercise = selectedExercises.getFirst();
+            if (hasVisibleSemanticHeader(analysis, exercise, selection)) {
+                var number = orEmpty(exercise.number());
+                var exerciseTitle = orEmpty(exercise.title());
+                var label = number.isBlank() ? exerciseTitle
+                    : "Exercise " + number + (exerciseTitle.isBlank() ? "" : ": " + exerciseTitle);
+                if (!label.isBlank()) title = book.title() + " — " + label;
+                instruction = orEmpty(exercise.instruction());
+            }
+            if (!orEmpty(exercise.kind()).isBlank()) exerciseKind = exercise.kind();
+        } else if (!selectedExercises.isEmpty()) {
+            var numbers = selectedExercises.stream()
+                .map(exercise -> orEmpty(exercise.number()))
+                .filter(number -> !number.isBlank())
+                .toList();
+            if (!numbers.isEmpty()) {
+                title = book.title() + " — selected exercises " + String.join(", ", numbers);
+            }
+        }
         return new BuiltContext(
-            new AssistContext(book.title() + " — selected page region", "", source,
-                "selection", List.of(), null, orEmpty(book.sourceLanguage()), targetLanguage, question),
+            new AssistContext(title, instruction, source,
+                exerciseKind, List.of(), null, orEmpty(book.sourceLanguage()), targetLanguage, question),
             false
         );
     }
 
-    private String selectedText(PageAnalysis analysis, SelectionRect selection) {
-        var selectedExercises = analysis.semanticExercises().stream()
+    private static List<PageAnalysis.SemanticExercise> selectedSemanticExercises(
+        PageAnalysis analysis, SelectionRect selection) {
+        return analysis.semanticExercises().stream()
             .filter(exercise -> selectsExercise(exercise.bbox(), selection))
             .toList();
+    }
+
+    private static boolean hasVisibleSemanticHeader(
+        PageAnalysis analysis, PageAnalysis.SemanticExercise exercise, SelectionRect selection) {
+        var title = orEmpty(exercise.title()).trim();
+        var instruction = orEmpty(exercise.instruction()).trim();
+        return analysis.textSpans().stream()
+            .anyMatch(span -> {
+                if (span == null || !intersects(span.bbox(), selection, LINE_EDGE_TOLERANCE)) {
+                    return false;
+                }
+                var text = orEmpty(span.text()).trim();
+                return (!title.isBlank() && title.equals(text))
+                    || (!instruction.isBlank() && instruction.equals(text));
+            });
+    }
+
+    private String selectedText(PageAnalysis analysis, SelectionRect selection,
+                                List<PageAnalysis.SemanticExercise> selectedExercises) {
         Set<String> exerciseOwnedSpanIds = new HashSet<>();
         Set<String> selectedExerciseSpanIds = new HashSet<>();
         for (var exercise : analysis.semanticExercises()) {
@@ -144,7 +189,8 @@ public class AssistContextBuilder {
             .filter(span -> intersects(span.bbox(), selection, LINE_EDGE_TOLERANCE))
             // OCR/text extraction boxes can drift across an exercise boundary.
             // When the rectangle clearly identifies semantic exercise regions,
-            // admit only their owned spans and unowned spans within their text range.
+            // admit only their owned spans that are visibly selected and unowned
+            // structural labels within their selected text range.
             .filter(span -> selectedExercises.isEmpty()
                 || selectedExerciseSpanIds.contains(span.id())
                 || (!exerciseOwnedSpanIds.contains(span.id())

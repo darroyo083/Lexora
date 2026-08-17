@@ -29,7 +29,7 @@ public class AssistService {
 
     private static final Logger log = LoggerFactory.getLogger(AssistService.class);
     private static final Set<String> TARGET_LANGUAGES = Set.of("en", "es");
-    private static final String PROMPT_VERSION = "1";
+    private static final String PROMPT_VERSION = "2-selection-intent";
 
     private final AssistConfiguration configuration;
     private final AssistContextBuilder contextBuilder;

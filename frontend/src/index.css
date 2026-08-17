@@ -5223,7 +5223,7 @@ html, body, #root {
 .lesson-help-action .ask-lexora-panel {
   position: fixed;
   top: 123px;
-  right: 14px;
+  right: 24px;
   left: auto;
   z-index: 100;
   max-height: calc(100dvh - 139px);
@@ -5231,7 +5231,7 @@ html, body, #root {
 
 .lesson-help-action .ask-lexora-panel.is-collapsed {
   top: 123px;
-  right: 16px;
+  right: 24px;
 }
 
 @media (min-width: 1181px) {
@@ -5242,6 +5242,7 @@ html, body, #root {
 
   .lesson-help-action .ask-lexora-panel.is-collapsed {
     top: 94px;
+    right: 24px;
   }
 }
 

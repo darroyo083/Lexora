@@ -165,4 +165,33 @@ class AssistContextBuilderTest {
                     "die Bäckerei", "Medikamente");
         }
     }
+
+    @Test
+    void classicSelectionReconstructsSemanticIntentAndVisibleMatchingLabels() throws Exception {
+        try (var stream = getClass().getClassLoader()
+            .getResourceAsStream("demo/page-analysis-2.json")) {
+            assertThat(stream).isNotNull();
+            var publicDemoAnalysis = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            var page = new BookPage(UUID.randomUUID(), bookId, 2, 1322, 1870,
+                ProcessingStatus.READY, publicDemoAnalysis, Instant.now(), null);
+            when(bookService.getPage(bookId, 2)).thenReturn(Optional.of(page));
+
+            var built = builder.buildSelection(bookId, 2,
+                new com.lexora.assist.contract.AssistContract.SelectionRect(
+                    0.05, 0.343, 0.90, 0.357),
+                "de q va", "es");
+
+            assertThat(built).isNotNull();
+            assertThat(built.context().title()).contains("Exercise 5", "Wo findet man das?");
+            assertThat(built.context().instruction())
+                .isEqualTo("Ordne jedem Ort die passende Sache zu.");
+            assertThat(built.context().exerciseKind()).isEqualTo("matching");
+            assertThat(built.context().source())
+                .contains("1", "2", "3", "4", "A", "B", "C", "D")
+                .contains("die Bäckerei", "Medikamente", "Brot", "Bücher")
+                .doesNotContain("Ein Satz", "Ich brauche ein Buch");
+            assertThat(built.context().question()).isEqualTo("de q va");
+            assertThat(built.context().targetLanguage()).isEqualTo("es");
+        }
+    }
 }

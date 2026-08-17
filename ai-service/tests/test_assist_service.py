@@ -206,6 +206,26 @@ def test_prompt_quotes_source_as_data():
     assert "no tools" in system
 
 
+def test_ask_prompt_describes_generic_exercise_questions_without_solving():
+    from app.assist.prompts import build_messages
+
+    user = build_messages(
+        "ask",
+        _context(
+            title="Synthetic Workbook — Exercise 5: Wo findet man das?",
+            instruction="Ordne jedem Ort die passende Sache zu.",
+            source="1 die Bäckerei A Medikamente 2 die Bibliothek B Züge",
+            exerciseKind="matching",
+            question="de q va",
+        ),
+    )[1]["content"]
+
+    assert "what the exercise is about" in user
+    assert "describe the task" in user
+    assert "Do not solve the exercise" in user
+    assert "answer mappings" in user
+
+
 # --- endpoint -------------------------------------------------------------
 
 def test_assist_endpoint_success(monkeypatch):

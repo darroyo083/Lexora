@@ -119,7 +119,15 @@ export default function AskLexora({
     turnstileToken: string | null,
     question: string | null = null,
   ) => {
-    if (!bookId || (mode === 'interactive' && !exercise) || (mode === 'classic' && !selection)) return;
+    if (!bookId || (mode === 'interactive' && !exercise) || (mode === 'classic' && !selection)) {
+      setActiveAction(null);
+      setResult(null);
+      setMessage(mode === 'classic'
+        ? 'Select a readable source region to continue.'
+        : 'Select an exercise to continue.');
+      setPhase('done');
+      return;
+    }
     setPhase('working');
     setActiveAction(action);
     setResult(null);
@@ -367,7 +375,10 @@ export default function AskLexora({
               </form>
             ) : (
               <div className="ask-lexora-menu" role="group" aria-label="AI help actions">
-                {mode === 'classic' && !selectionHasContext && (
+                {mode === 'classic' && !selectionHasContext && selection && (
+                  <p className="ask-lexora-context-note">Lexora will validate this selection against the source.</p>
+                )}
+                {mode === 'classic' && !selection && (
                   <p className="ask-lexora-context-note">Select a readable source region to continue.</p>
                 )}
                 {items.map((item) => (
@@ -382,7 +393,7 @@ export default function AskLexora({
                       }
                       void runAction(item.action, item.target ?? null, null);
                     }}
-                    disabled={mode === 'classic' && !selectionHasContext}
+                    disabled={mode === 'classic' && !selection}
                   >
                     {item.label}
                   </button>

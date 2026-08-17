@@ -165,6 +165,29 @@ describe('AskLexora', () => {
     expect(body.selection).toEqual({ x: 0.1, y: 0.2, width: 0.4, height: 0.1 });
   });
 
+  it('starts a Classic request while local text readiness is still settling', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        action: 'explain', status: 'success', content: 'Context.',
+        verdict: null, cached: false, siteKey: null, message: null,
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AskLexora
+      {...baseProps}
+      mode="classic"
+      selection={{ x: 0.1, y: 0.2, width: 0.4, height: 0.1 }}
+      selectionHasContext={false}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Explain' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('Context.')).toBeTruthy();
+  });
+
   it('uses the canonical assist id for grouped Interactive exercises', async () => {
     const fetchMock = vi.fn(() => Promise.resolve({
       ok: true,

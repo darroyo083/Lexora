@@ -142,7 +142,7 @@ describe('AskLexora', () => {
   it('renders limited Markdown as safe semantic content', async () => {
     stubFetchResponse(200, {
       action: 'explain', status: 'success',
-      content: '**Use** this.\n\n- <script>alert(1)</script>\n\n1. `der`',
+      content: '### A useful pattern\n\n**Use** this.\nline two stays in the paragraph.\n\n• First point\n◦ Second point\n\n1. `der`\n\n<script>alert(1)</script>',
       verdict: null, cached: false, siteKey: null, message: null,
     });
     render(<AskLexora {...baseProps} />);
@@ -150,9 +150,52 @@ describe('AskLexora', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Explain' }));
     await waitFor(() => expect(screen.getByText('Use')).toBeTruthy());
     expect(document.querySelector('strong')).not.toBeNull();
+    expect(document.querySelector('h3')?.textContent).toBe('A useful pattern');
     expect(document.querySelector('ul')).not.toBeNull();
+    expect(document.querySelector('ul')?.children).toHaveLength(2);
     expect(document.querySelector('ol')).not.toBeNull();
     expect(document.querySelector('.ask-lexora-markdown script')).toBeNull();
+    expect(screen.queryByText(/<script>/)).toBeNull();
+  });
+
+  it('returns from the question flow to the action chooser', () => {
+    render(<AskLexora {...baseProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ask a question…' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Ask Lexora actions' }));
+    expect(screen.getByRole('button', { name: 'Explain' })).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: 'Ask about this exercise' })).toBeNull();
+  });
+
+  it('submits a question with Enter and reserves Shift+Enter for a newline', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        action: 'ask', status: 'success', content: 'A focused answer.',
+        verdict: null, cached: false, siteKey: null, message: null,
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AskLexora {...baseProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ask a question…' }));
+    const question = screen.getByRole('textbox', { name: 'Ask about this exercise' });
+    fireEvent.change(question, { target: { value: 'Why is this dative?' } });
+    fireEvent.keyDown(question, { key: 'Enter', shiftKey: true });
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.keyDown(question, { key: 'Enter' });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText('A focused answer.')).toBeTruthy());
+  });
+
+  it('uses the shared processing loader and pending-text treatment', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)));
+    render(<AskLexora {...baseProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Explain' }));
+    expect(document.querySelectorAll('.ask-lexora-loading-orb')).toHaveLength(1);
+    expect(document.querySelector('.ask-lexora-pending-copy')).not.toBeNull();
   });
 
   it('provides a keyboard-accessible collapse affordance', () => {

@@ -1071,6 +1071,13 @@ html, body, #root {
   background: rgba(42, 62, 49, 0.08);
 }
 
+.page-selection-active {
+  position: absolute;
+  inset: 0;
+  z-index: 29;
+  pointer-events: none;
+}
+
 .page-selection-instruction {
   position: absolute;
   top: 12px;
@@ -5025,12 +5032,11 @@ html, body, #root {
 
 .ask-lexora-panel {
   position: fixed;
-  top: 68px;
-  right: max(14px, 1.4vw);
-  bottom: 14px;
+  top: 60px;
+  right: 16px;
   z-index: 40;
-  width: min(360px, calc(33vw - 12px));
-  max-height: calc(100dvh - 82px);
+  width: min(344px, calc(100vw - 32px));
+  max-height: calc(100dvh - 76px);
   overflow: auto;
   padding: 14px;
   border: 1px solid var(--border-strong);
@@ -5040,13 +5046,16 @@ html, body, #root {
   outline: none;
 }
 
-.app-main-workspace:has(.ask-lexora-panel) .reader-layout {
-  padding-right: clamp(260px, 32vw, 382px);
+.app-main-workspace:has(.ask-lexora-panel:not(.is-collapsed)) .reader-layout {
+  padding-right: 372px;
+}
+
+.app-main-workspace:has(.ask-lexora-panel.is-collapsed) .reader-layout {
+  padding-right: 0;
 }
 
 .ask-lexora-panel.is-collapsed {
-  right: max(14px, 1.4vw);
-  bottom: auto;
+  right: 16px;
   width: min(270px, calc(33vw - 12px));
   overflow: hidden;
 }
@@ -5064,7 +5073,14 @@ html, body, #root {
   gap: 2px;
 }
 
-.ask-lexora-head > span {
+.ask-lexora-head-main {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.ask-lexora-head-main > span {
   color: var(--text-primary);
   font: 650 13px/1 var(--font-sans);
 }
@@ -5098,7 +5114,24 @@ html, body, #root {
 
 .ask-lexora-pending-copy {
   display: inline-block;
-  animation: ask-pending-copy-in 260ms cubic-bezier(.16, 1, .3, 1) both;
+  color: transparent;
+  background: linear-gradient(
+    100deg,
+    var(--text-tertiary) 30%,
+    var(--text-primary) 48%,
+    var(--accent-primary) 52%,
+    var(--text-tertiary) 70%
+  );
+  background-size: 260% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: text-shimmer-lr 2.5s ease-in-out infinite,
+    ask-pending-copy-in 220ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.ask-lexora-loading-orb {
+  width: 20px;
+  height: 20px;
 }
 
 @keyframes ask-pending-copy-in {
@@ -5260,15 +5293,28 @@ html, body, #root {
 
 .ask-lexora-markdown p,
 .ask-lexora-markdown ul,
-.ask-lexora-markdown ol {
+.ask-lexora-markdown ol,
+.ask-lexora-markdown h3 {
   margin: 0;
+}
+
+.ask-lexora-markdown h3 {
+  color: var(--text-primary);
+  font-size: 13.5px;
+  line-height: 1.4;
 }
 
 .ask-lexora-markdown p + p,
 .ask-lexora-markdown p + ul,
 .ask-lexora-markdown p + ol,
+.ask-lexora-markdown h3 + p,
+.ask-lexora-markdown h3 + ul,
+.ask-lexora-markdown h3 + ol,
 .ask-lexora-markdown ul + p,
-.ask-lexora-markdown ol + p {
+.ask-lexora-markdown ol + p,
+.ask-lexora-markdown p + h3,
+.ask-lexora-markdown ul + h3,
+.ask-lexora-markdown ol + h3 {
   margin-top: 10px;
 }
 
@@ -5328,8 +5374,17 @@ html, body, #root {
   color: var(--correction-err);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .ask-lexora-pending-copy {
+    color: var(--text-secondary);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    animation: none !important;
+  }
+}
+
 @media (max-width: 720px) {
-  .app-main-workspace:has(.ask-lexora-panel) .reader-layout {
+  .app-main-workspace:has(.ask-lexora-panel:not(.is-collapsed)) .reader-layout {
     padding-right: 0;
   }
 

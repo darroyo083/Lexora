@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Maximize2, Minimize2, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Maximize2, Minimize2, Sparkles, X } from 'lucide-react';
 import {
   requestAssist,
   type AssistAction,
@@ -76,9 +76,31 @@ export default function AskLexora({
   const [questionOpen, setQuestionOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const pendingRef = useRef<PendingPayload | null>(null);
+  const requestControllerRef = useRef<AbortController | null>(null);
   const turnstileRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const resetToMenu = useCallback(() => {
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
+    pendingRef.current = null;
+    setPhase('idle');
+    setActiveAction(null);
+    setResult(null);
+    setMessage(null);
+    setQuestionDraft('');
+    setQuestionOpen(false);
+  }, []);
+
+  const closePanel = useCallback(() => {
+    resetToMenu();
+    setOpen(false);
+    setCollapsed(false);
+    triggerRef.current?.focus();
+  }, [resetToMenu]);
+
+  useEffect(() => () => requestControllerRef.current?.abort(), []);
 
   const runAction = useCallback(async (
     action: AssistAction,
@@ -92,6 +114,9 @@ export default function AskLexora({
     setResult(null);
     setMessage(null);
     pendingRef.current = { action, targetLanguage, question };
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
     try {
       const response = await requestAssist({
         action,
@@ -109,7 +134,7 @@ export default function AskLexora({
         question,
         selection: mode === 'classic' ? selection : null,
         turnstileToken,
-      });
+      }, controller.signal);
       if (response.status === 'verification_required') {
         setPhase('verifying');
         return;
@@ -121,9 +146,14 @@ export default function AskLexora({
       }
       setMessage(statusMessage(response));
       setPhase('done');
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
       setMessage('AI help is temporarily unavailable. Please try again.');
       setPhase('done');
+    } finally {
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+      }
     }
   }, [bookId, mode, pageNumber, exercise, selection]);
 
@@ -157,18 +187,12 @@ export default function AskLexora({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        setOpen(false);
-        setPhase('idle');
-        setResult(null);
-        setMessage(null);
-        setQuestionDraft('');
-        setQuestionOpen(false);
-        triggerRef.current?.focus();
+        closePanel();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open]);
+  }, [closePanel, open]);
 
   const openPanel = () => {
     setOpen(true);
@@ -179,6 +203,8 @@ export default function AskLexora({
     setQuestionDraft('');
     setQuestionOpen(false);
   };
+
+  const canGoBack = questionOpen || phase !== 'idle';
 
   useEffect(() => {
     if (mode === 'classic' && selection) openPanel();
@@ -215,7 +241,7 @@ export default function AskLexora({
             onStartSelection?.();
             return;
           }
-          open ? setOpen(false) : openPanel();
+          open ? closePanel() : openPanel();
         }}
       >
         <Sparkles size={15} aria-hidden="true" />
@@ -232,7 +258,20 @@ export default function AskLexora({
           tabIndex={-1}
         >
           <div className="ask-lexora-head">
-            <span id="ask-lexora-title">{mode === 'classic' ? 'Ask about this selection' : 'Ask about this exercise'}</span>
+            <div className="ask-lexora-head-main">
+              {canGoBack && (
+                <button
+                  type="button"
+                  className="ask-lexora-close"
+                  aria-label="Back to Ask Lexora actions"
+                  title="Back"
+                  onClick={resetToMenu}
+                >
+                  <ArrowLeft size={16} aria-hidden="true" />
+                </button>
+              )}
+              <span id="ask-lexora-title">{mode === 'classic' ? 'Ask about this selection' : 'Ask about this exercise'}</span>
+            </div>
             <div className="ask-lexora-head-actions">
               <button
                 type="button"
@@ -251,14 +290,7 @@ export default function AskLexora({
                 className="ask-lexora-close"
                 aria-label="Close Ask Lexora"
                 title="Close"
-                onClick={() => {
-                  setOpen(false);
-                  setCollapsed(false);
-                  setPhase('idle');
-                  setResult(null);
-                  setMessage(null);
-                  triggerRef.current?.focus();
-                }}
+                onClick={closePanel}
               >
                 <X size={16} aria-hidden="true" />
               </button>
@@ -297,11 +329,16 @@ export default function AskLexora({
                   maxLength={400}
                   rows={3}
                   onChange={(event) => setQuestionDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }}
                   placeholder="What should I look for here?"
                 />
                 <div className="ask-lexora-question-actions">
                   <small>{questionDraft.length}/400</small>
-                  <button type="button" className="ask-lexora-new" onClick={() => setQuestionOpen(false)}>Cancel</button>
+                  <button type="button" className="ask-lexora-new" onClick={resetToMenu}>Cancel</button>
                   <button type="submit" className="ask-lexora-action" disabled={!questionDraft.trim()}>Ask</button>
                 </div>
               </form>
@@ -328,7 +365,10 @@ export default function AskLexora({
                   </button>
                 ))}
                 {mode === 'classic' && onClearSelection && (
-                  <button type="button" className="ask-lexora-new" onClick={onClearSelection}>Choose another region</button>
+                  <button type="button" className="ask-lexora-new" onClick={() => {
+                    closePanel();
+                    onClearSelection();
+                  }}>Choose another region</button>
                 )}
               </div>
             )

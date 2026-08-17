@@ -771,6 +771,14 @@ export default function PageViewer({
             )));
           })()}
         </div>
+        {selection && !selectionMode && (
+          <div className="page-selection-active" aria-hidden="true">
+            <div
+              className="page-selection-rectangle"
+              style={bboxPercentageStyle(selection, rotation)}
+            />
+          </div>
+        )}
         {selectionMode && (
           <div
             className="page-selection-layer"

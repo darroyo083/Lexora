@@ -139,6 +139,36 @@ test('hint happy path renders a mocked provider response', async ({ page }) => {
   await expect(page.getByText('Think about the verb form.')).toBeVisible();
 });
 
+test('Interactive Explain and Ask stay coherent and navigable', async ({ page }) => {
+  await mockWorkbook(page);
+  await mockAssist(page, { enabled: true, siteKey: null }, {
+    explain: {
+      action: 'explain', status: 'success',
+      content: '### Present tense\n\n- **bin** agrees with *ich*.\n- The sentence means `I am here today`.',
+      verdict: null, cached: false, siteKey: null, message: null,
+    },
+    ask: {
+      action: 'ask', status: 'success',
+      content: 'Use **bin** because the subject is *ich*.',
+      verdict: null, cached: false, siteKey: null, message: null,
+    },
+  });
+  await page.goto('/demo');
+  await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
+  await openAskLexora(page);
+
+  await page.getByRole('button', { name: 'Explain' }).click();
+  await expect(page.getByRole('heading', { name: 'Present tense', level: 3 })).toBeVisible();
+  await expect(page.locator('.ask-lexora-markdown li')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Back to Ask Lexora actions' }).click();
+
+  await page.getByRole('button', { name: 'Ask a question…' }).click();
+  const question = page.getByRole('textbox', { name: 'Ask about this exercise' });
+  await question.fill('Why is bin used here?');
+  await question.press('Enter');
+  await expect(page.getByText('Use bin because the subject is ich.')).toBeVisible();
+});
+
 test('Classic Ask Lexora uses an explicit bounded page selection', async ({ page }) => {
   await mockWorkbook(page);
   await mockAssist(page, { enabled: true, siteKey: null }, {
@@ -168,10 +198,16 @@ test('Classic Ask Lexora uses an explicit bounded page selection', async ({ page
   await page.mouse.up();
 
   await expect(page.getByRole('dialog', { name: 'Ask Lexora' })).toBeVisible();
+  await expect(page.locator('.page-selection-active .page-selection-rectangle')).toBeVisible();
+  const panelBox = await page.getByRole('dialog', { name: 'Ask Lexora' }).boundingBox();
+  expect(panelBox?.height).toBeLessThan(420);
   await page.getByRole('button', { name: 'Ask a question…' }).click();
-  await page.getByRole('textbox', { name: 'Ask about this selection' }).fill('What verb form is used here?');
-  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Back to Ask Lexora actions' })).toBeVisible();
+  const question = page.getByRole('textbox', { name: 'Ask about this selection' });
+  await question.fill('What verb form is used here?');
+  await question.press('Enter');
   await expect(page.getByText(/present-tense verb/i)).toBeVisible();
+  await expect(page.locator('.page-selection-active .page-selection-rectangle')).toBeVisible();
 
   expect(requestBody).toMatchObject({
     action: 'ask',
@@ -189,6 +225,35 @@ test('Classic Ask Lexora uses an explicit bounded page selection', async ({ page
   expect(selection.y).toBeGreaterThanOrEqual(0);
   expect(selection.x + selection.width).toBeLessThanOrEqual(1);
   expect(selection.y + selection.height).toBeLessThanOrEqual(1);
+});
+
+test('Ask Lexora reserves a non-overlapping desktop rail across target widths', async ({ page }) => {
+  await mockWorkbook(page);
+  await mockAssist(page, { enabled: true, siteKey: null }, {});
+
+  for (const width of [768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/demo');
+    await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
+    await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
+    const selectionTrigger = page.getByRole('button', {
+      name: /Ask Lexora|Select a region of the source page/,
+    });
+    await selectionTrigger.click();
+    const selectionLayer = page.locator('.page-selection-layer');
+    const selectionBox = await selectionLayer.boundingBox();
+    if (!selectionBox) throw new Error('Selection layer has no measurable page bounds');
+    await page.mouse.move(selectionBox.x + selectionBox.width * 0.10, selectionBox.y + selectionBox.height * 0.20);
+    await page.mouse.down();
+    await page.mouse.move(selectionBox.x + selectionBox.width * 0.65, selectionBox.y + selectionBox.height * 0.34);
+    await page.mouse.up();
+
+    const panel = await page.getByRole('dialog', { name: 'Ask Lexora' }).boundingBox();
+    const pageArea = await page.locator('.page-area').boundingBox();
+    expect(panel).not.toBeNull();
+    expect(pageArea).not.toBeNull();
+    expect((pageArea?.x ?? 0) + (pageArea?.width ?? 0)).toBeLessThanOrEqual(panel?.x ?? 0);
+  }
 });
 
 test('Check with AI is a fallback only for genuinely ungraded answers', async ({ page }) => {

@@ -1,17 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ThinkingOrb } from 'thinking-orbs';
 import type { AssistAction } from '../api/assist';
-
-type OrbState = 'working' | 'composing' | 'solving';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const MESSAGE_INTERVAL_MS = 1250;
-
-function orbStateFor(action: AssistAction): OrbState {
-  if (action === 'check') return 'solving';
-  if (action === 'hint') return 'working';
-  return 'composing';
-}
 
 function messagesFor(action: AssistAction): string[] {
   if (action === 'check') {
@@ -54,7 +45,7 @@ export default function AiPendingState({ action }: { action: AssistAction }) {
   const message = messages[reducedMotion ? 0 : messageIndex] ?? messages[0];
   return (
     <div className="ask-lexora-working" role="status" aria-live="polite" aria-atomic="true">
-      <ThinkingOrb state={orbStateFor(action)} size={20} />
+      <span className="processing-spinner-ring ask-lexora-loading-orb" aria-hidden="true" />
       <span key={message} className="ask-lexora-pending-copy">{message}</span>
     </div>
   );

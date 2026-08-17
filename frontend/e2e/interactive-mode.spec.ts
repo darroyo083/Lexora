@@ -150,7 +150,7 @@ test('completes native interactions, checks conservatively, and restores work', 
   const choice = await advanceToKind(page, 'choice');
   await choice.getByRole('radio', { name: 'A', exact: true }).locator('..').click();
   await page.getByRole('button', { name: 'Check answers' }).click();
-  await expect(page.getByText('No answer key available')).toBeVisible();
+  await expect(page.getByText('No reliable source answer')).toBeVisible();
   await page.getByRole('button', { name: 'Next exercise' }).click();
 
   const grid = await advanceToKind(page, 'choice-grid');

@@ -4,7 +4,9 @@ function withoutUnsafeLinks(value: string): string {
   // Links are deliberately rendered as text-only labels. React escapes the
   // remaining text, so workbook/provider output cannot introduce HTML or
   // event handlers into the reader.
-  return value.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
 }
 
 function inline(value: string, keyPrefix: string): ReactNode[] {
@@ -31,12 +33,13 @@ function inline(value: string, keyPrefix: string): ReactNode[] {
   return output;
 }
 
-function inlineWithBreaks(value: string, keyPrefix: string): ReactNode[] {
-  return value.split('\n').flatMap((line, index, lines) => (
-    index === lines.length - 1
-      ? inline(line, `${keyPrefix}-${index}`)
-      : [...inline(line, `${keyPrefix}-${index}`), <br key={`${keyPrefix}-br-${index}`} />]
-  ));
+function unorderedItem(line: string): string | null {
+  const markdownBullet = line.match(/^\s*[-+*]\s+(.+)$/);
+  if (markdownBullet) return markdownBullet[1];
+  const typographicDash = line.match(/^\s*[–—]\s+(.+)$/);
+  if (typographicDash) return typographicDash[1];
+  const typographicBullet = line.match(/^\s*[•◦▪‣]\s*(.+)$/);
+  return typographicBullet?.[1] ?? null;
 }
 
 export default function LimitedMarkdown({ content }: { content: string }) {
@@ -48,7 +51,7 @@ export default function LimitedMarkdown({ content }: { content: string }) {
   const flushParagraph = () => {
     if (paragraph.length === 0) return;
     const key = `paragraph-${blockIndex++}`;
-    blocks.push(<p key={key}>{inlineWithBreaks(paragraph.join('\n'), key)}</p>);
+    blocks.push(<p key={key}>{inline(paragraph.map((line) => line.trim()).join(' '), key)}</p>);
     paragraph = [];
   };
 
@@ -61,11 +64,20 @@ export default function LimitedMarkdown({ content }: { content: string }) {
       continue;
     }
 
+    const heading = line.match(/^\s{0,3}#{1,3}\s+(.+?)\s*#*\s*$/);
+    if (heading) {
+      flushParagraph();
+      const key = `heading-${blockIndex++}`;
+      blocks.push(<h3 key={key}>{inline(heading[1], key)}</h3>);
+      index += 1;
+      continue;
+    }
+
     const unordered: string[] = [];
     while (index < lines.length) {
-      const match = lines[index].match(/^\s*[-*]\s+(.+)$/);
-      if (!match) break;
-      unordered.push(match[1]);
+      const item = unorderedItem(lines[index]);
+      if (item === null) break;
+      unordered.push(item);
       index += 1;
     }
     if (unordered.length > 0) {

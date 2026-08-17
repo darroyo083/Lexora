@@ -58,7 +58,7 @@ describe('public-demo Classic to Interactive projection', () => {
       if (block.kind !== 'choice') return;
       expect(block.targets.map((target) => block.itemPrompts[target.id])).toEqual(expected.prompts);
       expect(block.targets.map((target) => optionLabels(block, target.id))).toEqual(expected.options);
-      const optionTexts = new Set(expected.options.flat());
+      const optionTexts = new Set<string>(expected.options.flat());
       const contextTexts = (block.contextParagraphs ?? []).map((paragraph) => paragraph.text);
       expect(contextTexts.some((text) => optionTexts.has(text))).toBe(false);
       if ('context' in expected) expect(contextTexts).toEqual(expected.context);

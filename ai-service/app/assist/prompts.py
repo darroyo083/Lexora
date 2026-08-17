@@ -49,6 +49,18 @@ def _build_user(action: str, context: AssistContext) -> str:
 
     if action == "check":
         answer = _quoted("Learner answer", context.answer or "")
+        if context.exerciseKind == "free-text":
+            task = (
+                "Action: Give concise AI-assisted feedback on the learner's open response. "
+                "Comment on grammar, correctness, and clarity; name one or two useful "
+                "improvements; and include an optional corrected version when it helps. "
+                "This is not a source-backed grade and there may be many valid wordings. "
+                "Do not claim authoritative correctness, assign a school grade, or invent "
+                "requirements beyond the supplied instruction. Return a JSON object with "
+                'exactly two fields: "verdict" set to "uncertain" and "content" '
+                "containing the feedback."
+            )
+            return "\n\n".join([*sections, answer, task])
         task = (
             "Action: Review the learner's answer for this exercise. "
             "Return a JSON object with exactly two fields: "

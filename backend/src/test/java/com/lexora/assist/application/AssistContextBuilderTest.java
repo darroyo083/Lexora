@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import tools.jackson.databind.json.JsonMapper;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -192,6 +194,86 @@ class AssistContextBuilderTest {
                 .doesNotContain("Ein Satz", "Ich brauche ein Buch");
             assertThat(built.context().question()).isEqualTo("de q va");
             assertThat(built.context().targetLanguage()).isEqualTo("es");
+        }
+    }
+
+    @Test
+    void classicSelectionRecoversCanonicalContextWhenOwnedOcrBoxesDrift() throws Exception {
+        try (var stream = getClass().getClassLoader()
+            .getResourceAsStream("demo/page-analysis-2.json")) {
+            assertThat(stream).isNotNull();
+            var publicDemoAnalysis = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            var page = new BookPage(UUID.randomUUID(), bookId, 2, 1322, 1870,
+                ProcessingStatus.READY, publicDemoAnalysis, Instant.now(), null);
+            when(bookService.getPage(bookId, 2)).thenReturn(Optional.of(page));
+
+            var built = builder.buildSelection(bookId, 2,
+                new com.lexora.assist.contract.AssistContract.SelectionRect(
+                    0.070968, 0.751995, 0.858065, 0.114025),
+                "what is this about?", "en");
+
+            assertThat(built).isNotNull();
+            assertThat(built.context().title()).contains("Exercise 6", "Ein Satz");
+            assertThat(built.context().source())
+                .contains("Ein Satz", "Ich brauche ein Buch")
+                .doesNotContain("Wo findet man das?", "Artikel wählen");
+        }
+    }
+
+    @Test
+    void classicSelectionReconstructsMatchingLabelsFromCanonicalInteractionData() throws Exception {
+        try (var stream = getClass().getClassLoader()
+            .getResourceAsStream("demo/page-analysis-2.json")) {
+            assertThat(stream).isNotNull();
+            var publicDemoAnalysis = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            var page = new BookPage(UUID.randomUUID(), bookId, 2, 1322, 1870,
+                ProcessingStatus.READY, publicDemoAnalysis, Instant.now(), null);
+            when(bookService.getPage(bookId, 2)).thenReturn(Optional.of(page));
+
+            var built = builder.buildSelection(bookId, 2,
+                new com.lexora.assist.contract.AssistContract.SelectionRect(
+                    0.104839, 0.521665, 0.790323, 0.18358),
+                "de q va", "es");
+
+            assertThat(built).isNotNull();
+            assertThat(built.context().source())
+                .contains("1. die Bäckerei", "A. Medikamente", "4. die Apotheke", "D. Bücher")
+                .doesNotContain("Artikel wählen");
+        }
+    }
+
+    @Test
+    void everyPublicDemoExerciseResolvesFromItsCanonicalSelectionRegion() throws Exception {
+        when(resolutionService.resolve(bookId, 1))
+            .thenReturn(PageCorrectionResolution.unmapped(bookId, 1, null));
+        for (int pageNumber = 1; pageNumber <= 4; pageNumber++) {
+            try (var stream = getClass().getClassLoader()
+                .getResourceAsStream("demo/page-analysis-" + pageNumber + ".json")) {
+                assertThat(stream).isNotNull();
+                var analysisJson = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                var analysis = JsonMapper.builder().build()
+                    .readTree(analysisJson);
+                var semanticExercises = analysis.get("semanticExercises");
+                for (var exercise : semanticExercises) {
+                    var page = new BookPage(UUID.randomUUID(), bookId, pageNumber, 1322, 1870,
+                        ProcessingStatus.READY, analysisJson, Instant.now(), null);
+                    when(bookService.getPage(bookId, pageNumber)).thenReturn(Optional.of(page));
+                    when(resolutionService.resolve(bookId, pageNumber))
+                        .thenReturn(PageCorrectionResolution.unmapped(bookId, pageNumber, null));
+
+                    var bbox = exercise.get("bbox");
+                    var built = builder.buildSelection(bookId, pageNumber,
+                        new com.lexora.assist.contract.AssistContract.SelectionRect(
+                            bbox.get("x").asDouble(), bbox.get("y").asDouble(),
+                            bbox.get("width").asDouble(), bbox.get("height").asDouble()),
+                        "what is this about?", "en");
+
+                    assertThat(built)
+                        .as("page %s exercise %s", pageNumber, exercise.get("number").asText())
+                        .isNotNull();
+                    assertThat(built.context().source()).isNotBlank();
+                }
+            }
         }
     }
 }

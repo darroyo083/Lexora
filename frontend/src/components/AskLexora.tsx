@@ -286,7 +286,8 @@ export default function AskLexora({
   const hasContext = mode === 'classic'
     ? Boolean(bookId)
     : Boolean(bookId && exercise);
-  const canCheck = Boolean(exercise?.canCheck && exercise.answer);
+  const isOpenResponse = exercise?.kind === 'free-text';
+  const canCheck = Boolean(isOpenResponse && exercise?.canCheck && exercise.answer);
 
   const items: Array<{ action: AssistAction; label: string; target?: string }> = [
     ...(mode === 'interactive' ? [{ action: 'hint' as AssistAction, label: 'Hint' }] : []),
@@ -294,7 +295,7 @@ export default function AskLexora({
     { action: 'translate', label: 'Translate to English', target: 'en' },
     { action: 'translate', label: 'Translate to Spanish', target: 'es' },
     { action: 'ask', label: 'Ask a question…' },
-    ...(canCheck ? [{ action: 'check' as AssistAction, label: 'Check with AI' }] : []),
+    ...(canCheck ? [{ action: 'check' as AssistAction, label: 'Get AI feedback' }] : []),
   ];
 
   return (
@@ -450,7 +451,13 @@ export default function AskLexora({
 
           {!collapsed && phase === 'done' && result !== null && (
             <div className="ask-lexora-result" aria-live="polite">
-              {result.action === 'check' && result.verdict && (
+              {result.action === 'check' && isOpenResponse && (
+                <div className="ask-lexora-verdict" data-verdict="uncertain">
+                  <span>AI-assisted feedback</span>
+                  <small>Not source-backed · no automatic grade</small>
+                </div>
+              )}
+              {result.action === 'check' && !isOpenResponse && result.verdict && (
                 <div className="ask-lexora-verdict" data-verdict={result.verdict}>
                   <span>{VERDICT_LABEL[result.verdict] ?? result.verdict}</span>
                   <small>AI-assisted review · not source-backed</small>

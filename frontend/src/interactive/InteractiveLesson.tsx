@@ -435,7 +435,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
     <section className="lesson-step lesson-activity-step" data-kind={block.kind}>
       {intro}
       <div className="lesson-control-region lesson-free-text-control">
-        <label htmlFor={`${block.interaction.id}-answer`}>Your response</label>
+        <label className="lesson-free-text-label" htmlFor={`${block.interaction.id}-answer`}>Your response</label>
         <textarea
           id={`${block.interaction.id}-answer`}
           rows={4}

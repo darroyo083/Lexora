@@ -357,7 +357,7 @@ test('Ask Lexora reserves a non-overlapping desktop rail across target widths', 
   }
 });
 
-test('Check with AI is a fallback only for genuinely ungraded answers', async ({ page }) => {
+test('AI feedback is offered only for genuinely ungraded answers', async ({ page }) => {
   await mockWorkbook(page);
   await mockAssist(page, { enabled: true, siteKey: null }, {
     check: { action: 'check', status: 'success', content: 'Looks plausible.', verdict: 'likely_correct', cached: false, siteKey: null, message: null },
@@ -369,20 +369,20 @@ test('Check with AI is a fallback only for genuinely ungraded answers', async ({
   await page.locator('.lesson-step[data-kind="fill-blank"] input').fill('bin');
   await advanceToKind(page, 'free-text');
 
-  // Free-text is genuinely ungraded: answer it, then Check with AI is offered.
+  // Free-text is genuinely ungraded: answer it, then AI feedback is offered.
   await page.locator('.lesson-step[data-kind="free-text"] textarea').fill('Am Morgen trinke ich Tee.');
   await openAskLexora(page);
-  await page.getByRole('button', { name: 'Check with AI' }).click();
+  await page.getByRole('button', { name: 'Get AI feedback' }).click();
   await expect(page.getByText('Looks plausible.')).toBeVisible();
-  await expect(page.getByText('Likely correct')).toBeVisible();
-  await expect(page.getByText('AI-assisted review · not source-backed')).toBeVisible();
+  await expect(page.getByText('AI-assisted feedback')).toBeVisible();
+  await expect(page.getByText('Not source-backed · no automatic grade')).toBeVisible();
 
-  // Back on the fill-blank step, the answer is source-backed: no Check with AI.
+  // Back on the fill-blank step, the answer is source-backed: no AI feedback.
   await page.getByRole('button', { name: 'Try another action' }).click();
   await backToKind(page, 'fill-blank');
   await page.locator('.lesson-step[data-kind="fill-blank"] input').fill('bin');
   await expect(page.getByRole('button', { name: 'Hint' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Check with AI' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Get AI feedback' })).toHaveCount(0);
 });
 
 test('shows a clean state when the provider is unavailable', async ({ page }) => {

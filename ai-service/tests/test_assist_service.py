@@ -226,6 +226,25 @@ def test_ask_prompt_describes_generic_exercise_questions_without_solving():
     assert "answer mappings" in user
 
 
+def test_open_response_prompt_requests_non_authoritative_language_feedback():
+    from app.assist.prompts import build_messages
+
+    user = build_messages(
+        "check",
+        _context(
+            exerciseKind="free-text",
+            instruction="Schreibe zwei Sätze über deinen eigenen Morgen.",
+            answer="Ich aufstehen um sieben Uhr.",
+        ),
+    )[1]["content"]
+
+    assert "grammar, correctness, and clarity" in user
+    assert "one or two useful improvements" in user
+    assert "optional corrected version" in user
+    assert "not a source-backed grade" in user
+    assert '"verdict" set to "uncertain"' in user
+
+
 # --- endpoint -------------------------------------------------------------
 
 def test_assist_endpoint_success(monkeypatch):

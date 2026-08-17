@@ -4139,6 +4139,19 @@ html, body, #root {
   margin-top: clamp(16px, 2.6vh, 24px);
 }
 
+.lesson-free-text-control {
+  width: 100%;
+  max-width: 68ch;
+  align-items: stretch;
+}
+
+.lesson-free-text-label {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0 1px;
+}
+
 .lesson-control-region label {
   color: var(--lesson-text-muted);
   font-size: 13px;
@@ -4165,6 +4178,8 @@ html, body, #root {
 }
 
 .lesson-control-region textarea {
+  display: block;
+  box-sizing: border-box;
   min-height: 118px;
   padding: 13px 16px;
   overflow: auto;

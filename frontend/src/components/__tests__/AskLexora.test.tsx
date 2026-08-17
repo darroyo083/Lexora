@@ -36,12 +36,20 @@ describe('AskLexora', () => {
     expect(screen.queryByRole('button', { name: 'Check with AI' })).toBeNull();
   });
 
-  it('offers Check with AI only for a genuinely ungraded, answered exercise', () => {
+  it('offers AI feedback only for a genuinely ungraded, answered open response', () => {
     render(<AskLexora {...baseProps} exercise={{
       exerciseId: 'ft-01', kind: 'free-text', answer: 'Mein Morgen', canCheck: true,
     }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
-    expect(screen.getByRole('button', { name: 'Check with AI' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Get AI feedback' })).toBeTruthy();
+  });
+
+  it('does not offer AI feedback in place of deterministic grading', () => {
+    render(<AskLexora {...baseProps} exercise={{
+      exerciseId: 'blank-01', kind: 'fill-in-line', answer: 'gehe', canCheck: true,
+    }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    expect(screen.queryByRole('button', { name: 'Get AI feedback' })).toBeNull();
   });
 
   it('renders the result and AI-review label on a successful check', async () => {
@@ -53,13 +61,13 @@ describe('AskLexora', () => {
       exerciseId: 'ft-01', kind: 'free-text', answer: 'Mein Morgen', canCheck: true,
     }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Check with AI' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Get AI feedback' }));
 
     await waitFor(() => {
       expect(screen.getByText('Looks plausible.')).toBeTruthy();
     });
-    expect(screen.getByText('Likely correct')).toBeTruthy();
-    expect(screen.getByText('AI-assisted review · not source-backed')).toBeTruthy();
+    expect(screen.getByText('AI-assisted feedback')).toBeTruthy();
+    expect(screen.getByText('Not source-backed · no automatic grade')).toBeTruthy();
   });
 
   it('explicitly renders Turnstile when verification is required', async () => {

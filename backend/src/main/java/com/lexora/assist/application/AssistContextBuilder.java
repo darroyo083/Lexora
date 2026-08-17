@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -122,14 +123,12 @@ public class AssistContextBuilder {
         var exerciseKind = "selection";
         if (selectedExercises.size() == 1) {
             var exercise = selectedExercises.getFirst();
-            if (hasVisibleSemanticHeader(analysis, exercise, selection)) {
-                var number = orEmpty(exercise.number());
-                var exerciseTitle = orEmpty(exercise.title());
-                var label = number.isBlank() ? exerciseTitle
-                    : "Exercise " + number + (exerciseTitle.isBlank() ? "" : ": " + exerciseTitle);
-                if (!label.isBlank()) title = book.title() + " — " + label;
-                instruction = orEmpty(exercise.instruction());
-            }
+            var number = orEmpty(exercise.number());
+            var exerciseTitle = orEmpty(exercise.title());
+            var label = number.isBlank() ? exerciseTitle
+                : "Exercise " + number + (exerciseTitle.isBlank() ? "" : ": " + exerciseTitle);
+            if (!label.isBlank()) title = book.title() + " — " + label;
+            instruction = orEmpty(exercise.instruction());
             if (!orEmpty(exercise.kind()).isBlank()) exerciseKind = exercise.kind();
         } else if (!selectedExercises.isEmpty()) {
             var numbers = selectedExercises.stream()
@@ -154,21 +153,6 @@ public class AssistContextBuilder {
             .toList();
     }
 
-    private static boolean hasVisibleSemanticHeader(
-        PageAnalysis analysis, PageAnalysis.SemanticExercise exercise, SelectionRect selection) {
-        var title = orEmpty(exercise.title()).trim();
-        var instruction = orEmpty(exercise.instruction()).trim();
-        return analysis.textSpans().stream()
-            .anyMatch(span -> {
-                if (span == null || !intersects(span.bbox(), selection, LINE_EDGE_TOLERANCE)) {
-                    return false;
-                }
-                var text = orEmpty(span.text()).trim();
-                return (!title.isBlank() && title.equals(text))
-                    || (!instruction.isBlank() && instruction.equals(text));
-            });
-    }
-
     private String selectedText(PageAnalysis analysis, SelectionRect selection,
                                 List<PageAnalysis.SemanticExercise> selectedExercises) {
         Set<String> exerciseOwnedSpanIds = new HashSet<>();
@@ -184,7 +168,14 @@ public class AssistContextBuilder {
             .filter(Objects::nonNull)
             .toList();
 
-        return analysis.textSpans().stream()
+        // Keep the physical selection as the first boundary.  A selected
+        // semantic exercise may still have canonical context spans whose OCR
+        // boxes drift outside that exercise's rendered region (the public
+        // demo's exercise 6 is one example).  Once the exercise identity is
+        // unambiguous, recover only spans owned by that exercise; never widen
+        // the selection to unowned text from a neighbouring exercise.
+        var selectedSpanIds = new LinkedHashSet<String>();
+        analysis.textSpans().stream()
             .filter(span -> span != null && span.text() != null && !span.text().isBlank())
             .filter(span -> intersects(span.bbox(), selection, LINE_EDGE_TOLERANCE))
             // OCR/text extraction boxes can drift across an exercise boundary.
@@ -198,10 +189,76 @@ public class AssistContextBuilder {
             .sorted(java.util.Comparator
                 .comparingDouble((PageAnalysis.TextSpan span) -> span.bbox() == null ? 1 : span.bbox().y())
                 .thenComparingDouble(span -> span.bbox() == null ? 1 : span.bbox().x()))
+            .forEach(span -> selectedSpanIds.add(span.id()));
+
+        var spansById = new java.util.HashMap<String, PageAnalysis.TextSpan>();
+        for (var span : analysis.textSpans()) {
+            if (span != null && span.id() != null) spansById.put(span.id(), span);
+        }
+
+        var sourceParts = new ArrayList<String>();
+        selectedExercises.stream()
+            .flatMap(exercise -> exercise.contextSpanIds().stream())
+            .map(spansById::get)
+            .filter(span -> span != null && span.text() != null && !span.text().isBlank())
+            .sorted(java.util.Comparator
+                .comparingDouble((PageAnalysis.TextSpan span) -> span.bbox() == null ? 1 : span.bbox().y())
+                .thenComparingDouble(span -> span.bbox() == null ? 1 : span.bbox().x()))
+            .forEach(span -> selectedSpanIds.add(span.id()));
+
+        selectedSpanIds.stream()
+            .map(spansById::get)
+            .filter(Objects::nonNull)
+            .sorted(java.util.Comparator
+                .comparingDouble((PageAnalysis.TextSpan span) -> span.bbox() == null ? 1 : span.bbox().y())
+                .thenComparingDouble(span -> span.bbox() == null ? 1 : span.bbox().x()))
             .map(PageAnalysis.TextSpan::text)
-            .reduce((left, right) -> left + " " + right)
-            .map(this::bound)
-            .orElse("");
+            .forEach(sourceParts::add);
+
+        // Some structured interactions carry the learner-facing labels in
+        // interaction data rather than OCR spans.  Add those canonical lines
+        // only for the selected semantic exercise, and only when the physical
+        // text reconstruction did not already contain them.
+        for (var exercise : selectedExercises) {
+            for (var line : canonicalInteractionLines(analysis, exercise)) {
+                if (sourceParts.stream().noneMatch(existing -> containsText(existing, line))) {
+                    sourceParts.add(line);
+                }
+            }
+        }
+
+        return bound(String.join(" ", sourceParts));
+    }
+
+    private static List<String> canonicalInteractionLines(
+        PageAnalysis analysis, PageAnalysis.SemanticExercise exercise) {
+        var lines = new ArrayList<String>();
+        for (var interactionId : exercise.interactionIds()) {
+            analysis.matchingInteractions().stream()
+                .filter(interaction -> interaction.id().equals(interactionId))
+                .findFirst()
+                .ifPresent(interaction -> {
+                    interaction.leftItems().forEach(item -> lines.add(item.label() + ". " + item.text()));
+                    interaction.rightItems().forEach(item -> lines.add(item.label() + ". " + item.text()));
+                });
+
+            var orderingItems = analysis.sentenceOrderings().stream()
+                .filter(ordering -> ordering.id().equals(interactionId)
+                    || (ordering.exerciseId() != null && ordering.exerciseId().equals(interactionId)))
+                .flatMap(ordering -> ordering.items().stream())
+                .map(PageAnalysis.SentenceOrderingItem::text)
+                .toList();
+            if (!orderingItems.isEmpty()) lines.add(String.join(" ", orderingItems));
+        }
+        return lines.stream()
+            .filter(line -> line != null && !line.isBlank())
+            .toList();
+    }
+
+    private static boolean containsText(String existing, String candidate) {
+        if (existing == null || candidate == null) return false;
+        return existing.toLowerCase(java.util.Locale.ROOT)
+            .contains(candidate.toLowerCase(java.util.Locale.ROOT));
     }
 
     private record VerticalRange(double top, double bottom) {

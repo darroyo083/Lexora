@@ -150,4 +150,53 @@ describe('InteractiveLesson', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Correction unavailable. Retry' }));
     expect(correctionCallbacks.onRetryCorrectionLoad).toHaveBeenCalledOnce();
   });
+
+  it('labels the open-response control cleanly and offers non-authoritative AI feedback', () => {
+    const freeTextProjection = {
+      status: 'AVAILABLE' as const,
+      lesson: {
+        ...projection.lesson,
+        sections: [{
+          id: 'source',
+          heading: null,
+          blocks: [{
+            id: 'free-block',
+            kind: 'free-text' as const,
+            sourceY: 0.2,
+            prompt: 'Deine Nachricht',
+            exerciseTitle: 'Deine Nachricht',
+            instruction: 'Schreibe eine kurze Einladung.',
+            interaction: {
+              id: 'free-1',
+              kind: 'free-text' as const,
+              bbox: { x: 0.1, y: 0.2, width: 0.8, height: 0.1 },
+              detectionMethod: 'free-text-v1' as const,
+              candidateScore: 0.9,
+              nearbyTextSpanIds: [],
+              responseLines: [{ id: 'line-1', bbox: { x: 0.1, y: 0.24, width: 0.8, height: 0.02 } }],
+            },
+            evidence: { spanIds: [], interactionIds: ['free-1'], bboxes: [], confidence: 0.9, detectionMethods: ['free-text-v1'] },
+          }],
+        }],
+        blockCount: 1,
+        interactionCount: 1,
+      },
+    } satisfies LessonProjection;
+    render(<InteractiveLesson {...props({
+      projection: freeTextProjection,
+      answers: { 'free-1': 'Ich schreibe eine Einladung.' },
+      assist: {
+        bookId: 'book-1',
+        pageNumber: 12,
+        siteKey: null,
+        exercise: { exerciseId: 'free-1', kind: 'free-text', answer: 'Ich schreibe eine Einladung.', canCheck: true },
+      },
+    })} />);
+
+    const response = screen.getByRole('textbox', { name: 'Your response' });
+    expect(response.getAttribute('id')).toBe('free-1-answer');
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    expect(screen.getByRole('button', { name: 'Get AI feedback' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Check answers' })).toBeNull();
+  });
 });

@@ -80,6 +80,13 @@ services:
       context: ./frontend
       target: production
     restart: unless-stopped
+    environment:
+      VIRTUAL_HOST: withlexora.com
+      LETSENCRYPT_HOST: withlexora.com
+      VIRTUAL_PORT: "8080"
+    networks:
+      - default
+      - nginx-proxy
     ports:
       - "${LEXORA_BIND_ADDRESS:-127.0.0.1}:${LEXORA_HTTP_PORT:-8088}:8080"
     depends_on:
@@ -94,3 +101,8 @@ services:
 volumes:
   pgdata:
   lexora_storage:
+
+networks:
+  nginx-proxy:
+    external: true
+    name: nginx-proxy

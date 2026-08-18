@@ -1,8 +1,13 @@
 # Lexora
 
 Lexora is a source-faithful workbook practice system. Its public portfolio demo
-uses a curated synthetic workbook and precomputed analysis, so browsing the demo
-does not trigger external AI inference.
+uses a curated synthetic workbook and validated exercise analysis. Interactive
+mode provides deterministic checks where canonical answers exist; Classic mode
+keeps the original page available. Ask Lexora offers bounded contextual help—
+Explain, Translate, Hint, and questions—when the current exercise or selection
+is reliable. True open responses can receive AI-assisted feedback, which is not
+source-authoritative grading. Public assistance is protected by verification and
+session quotas, and unreliable source context fails closed.
 
 - [Project overview](https://github.com/darroyo083/Lexora)
 - [Interactive public demo](/demo)

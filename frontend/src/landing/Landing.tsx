@@ -123,7 +123,7 @@ function ProductFrame({ compact = false }: { compact?: boolean }) {
   return (
     <figure className={`product-frame${compact ? ' product-frame-compact' : ''}`}>
       <ProductMicroLoop
-        alt="Lexora Interactive mode presenting a source-backed German exercise"
+        alt="Lexora Interactive mode presenting a source-linked German exercise"
         className={compact ? 'product-micro-loop-compact' : ''}
       />
     </figure>
@@ -155,7 +155,7 @@ function HomePage() {
         <div className="home-copy">
           <p className="site-kicker">Source-faithful language practice</p>
           <h1>Turn workbook exercises into focused practice.</h1>
-          <p>Lexora rebuilds each source exercise as one coherent learner task, with the original page always within reach.</p>
+          <p>Lexora rebuilds each source exercise as one coherent learner task, with the original page always within reach and contextual help tied to the exercise.</p>
           <div className="site-actions">
             <a className="site-button site-button-primary" href="/demo">Try the demo <ArrowRight size={17} aria-hidden="true" /></a>
             <RouteLink className="site-button site-button-secondary" href="/product">Explore the product</RouteLink>
@@ -166,13 +166,13 @@ function HomePage() {
       <section className="home-trust" aria-labelledby="home-trust-title">
         <h2 id="home-trust-title">One source. Two trustworthy views.</h2>
         <div className="trust-points">
-          <article><strong>Interactive</strong><p>Complete the full exercise, check it once, then move forward.</p></article>
-          <article><strong>Classic</strong><p>Return to the original workbook page whenever source context matters.</p></article>
-          <article><strong>Grounded</strong><p>Ambiguous answers stay neutral. Lexora never invents correction authority.</p></article>
+          <article><strong>Interactive</strong><p>Complete a structured task and use deterministic checks where a canonical answer exists.</p></article>
+          <article><strong>Classic</strong><p>Keep the original workbook page in view and ask about a readable selection.</p></article>
+          <article><strong>Grounded help</strong><p>Explain, translate, hint, or ask a question with bounded context. Open responses receive AI-assisted feedback, not an automatic grade.</p></article>
         </div>
       </section>
       <section className="home-route-grid" aria-label="Explore Lexora">
-        <RouteLink href="/product"><span>Product</span><strong>See complete exercise interactions</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
+        <RouteLink href="/product"><span>Product</span><strong>See Interactive, Classic, and Ask Lexora</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
         <RouteLink href="/how-it-works"><span>How it works</span><strong>Follow the source-to-lesson path</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
         <RouteLink href="/inside-lexora"><span>Inside Lexora</span><strong>See what keeps the demo trustworthy</strong><ArrowUpRight aria-hidden="true" /></RouteLink>
       </section>
@@ -189,8 +189,20 @@ function ProductPage() {
       </PageIntro>
       <section className="mode-comparison" aria-labelledby="mode-comparison-title">
         <div className="section-copy"><h2 id="mode-comparison-title">Two views of the same material.</h2><p>Switch modes without losing the page or your orientation.</p></div>
-        <article><div><span>Interactive</span><h3>Work through a complete task.</h3><p>Related blanks, questions, rows, tokens, or pairs remain together.</p></div><img src="/release/lexora-interactive.webp" width="1440" height="900" alt="Interactive Mode showing a focused exercise workspace" /></article>
-        <article><img src="/release/lexora-classic.webp" width="1440" height="900" alt="Classic Mode showing the original synthetic workbook page" /><div><span>Classic</span><h3>Check the source at any time.</h3><p>The workbook remains the authority for layout, wording, and uncertain structure.</p></div></article>
+        <article><div><span>Interactive</span><h3>Work through a complete task.</h3><p>Related blanks, questions, rows, tokens, or pairs remain together, with deterministic checks where a canonical answer exists.</p></div><img src="/release/lexora-interactive.webp" width="1440" height="900" alt="Interactive Mode showing a completed German exercise ready for checking" /></article>
+        <article><img src="/release/lexora-classic.webp" width="1440" height="900" alt="Classic Mode showing the original synthetic workbook page" /><div><span>Classic</span><h3>Check the source at any time.</h3><p>The workbook remains the reference for layout, wording, and uncertain structure. Select a readable region when you need contextual help.</p></div></article>
+      </section>
+      <section className="static-product-section" aria-labelledby="assist-product-title">
+        <div className="static-product-copy">
+          <span>Ask Lexora</span>
+          <h2 id="assist-product-title">Help that stays with the exercise.</h2>
+          <p>Explain, translate, offer a hint, or ask a question about the current exercise—or a readable Classic selection.</p>
+          <p>Canonical answers keep deterministic grading. True open responses can receive concise AI-assisted feedback, clearly separate from source-backed correction.</p>
+        </div>
+        <figure className="static-product-preview">
+          <img src="/release/lexora-ask.webp" width="1440" height="900" alt="Ask Lexora open beside a current German exercise" />
+          <figcaption><span>Contextual help</span><span>Current public demo</span></figcaption>
+        </figure>
       </section>
       <InteractionShowcase />
     </>
@@ -201,27 +213,27 @@ function HowItWorksPage() {
   return (
     <>
       <PageIntro eyebrow="How it works" title="Understanding first. Rendering second."
-        copy="Multimodal AI identifies source structure. Lexora validates it, groups complete exercises, and renders a consistent learning interface." />
+        copy="A real workbook page becomes validated semantic exercise data. Lexora then combines deterministic checks with bounded contextual help when the source context is reliable." />
       <section className="signal-path" aria-label="Lexora transformation path">
-        <article><ScanLine aria-hidden="true" /><span>Source</span><h2>Visual workbook page</h2><p>Original content, order, and geometry remain traceable.</p></article>
-        <article><Braces aria-hidden="true" /><span>Understanding</span><h2>Semantic exercise data</h2><p>Bounded analysis identifies titles, instructions, related items, and evidence.</p></article>
-        <article><BookOpen aria-hidden="true" /><span>Experience</span><h2>Deterministic lesson</h2><p>Lexora controls layout, correction, navigation, accessibility, and fallback.</p></article>
+        <article><ScanLine aria-hidden="true" /><span>Source</span><h2>Visual workbook page</h2><p>The original content, order, and geometry remain traceable.</p></article>
+        <article><Braces aria-hidden="true" /><span>Understanding</span><h2>Semantic exercise data</h2><p>Validated analysis identifies titles, instructions, related items, answers, and evidence.</p></article>
+        <article><BookOpen aria-hidden="true" /><span>Experience</span><h2>A careful practice surface</h2><p>Deterministic checks, Classic context, and bounded Ask Lexora help stay tied to the exercise.</p></article>
       </section>
       <section className="static-product-section" aria-labelledby="static-product-title">
         <div className="static-product-copy">
           <span>Real product, real source</span>
-          <h2 id="static-product-title">Structure becomes practice. The page stays close.</h2>
-          <p>This is the current public demo: a complete source exercise in Interactive Mode, with the original synthetic workbook always available in Classic.</p>
+          <h2 id="static-product-title">One source, a more useful practice surface.</h2>
+          <p>The current public demo presents complete exercises in Interactive Mode, keeps the original synthetic workbook available in Classic, and adds contextual help without losing the source boundary.</p>
           <a className="site-button site-button-primary" href="/demo">Open the live demo <ArrowRight size={17} aria-hidden="true" /></a>
         </div>
         <figure className="static-product-preview">
-          <ProductMicroLoop alt="Current Lexora Interactive Mode presenting a source-backed German exercise" />
+          <ProductMicroLoop alt="Current Lexora Interactive Mode presenting a source-linked German exercise" />
           <figcaption><span>Interactive</span><span>Current public demo</span></figcaption>
         </figure>
       </section>
       <section className="public-private" aria-labelledby="runtime-title">
         <h2 id="runtime-title">Private analysis. Public certainty.</h2>
-        <div><article><span>Local workflow</span><p>An owner PDF is rasterized, analyzed, and validated through the private runtime.</p></article><article><span>Public demo</span><p>Frozen validated analysis is read-only. Visitors trigger zero provider inference.</p></article></div>
+        <div><article><span>Local workflow</span><p>An owner PDF is rasterized, analyzed, and validated through the private runtime.</p></article><article><span>Public demo</span><p>Frozen exercise analysis keeps the demo curated and read-only. Ask Lexora may provide bounded, verified help when the current source context is reliable.</p></article></div>
       </section>
     </>
   );
@@ -231,18 +243,18 @@ function InsideLexoraPage() {
   return (
     <>
       <PageIntro eyebrow="Inside Lexora" title="AI at the boundary. Determinism after it."
-        copy="The model may understand document structure. Product behavior remains contract-driven, testable, conservative, and source-backed." />
+        copy="Models help identify document structure. Once the exercise contract is validated, grading and rendering stay contract-driven; bounded AI assistance is available only with reliable context." />
       <section className="engineering-flow" aria-label="How Lexora stays trustworthy">
         {[
           ['Private analysis', 'A bounded page image enters the multimodal workflow.'],
           ['Validated contract', 'PageAnalysis rejects malformed, invented, or mismatched structures.'],
-          ['Exercise projection', 'Semantic groups become stable Lexora exercise families.'],
-          ['Reader', 'Interactive and Classic share source, answers, and correction.'],
+          ['Exercise projection', 'Semantic groups become stable Lexora exercise families with canonical answer boundaries.'],
+          ['Reader', 'Interactive and Classic share exercise data; Ask Lexora answers only from the current exercise or selection.'],
         ].map(([title, copy], index) => <article key={title}><span>{String(index + 1).padStart(2, '0')}</span><h2>{title}</h2><p>{copy}</p></article>)}
       </section>
       <section className="engineering-invariants" aria-labelledby="invariants-title">
         <ShieldCheck size={34} aria-hidden="true" /><h2 id="invariants-title">The public boundary stays small.</h2>
-        <ul><li>No provider credential</li><li>No AI service</li><li>No arbitrary upload</li><li>No process endpoint</li><li>Demo book only</li><li>Fail-closed grading</li></ul>
+        <ul><li>Provider keys stay server-side</li><li>Bounded contextual AI</li><li>No arbitrary upload</li><li>Verification + quotas</li><li>Demo book only</li><li>Fail-closed grading</li></ul>
       </section>
       <section className="engineering-source"><div><h2>Inspect the implementation.</h2><p>Architecture, tests, and the synthetic public dataset are available in the repository.</p></div><a className="site-button site-button-secondary" href="https://github.com/darroyo083/Lexora" target="_blank" rel="noreferrer"><Code2 size={17} aria-hidden="true" /> View source</a></section>
     </>

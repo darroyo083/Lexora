@@ -39,7 +39,12 @@ try {
   const page = await desktop.newPage();
   await openCleanDemo(page);
 
-  await page.getByRole('textbox', { name: /answer for/i }).first().fill('stehe');
+  const blanks = page.getByRole('textbox', { name: /answer for/i });
+  await blanks.nth(0).fill('stehe');
+  await blanks.nth(1).fill('trinke');
+  await blanks.nth(2).fill('fahre');
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await page.getByRole('status').filter({ hasText: /Correct|Not quite|Try again/ }).first().waitFor();
 
   await page.screenshot({
     path: resolve(output, 'lexora-interactive.webp'),
@@ -60,12 +65,46 @@ try {
   await page.getByRole('button', { name: 'Ask Lexora' }).click();
   await page.locator('.ask-lexora-panel').waitFor();
   await page.screenshot({
+    path: resolve(output, 'lexora-ask.webp'),
+    type: 'webp',
+    quality: 90,
+  });
+  await page.screenshot({
     path: resolve(output, 'lexora-loop-ask.webp'),
     type: 'webp',
     quality: 90,
   });
   await page.getByRole('button', { name: 'Close Ask Lexora' }).click();
 
+  const pageNumber = page.getByRole('spinbutton', { name: /Go to page/ });
+  await pageNumber.fill('4');
+  await pageNumber.press('Enter');
+  await page.getByRole('heading', { name: 'Verbformen' }).waitFor();
+  const verbBlanks = page.getByRole('textbox', { name: /answer for/i });
+  await verbBlanks.nth(0).fill('arbeitest');
+  await verbBlanks.nth(1).fill('arbeite');
+  await verbBlanks.nth(2).fill('treffen');
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
+  await page.getByRole('heading', { name: 'Richtig oder falsch?' }).waitFor();
+  await page.locator('label:has(input[name="ct1"][value="op2"])').click();
+  await page.locator('label:has(input[name="ct3"][value="op1"])').click();
+  await page.getByRole('button', { name: 'Check answers' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
+  await page.getByRole('heading', { name: 'Mein Lernziel' }).waitFor();
+  const response = page.getByRole('textbox', { name: 'Your response' });
+  await response.fill('Ich möchte nächste Woche mehr sprechen.');
+  await page.getByRole('button', { name: 'Done' }).click();
+  await page.getByRole('button', { name: 'Get AI feedback' }).waitFor({ state: 'visible' });
+  await page.screenshot({
+    path: resolve(output, 'lexora-open-response.webp'),
+    type: 'webp',
+    quality: 90,
+  });
+
+  await pageNumber.fill('1');
+  await pageNumber.press('Enter');
+  await page.getByRole('heading', { name: 'Mein Morgen' }).waitFor();
   await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
   await page.locator('canvas').first().waitFor({ state: 'visible' });
   await page.screenshot({

@@ -25,7 +25,7 @@ describe('Lexora public site', () => {
     expect(screen.getAllByRole('link', { name: /open demo|try the demo/i })[0].getAttribute('href')).toBe('/demo');
     expect(screen.getByRole('link', { name: /explore the product/i }).getAttribute('href')).toBe('/product');
     expect(screen.getByText(/one source\. two trustworthy views/i)).toBeTruthy();
-    expect(screen.getByText(/ambiguous answers stay neutral/i)).toBeTruthy();
+    expect(screen.getByText(/bounded context/i)).toBeTruthy();
   });
 
   it('navigates product routes through history without an anchor-only page', () => {
@@ -35,11 +35,14 @@ describe('Lexora public site', () => {
     expect(window.location.pathname).toBe('/product');
     expect(screen.getByRole('heading', { level: 1, name: /exercise stays whole/i })).toBeTruthy();
     expect(document.title).toBe('Product | Lexora');
+    expect(screen.getByRole('heading', { level: 2, name: /help that stays with the exercise/i })).toBeTruthy();
+    expect(screen.getByText(/Explain, translate, offer a hint/i)).toBeTruthy();
+    expect(screen.getByAltText(/Ask Lexora open beside/i).getAttribute('src')).toBe('/release/lexora-ask.webp');
 
     fireEvent.click(screen.getAllByRole('link', { name: 'Inside Lexora' })[0]);
     expect(window.location.pathname).toBe('/inside-lexora');
     expect(screen.getByRole('heading', { level: 1, name: /ai at the boundary/i })).toBeTruthy();
-    expect(screen.getByText(/no provider credential/i)).toBeTruthy();
+    expect(screen.getByText(/provider keys stay server-side/i)).toBeTruthy();
   });
 
   it('shares a persistent light and dark theme preference', () => {

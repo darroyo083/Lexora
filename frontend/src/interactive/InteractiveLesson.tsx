@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,7 +15,7 @@ import {
 import type { MatchingSelection } from '../reader/matching';
 import { parseMatchingAnswer } from '../reader/matching';
 import AskLexora from '../components/AskLexora';
-import type { ExerciseContext } from '../api/assist';
+import type { AssistAction, ExerciseContext } from '../api/assist';
 import { parseOrderedAnswer } from '../reader/ordering';
 import {
   isProcessingStage,
@@ -66,6 +66,7 @@ interface Props {
   onCheck: (itemIds?: string[]) => void;
   onRetry: (itemId: string) => void;
   onReveal: (itemId: string) => void;
+  onRequestAssist?: (action: AssistAction) => void;
   onActiveExerciseChange?: (exercise: {
     exerciseId: string;
     assistExerciseId?: string;
@@ -267,7 +268,14 @@ function ContextStepView({ step }: { step: ContextLessonStep }) {
 }
 
 function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Props }) {
+  const [completedResponse, setCompletedResponse] = useState<{ interactionId: string; value: string } | null>(null);
   const { block } = step;
+  const freeTextValue = block.kind === 'free-text' ? props.answers[block.interaction.id] ?? '' : '';
+  const hasMeaningfulResponse = freeTextValue.trim().length > 0;
+  const responseDone = block.kind === 'free-text'
+    && completedResponse?.interactionId === block.interaction.id
+    && completedResponse.value === freeTextValue
+    && hasMeaningfulResponse;
   const family = FAMILY_COPY[block.kind];
   const feedback = (itemId: string) => (
     <CorrectionFeedback
@@ -440,9 +448,40 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
           id={`${block.interaction.id}-answer`}
           rows={4}
           value={props.answers[block.interaction.id] ?? ''}
-          onChange={(event) => props.onAnswerChange(block.interaction.id, event.target.value)}
+          onChange={(event) => {
+            setCompletedResponse(null);
+            props.onAnswerChange(block.interaction.id, event.target.value);
+          }}
         />
-          <small>Open response. Your work is saved; Lexora does not claim an automatic grade for this kind of answer.</small>
+        <small>Open response. Your work is saved; Lexora does not claim an automatic grade for this kind of answer.</small>
+        <div className="lesson-free-text-actions" aria-label="Response actions">
+          <button
+            type="button"
+            className="lesson-response-done"
+            disabled={!hasMeaningfulResponse || responseDone}
+            aria-pressed={responseDone}
+            onClick={() => setCompletedResponse({ interactionId: block.interaction.id, value: freeTextValue })}
+          >
+            <Check size={15} aria-hidden="true" /> Done
+          </button>
+          {props.assist && props.onRequestAssist && (
+            <button
+              type="button"
+              className="lesson-ai-feedback-action"
+              disabled={!responseDone}
+              onClick={() => props.onRequestAssist?.('check')}
+            >
+              <Sparkles size={15} aria-hidden="true" /> Get AI feedback
+            </button>
+          )}
+        </div>
+        {props.assist && (
+          <p className="lesson-free-text-feedback-status" role="status">
+            {responseDone
+              ? 'Response marked done. AI-assisted feedback is ready.'
+              : 'Finish your response, then select Done to unlock AI-assisted feedback.'}
+          </p>
+        )}
       </div>
       <p className="lesson-save-status" role="status">{props.answers[block.interaction.id]?.trim() ? 'Saved on this device' : 'Your response is saved automatically.'}</p>
       {feedback(block.interaction.id)}
@@ -542,8 +581,19 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
   const stepIds = useMemo(() => steps.map((step) => step.id), [steps]);
   const [activeStepId, setActiveStepId] = useState(() => readLessonStep(lesson.id, stepIds));
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  const [assistRequest, setAssistRequest] = useState<{ action: AssistAction; nonce: number } | null>(null);
   const focusAfterNavigation = useRef(false);
   const stepContainerRef = useRef<HTMLDivElement>(null);
+  const assistRequestNonce = useRef(0);
+
+  const requestAssist = useCallback((action: AssistAction) => {
+    assistRequestNonce.current += 1;
+    setAssistRequest({ action, nonce: assistRequestNonce.current });
+  }, []);
+
+  const handleAssistRequestHandled = useCallback(() => {
+    setAssistRequest(null);
+  }, []);
 
   useEffect(() => {
     setActiveStepId(readLessonStep(lesson.id, stepIds));
@@ -653,6 +703,8 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
               exercise={props.assist.exercise}
               siteKey={props.assist.siteKey}
               mode="interactive"
+              assistRequest={assistRequest}
+              onAssistRequestHandled={handleAssistRequestHandled}
             />
           </div>
         )}
@@ -677,7 +729,7 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
       <main className="lesson-stage" ref={stepContainerRef}>
         <div key={step.id} className="lesson-step-motion" data-direction={direction}>
           {step.kind === 'context' && <ContextStepView step={step} />}
-          {step.kind === 'activity' && <ActivityStepView step={step} props={props} />}
+          {step.kind === 'activity' && <ActivityStepView step={step} props={{ ...props, onRequestAssist: requestAssist }} />}
           {step.kind === 'completion' && (
             <CompletionStepView pageNumber={lesson.source.pageNumber} activityCount={step.activityCount} />
           )}

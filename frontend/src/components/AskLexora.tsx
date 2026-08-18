@@ -20,6 +20,8 @@ interface Props {
   selectionHasContext?: boolean;
   onStartSelection?: () => void;
   onClearSelection?: () => void;
+  assistRequest?: { action: AssistAction; nonce: number } | null;
+  onAssistRequestHandled?: () => void;
 }
 
 type Phase = 'idle' | 'working' | 'verifying' | 'done';
@@ -84,6 +86,8 @@ export default function AskLexora({
   selectionHasContext = false,
   onStartSelection,
   onClearSelection,
+  assistRequest = null,
+  onAssistRequestHandled,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -273,6 +277,13 @@ export default function AskLexora({
     setQuestionDraft('');
     setQuestionOpen(false);
   };
+
+  useEffect(() => {
+    if (!assistRequest) return;
+    openPanel();
+    void runAction(assistRequest.action, null, null);
+    onAssistRequestHandled?.();
+  }, [assistRequest, onAssistRequestHandled, runAction]);
 
   const canGoBack = questionOpen || phase !== 'idle';
 

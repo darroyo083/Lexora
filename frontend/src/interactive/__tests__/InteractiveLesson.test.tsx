@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { AnswerResolutionStatus, CorrectionVerdict } from '../../state/correction';
 import type { LessonProjection } from '../lesson';
 import InteractiveLesson from '../InteractiveLesson';
@@ -195,8 +195,12 @@ describe('InteractiveLesson', () => {
 
     const response = screen.getByRole('textbox', { name: 'Your response' });
     expect(response.getAttribute('id')).toBe('free-1-answer');
+    const directFeedback = screen.getByRole('button', { name: 'Get AI feedback' });
+    expect(directFeedback.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(directFeedback.hasAttribute('disabled')).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
-    expect(screen.getByRole('button', { name: 'Get AI feedback' })).toBeTruthy();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Get AI feedback' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Check answers' })).toBeNull();
   });
 });

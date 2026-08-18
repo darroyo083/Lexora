@@ -4194,6 +4194,61 @@ html, body, #root {
   line-height: 1.45;
 }
 
+.lesson-free-text-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.lesson-response-done,
+.lesson-ai-feedback-action {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid var(--lesson-border-strong);
+  border-radius: 9px;
+  background: var(--lesson-bg-raised);
+  color: var(--lesson-text-muted);
+  font: 650 13px/1 var(--font-sans);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+
+.lesson-response-done:not(:disabled):hover,
+.lesson-ai-feedback-action:not(:disabled):hover {
+  border-color: var(--lesson-accent);
+  background: var(--lesson-accent-soft);
+  color: var(--lesson-text);
+}
+
+.lesson-response-done[aria-pressed="true"] {
+  border-color: var(--lesson-accent);
+  background: var(--lesson-accent-soft);
+  color: var(--lesson-text);
+}
+
+.lesson-ai-feedback-action:not(:disabled) {
+  border-color: var(--lesson-accent);
+  color: var(--lesson-text);
+}
+
+.lesson-response-done:disabled,
+.lesson-ai-feedback-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.lesson-free-text-feedback-status {
+  margin: 0;
+  color: var(--lesson-text-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .lesson-option-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4251,6 +4306,10 @@ html, body, #root {
 .lesson-player button:focus-visible {
   outline: 2px solid var(--lesson-accent-strong);
   outline-offset: 2px;
+}
+
+.lesson-free-text-control textarea:focus-visible {
+  outline-offset: 0;
 }
 
 .lesson-option input:checked + span,

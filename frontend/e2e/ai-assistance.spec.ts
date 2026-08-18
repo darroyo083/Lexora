@@ -369,13 +369,27 @@ test('AI feedback is offered only for genuinely ungraded answers', async ({ page
   await page.locator('.lesson-step[data-kind="fill-blank"] input').fill('bin');
   await advanceToKind(page, 'free-text');
 
-  // Free-text is genuinely ungraded: answer it, then AI feedback is offered.
-  await page.locator('.lesson-step[data-kind="free-text"] textarea').fill('Am Morgen trinke ich Tee.');
-  await openAskLexora(page);
-  await page.getByRole('button', { name: 'Get AI feedback' }).click();
+  // Free-text is genuinely ungraded: finish it, then the contextual AI action unlocks.
+  const freeText = page.locator('.lesson-step[data-kind="free-text"]');
+  const response = freeText.getByRole('textbox', { name: 'Your response' });
+  const done = freeText.getByRole('button', { name: 'Done' });
+  const feedback = freeText.getByRole('button', { name: 'Get AI feedback' });
+  await expect(feedback).toBeDisabled();
+  await response.focus();
+  await expect(response).toHaveCSS('outline-offset', '0px');
+  await response.fill('Am Morgen trinke ich Tee.');
+  await expect(done).toBeEnabled();
+  await expect(feedback).toBeDisabled();
+  await done.click();
+  await expect(feedback).toBeEnabled();
+  await feedback.click();
   await expect(page.getByText('Looks plausible.')).toBeVisible();
-  await expect(page.getByText('AI-assisted feedback')).toBeVisible();
+  await expect(page.getByText('AI-assisted feedback', { exact: true })).toBeVisible();
   await expect(page.getByText('Not source-backed · no automatic grade')).toBeVisible();
+
+  await response.fill('Am Abend lese ich ein Buch.');
+  await expect(done).toBeEnabled();
+  await expect(feedback).toBeDisabled();
 
   // Back on the fill-blank step, the answer is source-backed: no AI feedback.
   await page.getByRole('button', { name: 'Try another action' }).click();

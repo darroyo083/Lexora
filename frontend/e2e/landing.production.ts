@@ -19,6 +19,8 @@ test('public routes explain the product with real evidence and keyboard-safe act
     controls: video.controls,
     width: video.videoWidth,
   }))).toMatchObject({ muted: true, controls: false });
+  await expect(evidence.locator('source')).toHaveAttribute('src', '/release/lexora-home-hero.webm');
+  await expect(evidence).toHaveAttribute('poster', '/release/lexora-home-hero-poster.png');
 
   await primary.focus();
   await expect(primary).toBeFocused();
@@ -28,10 +30,13 @@ test('public routes explain the product with real evidence and keyboard-safe act
   await expect(page).toHaveURL(/\/product$/);
   await page.getByRole('tab', { name: 'Free text' }).click();
   await page.getByRole('textbox', { name: /Schreibe einen Satz/ }).fill('Am Morgen lerne ich Deutsch.');
-  await expect(page.getByText(/Saved locally.*stays ungraded/i)).toBeVisible();
+  await expect(page.getByText(/Saved locally\. Open responses use AI-assisted feedback/i)).toBeVisible();
 
   await page.goto('/how-it-works');
-  await expect(page.locator('.static-product-preview video')).toBeVisible();
+  const interactiveEvidence = page.locator('.static-product-preview video');
+  await expect(interactiveEvidence).toBeVisible();
+  await expect(interactiveEvidence.locator('source')).toHaveAttribute('src', '/release/lexora-interactive-loop.webm');
+  await expect(interactiveEvidence).toHaveAttribute('poster', '/release/lexora-interactive-loop-poster.png');
   await expect(page.getByRole('link', { name: /Open the live demo/ })).toHaveAttribute('href', '/demo');
   await expect(page.locator('video')).toHaveCount(1);
 
@@ -98,6 +103,9 @@ test('removes decorative transition duration when reduced motion is requested', 
   expect(await page.evaluate(() => (
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   ))).toBe(true);
+
+  await expect(page.locator('.product-frame video')).toHaveCSS('display', 'none');
+  await expect(page.locator('.product-frame .product-micro-loop-fallback')).toBeVisible();
 
   for (const selector of ['.site-button', '.site-demo-link', '.home-route-grid a']) {
     const target = page.locator(selector).first();

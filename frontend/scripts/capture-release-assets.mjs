@@ -28,6 +28,15 @@ async function openCleanDemo(page) {
   await page.goto(`${baseUrl}/demo`, { waitUntil: 'networkidle' });
   await verifyPublicBoundary(page);
   await page.getByRole('heading', { name: 'Mein Morgen' }).waitFor();
+  await page.getByRole('heading', { name: 'Lücken ergänzen' }).waitFor();
+}
+
+async function capture(page, filename) {
+  await page.screenshot({
+    path: resolve(output, filename),
+    type: 'webp',
+    quality: 90,
+  });
 }
 
 const browser = await chromium.launch();
@@ -39,42 +48,39 @@ try {
   const page = await desktop.newPage();
   await openCleanDemo(page);
 
+  await page.getByLabel('Reader mode').getByRole('button', { name: 'Classic', exact: true }).click();
+  await page.locator('canvas').first().waitFor({ state: 'visible' });
+  await capture(page, 'lexora-home-classic.webp');
+  await capture(page, 'lexora-loop-poster.webp');
+  await capture(page, 'lexora-loop-classic.webp');
+  await capture(page, 'lexora-classic.webp');
+
+  await page.getByLabel('Reader mode').getByRole('button', { name: 'Interactive', exact: true }).click();
+  await page.getByRole('heading', { name: 'Lücken ergänzen' }).waitFor();
+  await capture(page, 'lexora-interactive-start.webp');
+
   const blanks = page.getByRole('textbox', { name: /answer for/i });
   await blanks.nth(0).fill('stehe');
   await blanks.nth(1).fill('trinke');
   await blanks.nth(2).fill('fahre');
+  await capture(page, 'lexora-interactive-answer.webp');
   await page.getByRole('button', { name: 'Check answers' }).click();
-  await page.getByRole('status').filter({ hasText: /Correct|Not quite|Try again/ }).first().waitFor();
+  await page.locator('.lesson-feedback[data-verdict="correct"]').first().waitFor();
 
-  await page.screenshot({
-    path: resolve(output, 'lexora-interactive.webp'),
-    type: 'webp',
-    quality: 90,
-  });
-  await page.screenshot({
-    path: resolve(output, 'lexora-loop-interactive.webp'),
-    type: 'webp',
-    quality: 90,
-  });
-  await page.screenshot({
-    path: resolve(output, 'lexora-loop-poster.webp'),
-    type: 'webp',
-    quality: 90,
-  });
+  await capture(page, 'lexora-home-interactive.webp');
+  await capture(page, 'lexora-interactive-feedback.webp');
+  await capture(page, 'lexora-interactive.webp');
+  await capture(page, 'lexora-loop-interactive.webp');
 
   await page.getByRole('button', { name: 'Ask Lexora' }).click();
   await page.locator('.ask-lexora-panel').waitFor();
-  await page.screenshot({
-    path: resolve(output, 'lexora-ask.webp'),
-    type: 'webp',
-    quality: 90,
-  });
-  await page.screenshot({
-    path: resolve(output, 'lexora-loop-ask.webp'),
-    type: 'webp',
-    quality: 90,
-  });
+  await capture(page, 'lexora-home-ask.webp');
+  await capture(page, 'lexora-ask.webp');
+  await capture(page, 'lexora-loop-ask.webp');
   await page.getByRole('button', { name: 'Close Ask Lexora' }).click();
+  await page.getByRole('button', { name: 'Next exercise' }).click();
+  await page.getByRole('heading', { name: 'Die passende Antwort' }).waitFor();
+  await capture(page, 'lexora-interactive-next.webp');
 
   const pageNumber = page.getByRole('spinbutton', { name: /Go to page/ });
   await pageNumber.fill('4');
@@ -105,18 +111,8 @@ try {
   await pageNumber.fill('1');
   await pageNumber.press('Enter');
   await page.getByRole('heading', { name: 'Mein Morgen' }).waitFor();
-  await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
+  await page.getByLabel('Reader mode').getByRole('button', { name: 'Classic', exact: true }).click();
   await page.locator('canvas').first().waitFor({ state: 'visible' });
-  await page.screenshot({
-    path: resolve(output, 'lexora-classic.webp'),
-    type: 'webp',
-    quality: 90,
-  });
-  await page.screenshot({
-    path: resolve(output, 'lexora-loop-classic.webp'),
-    type: 'webp',
-    quality: 90,
-  });
 
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' });

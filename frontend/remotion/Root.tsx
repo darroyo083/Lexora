@@ -8,9 +8,13 @@ import {
   useVideoConfig,
 } from 'remotion';
 
-const CLASSIC = staticFile('release/lexora-loop-classic.webp');
-const INTERACTIVE = staticFile('release/lexora-loop-interactive.webp');
-const ASK = staticFile('release/lexora-loop-ask.webp');
+const HOME_CLASSIC = staticFile('release/lexora-home-classic.webp');
+const HOME_INTERACTIVE = staticFile('release/lexora-home-interactive.webp');
+const HOME_ASK = staticFile('release/lexora-home-ask.webp');
+const INTERACTIVE_START = staticFile('release/lexora-interactive-start.webp');
+const INTERACTIVE_ANSWER = staticFile('release/lexora-interactive-answer.webp');
+const INTERACTIVE_FEEDBACK = staticFile('release/lexora-interactive-feedback.webp');
+const INTERACTIVE_NEXT = staticFile('release/lexora-interactive-next.webp');
 
 function opacityBetween(frame: number, start: number, end: number): number {
   return interpolate(frame, [start, end], [0, 1], {
@@ -42,67 +46,113 @@ function Screen({ src, opacity, scale, x = 0, y = 0 }: {
   return <Img src={src} style={{ ...screenStyle(scale, x, y), opacity }} />;
 }
 
-function Cursor({ frame }: { frame: number }) {
-  const x = interpolate(frame, [135, 195, 245], [24, 48, 67], {
-    extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic),
-  });
-  const y = interpolate(frame, [135, 195, 245], [70, 51, 35], {
-    extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic),
-  });
-  const opacity = interpolate(frame, [132, 146, 250, 265], [0, 1, 1, 0], {
-    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
-  });
-  return (
-    <div style={{
-      position: 'absolute', left: `${x}%`, top: `${y}%`, opacity,
-      width: 22, height: 28, transform: 'rotate(-12deg)',
-      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,.4))',
-    }}>
-      <svg width="22" height="28" viewBox="0 0 22 28" fill="none" aria-hidden="true">
-        <path d="M3 2.2 19.8 15l-7.2 1.5 4 8.1-3.5 1.8-4.1-8.2-4.5 5.7L3 2.2Z" fill="#F4F7F1" stroke="#152019" strokeWidth="1.6" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
-
-function FocusMark({ frame }: { frame: number }) {
-  const opacity = interpolate(frame, [147, 164, 210, 228], [0, .9, .9, 0], {
-    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
-  });
-  const scale = interpolate(frame, [147, 170, 228], [.92, 1, 1.04], {
-    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
-  });
-  return <div style={{
-    position: 'absolute', left: '23%', top: '38%', width: '32%', height: '13%',
-    border: '1px solid rgba(184, 216, 181, .8)',
-    boxShadow: '0 0 0 7px rgba(134, 186, 136, .1), 0 10px 40px rgba(60, 110, 70, .24)',
-    transform: `scale(${scale})`, opacity, borderRadius: 4,
-  }} />;
-}
-
-export function LexoraMicroLoop() {
-  const frame = useCurrentFrame();
+function ProductStage({ children }: { children: React.ReactNode }) {
   const { width, height } = useVideoConfig();
-  const classicOpacity = frame < 105 ? 1 : 1 - opacityBetween(frame, 105, 138);
-  const interactiveOpacity = opacityBetween(frame, 112, 145) * (1 - opacityBetween(frame, 238, 270));
-  const askOpacity = opacityBetween(frame, 232, 266);
-  const breathing = interpolate(frame, [0, 150, 300], [0, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.sin) });
-  const classicScale = 1.015 + breathing * .012;
-  const interactiveScale = 1.01 + breathing * .008;
+
   return (
     <AbsoluteFill style={{ backgroundColor: '#101711', overflow: 'hidden' }}>
       <AbsoluteFill style={{
-        width, height, padding: 38, boxSizing: 'border-box',
+        width,
+        height,
+        padding: 38,
+        boxSizing: 'border-box',
         background: 'linear-gradient(135deg, #172219 0%, #0e140f 58%, #19251b 100%)',
       }}>
-        <AbsoluteFill style={{ inset: 38, overflow: 'hidden', borderRadius: 12, boxShadow: '0 24px 70px rgba(0,0,0,.42)', backgroundColor: '#121a14' }}>
-          <Screen src={CLASSIC} opacity={classicOpacity} scale={classicScale} x={-1} y={1} />
-          <Screen src={INTERACTIVE} opacity={interactiveOpacity} scale={interactiveScale} x={0} y={0} />
-          <Screen src={ASK} opacity={askOpacity} scale={1.008} x={0} y={0} />
-          <FocusMark frame={frame} />
-          <Cursor frame={frame} />
+        <AbsoluteFill style={{
+          inset: 38,
+          overflow: 'hidden',
+          borderRadius: 12,
+          boxShadow: '0 24px 70px rgba(0,0,0,.42)',
+          backgroundColor: '#121a14',
+        }}>
+          {children}
         </AbsoluteFill>
       </AbsoluteFill>
     </AbsoluteFill>
+  );
+}
+
+function SourceFocus({ frame }: { frame: number }) {
+  const opacity = interpolate(frame, [48, 66, 114, 132], [0, .82, .82, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  const scale = interpolate(frame, [66, 88, 132], [.985, 1, 1.015], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.cubic),
+  });
+
+  return <div style={{
+    position: 'absolute',
+    left: '28%',
+    top: '24%',
+    width: '48%',
+    height: '30%',
+    border: '1px solid rgba(184, 216, 181, .86)',
+    boxShadow: '0 0 0 7px rgba(134, 186, 136, .1), 0 12px 40px rgba(60, 110, 70, .22)',
+    transform: `scale(${scale})`,
+    opacity,
+    borderRadius: 5,
+  }} />;
+}
+
+export function LexoraHomeHero() {
+  const frame = useCurrentFrame();
+  const breathing = interpolate(frame, [0, 150, 300], [0, 1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.sin),
+  });
+  const classicOpacity = frame < 120
+    ? 1
+    : frame < 156
+      ? 1 - opacityBetween(frame, 120, 156)
+      : frame < 270
+        ? 0
+        : opacityBetween(frame, 270, 300);
+  const interactiveOpacity = opacityBetween(frame, 120, 156)
+    * (1 - opacityBetween(frame, 222, 252));
+  const askOpacity = opacityBetween(frame, 222, 252)
+    * (1 - opacityBetween(frame, 270, 300));
+
+  return (
+    <ProductStage>
+      <Screen src={HOME_CLASSIC} opacity={classicOpacity} scale={1.11 + breathing * .012} />
+      <Screen src={HOME_INTERACTIVE} opacity={interactiveOpacity} scale={1.003 + breathing * .006} />
+      <Screen src={HOME_ASK} opacity={askOpacity} scale={1.002} />
+      <SourceFocus frame={frame} />
+    </ProductStage>
+  );
+}
+
+export function LexoraInteractiveLoop() {
+  const frame = useCurrentFrame();
+  const breathing = interpolate(frame, [0, 135, 270], [0, 1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.sin),
+  });
+  const startOpacity = frame < 78
+    ? 1
+    : frame < 96
+      ? 1 - opacityBetween(frame, 78, 96)
+      : frame < 246
+        ? 0
+        : opacityBetween(frame, 246, 270);
+  const answerOpacity = opacityBetween(frame, 78, 96)
+    * (1 - opacityBetween(frame, 132, 150));
+  const feedbackOpacity = opacityBetween(frame, 132, 150)
+    * (1 - opacityBetween(frame, 204, 222));
+  const nextOpacity = opacityBetween(frame, 204, 222)
+    * (1 - opacityBetween(frame, 246, 264));
+
+  return (
+    <ProductStage>
+      <Screen src={INTERACTIVE_START} opacity={startOpacity} scale={1.003 + breathing * .006} />
+      <Screen src={INTERACTIVE_ANSWER} opacity={answerOpacity} scale={1.003 + breathing * .006} />
+      <Screen src={INTERACTIVE_FEEDBACK} opacity={feedbackOpacity} scale={1.002 + breathing * .004} />
+      <Screen src={INTERACTIVE_NEXT} opacity={nextOpacity} scale={1.002} />
+    </ProductStage>
   );
 }

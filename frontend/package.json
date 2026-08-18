@@ -14,7 +14,11 @@
     "test:e2e:production": "playwright test --config playwright.production.config.ts",
     "test:e2e:public-demo": "playwright test --config playwright.public-demo.config.ts",
     "capture:release": "node scripts/capture-release-assets.mjs",
-    "render:micro-loop": "remotion render remotion/index.tsx LexoraMicroLoop public/release/lexora-micro-loop.webm --codec=vp8 --width=1280 --height=720 --frames=0-299 --fps=30"
+    "render:home-hero": "remotion render remotion/index.tsx LexoraHomeHero public/release/lexora-home-hero.webm --codec=vp8 --width=1280 --height=720 --frames=0-299 --fps=30",
+    "render:interactive-loop": "remotion render remotion/index.tsx LexoraInteractiveLoop public/release/lexora-interactive-loop.webm --codec=vp8 --width=1280 --height=720 --frames=0-269 --fps=30",
+    "render:home-hero-poster": "remotion still remotion/index.tsx LexoraHomeHero public/release/lexora-home-hero-poster.png --frame=0 --image-format=png",
+    "render:interactive-loop-poster": "remotion still remotion/index.tsx LexoraInteractiveLoop public/release/lexora-interactive-loop-poster.png --frame=0 --image-format=png",
+    "render:product-loops": "npm run render:home-hero && npm run render:interactive-loop && npm run render:home-hero-poster && npm run render:interactive-loop-poster"
   },
   "dependencies": {
     "lucide-react": "^1.30.0",

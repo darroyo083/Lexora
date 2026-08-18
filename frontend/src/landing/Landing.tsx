@@ -93,7 +93,25 @@ function SiteHeader({ route, theme, onToggleTheme }: {
   );
 }
 
-function ProductMicroLoop({ alt, className = '' }: { alt: string; className?: string }) {
+type ProductVideoVariant = 'home' | 'interactive';
+
+const productVideoSources: Record<ProductVideoVariant, { src: string; poster: string }> = {
+  home: {
+    src: '/release/lexora-home-hero.webm',
+    poster: '/release/lexora-home-hero-poster.png',
+  },
+  interactive: {
+    src: '/release/lexora-interactive-loop.webm',
+    poster: '/release/lexora-interactive-loop-poster.png',
+  },
+};
+
+function ProductMicroLoop({ alt, className = '', variant = 'home' }: {
+  alt: string;
+  className?: string;
+  variant?: ProductVideoVariant;
+}) {
+  const source = productVideoSources[variant];
   return (
     <div className={`product-micro-loop${className ? ` ${className}` : ''}`}>
       <video
@@ -102,15 +120,15 @@ function ProductMicroLoop({ alt, className = '' }: { alt: string; className?: st
         loop
         playsInline
         preload="metadata"
-        poster="/release/lexora-loop-poster.webp"
+        poster={source.poster}
         aria-label={alt}
         tabIndex={-1}
       >
-        <source src="/release/lexora-micro-loop.webm" type="video/webm" />
+        <source src={source.src} type="video/webm" />
       </video>
       <img
         className="product-micro-loop-fallback"
-        src="/release/lexora-loop-poster.webp"
+        src={source.poster}
         width="1440"
         height="900"
         alt={alt}
@@ -227,7 +245,10 @@ function HowItWorksPage() {
           <a className="site-button site-button-primary" href="/demo">Open the live demo <ArrowRight size={17} aria-hidden="true" /></a>
         </div>
         <figure className="static-product-preview">
-          <ProductMicroLoop alt="Current Lexora Interactive Mode presenting a source-linked German exercise" />
+          <ProductMicroLoop
+            variant="interactive"
+            alt="Current Lexora Interactive Mode presenting a source-linked German exercise"
+          />
           <figcaption><span>Interactive</span><span>Current public demo</span></figcaption>
         </figure>
       </section>

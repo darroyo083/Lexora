@@ -19,9 +19,11 @@ source-derived acceptance data.
 ## Public portfolio release
 
 - Validated multimodal analysis in the local/private runtime; the public
-  production topology contains no AI service, credential, OCR, or model download.
+  production topology contains an internal-only AI-help service with no
+  published port. Document analysis, OCR, and model downloads remain private.
 - Read-only synthetic demo initialized server-side with precomputed analysis.
-- No anonymous upload, processing, extraction, or provider-spend path.
+- No anonymous upload, processing, or extraction path; explicit optional AI
+  assistance is provider-bound and protected by verification and quotas.
 - Public landing, current product screenshots, social preview,
   recruiter-oriented README, and production runbook.
 - Security headers, proxy limits, loopback-only public binding, health checks,
@@ -66,7 +68,9 @@ source-derived acceptance data.
 - Supports isolated writing lines and aligned multi-line response areas.
 - Single unprompted rules, form-like fields, and dense boxed regions are
   intentionally rejected to avoid false positives.
-- Learner text is local; the current interaction does not infer correctness.
+- Learner text is local and true open responses remain ungraded by deterministic
+  correction; after completion, optional Ask Lexora can provide AI-assisted,
+  non-source-backed feedback.
 
 ## Verification policy
 

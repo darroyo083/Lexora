@@ -5,9 +5,11 @@
 Detect and answer **FreeText** exercises: a printed prompt followed by one or
 more visibly reserved writing lines where the learner writes their own
 response. PoC 6 covers deterministic detection, an on-page writing overlay,
-and local answer persistence. It does NOT know the correct answer, does NOT
-extract answer keys, does NOT grade, and does NOT use an LLM or vision model
-(Answer Key + Correction is a later PoC).
+and local answer persistence. The detector does NOT know the correct answer,
+extract answer keys, or call an LLM or vision model; runtime feedback is a
+separate concern. True open responses remain ungraded by deterministic
+correction, while the current reader may offer explicit, non-source-backed
+Ask Lexora feedback after the learner marks a response done.
 
 PoC 6 is **COMPLETE** following manual acceptance on representative workbook
 pages and coexistence checks with earlier interaction types.
@@ -155,7 +157,9 @@ Same store as PoC 1–5 (`lexora.exerciseAnswers.v1`), new kind `free-text`.
 - The overlay uses the shared normalized geometry (`rotateBBox` +
   `freeTextInputStyle`), so it follows zoom (75%–200%) and rotation
   (0/90/180/270) like every other interaction overlay.
-- No correctness coloring, no "Check answer", no AI feedback.
+- No deterministic correctness coloring or "Check answer" for true open
+  responses. After the learner selects **Done**, optional Ask Lexora can offer
+  AI-assisted feedback labeled as not source-backed.
 
 ## Debug visualization
 
@@ -202,9 +206,12 @@ their own interactions still work; zero console errors.
 - Text rows printed exactly centered between two writing lines (inside
   neither isolation band) could slip through; conservative rules apply.
 - The candidate score is heuristic and not calibrated across book designs.
-- Answer correctness is unknown until the Answer Key + Correction PoC; every
-  learner response is neutral.
-- PoC 6 does not understand prompts, grammar, or correctness.
+- Deterministic answer correctness remains unknown for true open responses;
+  canonical source-backed correction applies only where a reliable mapping
+  exists.
+- PoC 6's detector does not understand prompts, grammar, or correctness; the
+  separate assist path may use the persisted prompt and learner response for
+  explicitly requested, non-authoritative feedback.
 - Detection has no LLM or vision-model dependency.
 
 ## Future (documented, NOT implemented)
@@ -216,5 +223,5 @@ their own interactions still work; zero console errors.
 - PoC 6.5: broad UX/UI overhaul of the reader, including explicit convenient
   previous/next or incremental page-navigation controls rather than restoring
   browser-native number-input spinners.
-- Answer Key extraction and automatic correction.
+- Broader answer-key extraction and deterministic correction for open responses.
 - Writing-line detection without printed lines (blank-page writing areas).

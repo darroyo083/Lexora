@@ -12,7 +12,7 @@ flowchart LR
     Backend -. optional explicit AI help .-> Assist[internal ai-service]
 ```
 
-Public Compose runs `frontend`, `backend`, `postgres`, and an internal `ai-service` with no published host port. The backend initializes one fixed demo book from committed resources. No provider credential, upload action, OCR, or document-processing inference is present in this topology. The internal `ai-service` is contacted only for optional, user-triggered AI help and is not proxied by Nginx.
+Public Compose runs `frontend`, `backend`, `postgres`, and an internal `ai-service` with no published host port. The backend initializes one fixed demo book from committed resources. No provider credential is baked into the topology, and no upload action, OCR, or document-processing inference is available there. The internal `ai-service` is contacted only for optional, user-triggered AI help and is not proxied by Nginx.
 
 The local/private topology adds the analysis boundary:
 

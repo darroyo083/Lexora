@@ -45,19 +45,26 @@ class AssistControllerTest {
 
     @Test
     void configReturnsSafePublicConfig() throws Exception {
-        when(service.config()).thenReturn(new AssistConfig(true, "public-site-key"));
+        when(sessionService.newSessionId()).thenReturn("config-session");
+        when(service.config(eq("config-session"), any()))
+            .thenReturn(new AssistConfig(true, "public-site-key",
+                new com.lexora.assist.contract.AssistContract.SessionQuota(3, 10, 7)));
 
         mvc.perform(get("/api/ai/assist/config"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.enabled").value(true))
-            .andExpect(jsonPath("$.siteKey").value("public-site-key"));
+            .andExpect(jsonPath("$.siteKey").value("public-site-key"))
+            .andExpect(jsonPath("$.sessionQuota.used").value(3))
+            .andExpect(jsonPath("$.sessionQuota.limit").value(10))
+            .andExpect(jsonPath("$.sessionQuota.remaining").value(7));
     }
 
     @Test
     void assistSetsHttpOnlySessionCookie() throws Exception {
         when(sessionService.newSessionId()).thenReturn("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4");
         when(service.assist(any(), eq("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"), any()))
-            .thenReturn(AssistResponse.success("hint", "A hint", null, false));
+            .thenReturn(AssistResponse.success("hint", "A hint", null, false)
+                .withSessionQuota(new com.lexora.assist.contract.AssistContract.SessionQuota(1, 10, 9)));
 
         var result = mvc.perform(post("/api/ai/assist")
                 .contentType("application/json")
@@ -67,6 +74,7 @@ class AssistControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("success"))
             .andExpect(jsonPath("$.content").value("A hint"))
+            .andExpect(jsonPath("$.sessionQuota.remaining").value(9))
             .andReturn();
 
         var cookie = result.getResponse().getHeader("Set-Cookie");

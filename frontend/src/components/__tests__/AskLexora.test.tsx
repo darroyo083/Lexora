@@ -23,6 +23,7 @@ const baseProps = {
   pageNumber: 2,
   exercise: { exerciseId: 'blank-01', kind: 'fill-in-line', answer: null, canCheck: false },
   siteKey: null,
+  sessionQuota: { used: 3, limit: 10, remaining: 7 },
 };
 
 describe('AskLexora', () => {
@@ -68,6 +69,35 @@ describe('AskLexora', () => {
     });
     expect(screen.getByText('AI-assisted feedback')).toBeTruthy();
     expect(screen.getByText('Not source-backed · no automatic grade')).toBeTruthy();
+  });
+
+  it('shows the backend-owned quota and accepts its refreshed value', async () => {
+    const onQuotaChange = vi.fn();
+    const fetchMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        action: 'hint', status: 'success', content: 'A hint', verdict: null,
+        cached: false, siteKey: null, message: null,
+        sessionQuota: { used: 4, limit: 10, remaining: 6 },
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(<AskLexora {...baseProps} onQuotaChange={onQuotaChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    expect(screen.getByText('7/10 AI uses left today')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Hint' }));
+    await waitFor(() => expect(onQuotaChange).toHaveBeenCalledWith({ used: 4, limit: 10, remaining: 6 }));
+    view.rerender(<AskLexora {...baseProps} sessionQuota={{ used: 4, limit: 10, remaining: 6 }} onQuotaChange={onQuotaChange} />);
+    expect(screen.getByText('6/10 AI uses left today')).toBeTruthy();
+  });
+
+  it('disables provider actions and explains an exhausted session quota', () => {
+    render(<AskLexora {...baseProps} sessionQuota={{ used: 10, limit: 10, remaining: 0 }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ask Lexora' }));
+    expect(screen.getByText("Today's demo AI limit has been reached. Try again tomorrow.")).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Explain' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Ask a question…' }).hasAttribute('disabled')).toBe(true);
   });
 
   it('explicitly renders Turnstile when verification is required', async () => {

@@ -15,7 +15,7 @@ import {
 import type { MatchingSelection } from '../reader/matching';
 import { parseMatchingAnswer } from '../reader/matching';
 import AskLexora from '../components/AskLexora';
-import type { AssistAction, ExerciseContext } from '../api/assist';
+import type { AssistAction, ExerciseContext, SessionQuota } from '../api/assist';
 import { parseOrderedAnswer } from '../reader/ordering';
 import {
   isProcessingStage,
@@ -78,6 +78,8 @@ interface Props {
     pageNumber: number;
     exercise: ExerciseContext | null;
     siteKey: string | null;
+    sessionQuota: SessionQuota | null;
+    onQuotaChange?: (quota: SessionQuota | null) => void;
   } | null;
 }
 
@@ -276,6 +278,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
     && completedResponse?.interactionId === block.interaction.id
     && completedResponse.value === freeTextValue
     && hasMeaningfulResponse;
+  const quotaExhausted = props.assist?.sessionQuota?.remaining === 0;
   const family = FAMILY_COPY[block.kind];
   const feedback = (itemId: string) => (
     <CorrectionFeedback
@@ -468,7 +471,7 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
             <button
               type="button"
               className="lesson-ai-feedback-action"
-              disabled={!responseDone}
+              disabled={!responseDone || quotaExhausted}
               onClick={() => props.onRequestAssist?.('check')}
             >
               <Sparkles size={15} aria-hidden="true" /> Get AI feedback
@@ -478,7 +481,9 @@ function ActivityStepView({ step, props }: { step: ActivityLessonStep; props: Pr
         {props.assist && (
           <p className="lesson-free-text-feedback-status" role="status">
             {responseDone
-              ? 'Response marked done. AI-assisted feedback is ready.'
+              ? quotaExhausted
+                ? "Today's demo AI limit has been reached. Try again tomorrow."
+                : 'Response marked done. AI-assisted feedback is ready.'
               : 'Finish your response, then select Done to unlock AI-assisted feedback.'}
           </p>
         )}
@@ -705,6 +710,8 @@ function AvailableLessonPlayer({ props, lesson }: { props: Props; lesson: Lesson
               mode="interactive"
               assistRequest={assistRequest}
               onAssistRequestHandled={handleAssistRequestHandled}
+              sessionQuota={props.assist.sessionQuota}
+              onQuotaChange={props.assist.onQuotaChange}
             />
           </div>
         )}

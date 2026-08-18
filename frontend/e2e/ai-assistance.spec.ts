@@ -83,16 +83,23 @@ async function mockWorkbook(page: Page) {
 type AssistResponse = {
   action: string; status: string; content: string | null; verdict: string | null;
   cached: boolean; siteKey: string | null; message: string | null;
+  sessionQuota?: { used: number; limit: number; remaining: number } | null;
 };
 
-async function mockAssist(page: Page, config: { enabled: boolean; siteKey: string | null }, byAction: Record<string, AssistResponse>) {
-  await page.route('**/api/ai/assist/config', (route) => json(route, config));
+async function mockAssist(page: Page, config: {
+  enabled: boolean;
+  siteKey: string | null;
+  sessionQuota?: { used: number; limit: number; remaining: number } | null;
+}, byAction: Record<string, AssistResponse>) {
+  const quota = config.sessionQuota ?? { used: 3, limit: 10, remaining: 7 };
+  await page.route('**/api/ai/assist/config', (route) => json(route, { ...config, sessionQuota: quota }));
   await page.route('**/api/ai/assist', (route) => {
     const body = route.request().postDataJSON();
     const response = byAction[body.action] ?? {
       action: body.action, status: 'success', content: 'Mocked AI response', verdict: null, cached: false, siteKey: null, message: null,
+      sessionQuota: quota,
     };
-    return json(route, response);
+    return json(route, { ...response, sessionQuota: response.sessionQuota ?? quota });
   });
 }
 
@@ -180,6 +187,46 @@ test('Interactive Explain and Ask stay coherent and navigable', async ({ page })
   await question.fill('Why is bin used here?');
   await question.press('Enter');
   await expect(page.getByText('Use bin because the subject is ich.')).toBeVisible();
+});
+
+test('quota stays backend-owned across provider response and mode changes', async ({ page }) => {
+  await mockWorkbook(page);
+  await mockAssist(page, {
+    enabled: true,
+    siteKey: null,
+    sessionQuota: { used: 3, limit: 10, remaining: 7 },
+  }, {
+    hint: {
+      action: 'hint', status: 'success', content: 'A quota-aware hint.', verdict: null,
+      cached: false, siteKey: null, message: null,
+      sessionQuota: { used: 4, limit: 10, remaining: 6 },
+    },
+    explain: {
+      action: 'explain', status: 'success', content: 'A quota-aware explanation.', verdict: null,
+      cached: false, siteKey: null, message: null,
+      sessionQuota: { used: 5, limit: 10, remaining: 5 },
+    },
+  });
+
+  await page.goto('/demo');
+  await openAskLexora(page);
+  await expect(page.getByText('7/10 AI uses left today')).toBeVisible();
+  await page.getByRole('button', { name: 'Hint' }).click();
+  await expect(page.getByText('A quota-aware hint.')).toBeVisible();
+  await expect(page.getByText('6/10 AI uses left today')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Try another action' }).click();
+  await page.getByRole('button', { name: 'Classic', exact: true }).first().click();
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 30_000 });
+  await selectClassicRegion(page, 0.20, 0.34);
+  await page.getByRole('button', { name: 'Explain', exact: true }).click();
+  await expect(page.getByText('A quota-aware explanation.')).toBeVisible();
+  await expect(page.getByText('5/10 AI uses left today')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Interactive', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Ask Lexora' })).toBeVisible();
+  await openAskLexora(page);
+  await expect(page.getByText('5/10 AI uses left today')).toBeVisible();
 });
 
 test('Classic Ask Lexora uses an explicit bounded page selection', async ({ page }) => {
@@ -359,8 +406,16 @@ test('Ask Lexora reserves a non-overlapping desktop rail across target widths', 
 
 test('AI feedback is offered only for genuinely ungraded answers', async ({ page }) => {
   await mockWorkbook(page);
-  await mockAssist(page, { enabled: true, siteKey: null }, {
-    check: { action: 'check', status: 'success', content: 'Looks plausible.', verdict: 'likely_correct', cached: false, siteKey: null, message: null },
+  await mockAssist(page, {
+    enabled: true,
+    siteKey: null,
+    sessionQuota: { used: 3, limit: 10, remaining: 7 },
+  }, {
+    check: {
+      action: 'check', status: 'success', content: 'Looks plausible.', verdict: 'likely_correct',
+      cached: false, siteKey: null, message: null,
+      sessionQuota: { used: 4, limit: 10, remaining: 6 },
+    },
   });
   await page.goto('/demo');
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
@@ -386,6 +441,7 @@ test('AI feedback is offered only for genuinely ungraded answers', async ({ page
   await expect(page.getByText('Looks plausible.')).toBeVisible();
   await expect(page.getByText('AI-assisted feedback', { exact: true })).toBeVisible();
   await expect(page.getByText('Not source-backed · no automatic grade')).toBeVisible();
+  await expect(page.getByText('6/10 AI uses left today')).toBeVisible();
 
   await response.fill('Am Abend lese ich ein Buch.');
   await expect(done).toBeEnabled();
@@ -397,6 +453,25 @@ test('AI feedback is offered only for genuinely ungraded answers', async ({ page
   await page.locator('.lesson-step[data-kind="fill-blank"] input').fill('bin');
   await expect(page.getByRole('button', { name: 'Hint' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Get AI feedback' })).toHaveCount(0);
+});
+
+test('exhausted quota disables direct open-response AI feedback', async ({ page }) => {
+  await mockWorkbook(page);
+  await mockAssist(page, {
+    enabled: true,
+    siteKey: null,
+    sessionQuota: { used: 10, limit: 10, remaining: 0 },
+  }, {});
+  await page.goto('/demo');
+  await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
+  await page.locator('.lesson-step[data-kind="fill-blank"] input').fill('bin');
+  await advanceToKind(page, 'free-text');
+
+  const freeText = page.locator('.lesson-step[data-kind="free-text"]');
+  await freeText.getByRole('textbox', { name: 'Your response' }).fill('Am Morgen trinke ich Tee.');
+  await freeText.getByRole('button', { name: 'Done' }).click();
+  await expect(freeText.getByRole('button', { name: 'Get AI feedback' })).toBeDisabled();
+  await expect(freeText.getByRole('status').filter({ hasText: /today's demo AI limit/i })).toBeVisible();
 });
 
 test('shows a clean state when the provider is unavailable', async ({ page }) => {
@@ -413,14 +488,19 @@ test('shows a clean state when the provider is unavailable', async ({ page }) =>
 
 test('shows a clean state when the daily limit is reached', async ({ page }) => {
   await mockWorkbook(page);
-  await mockAssist(page, { enabled: true, siteKey: null }, {
-    hint: { action: 'hint', status: 'limit_reached', content: null, verdict: null, cached: false, siteKey: null, message: 'AI help is temporarily unavailable. Please try again later.' },
+  await mockAssist(page, {
+    enabled: true,
+    siteKey: null,
+    sessionQuota: { used: 10, limit: 10, remaining: 0 },
+  }, {
+    hint: { action: 'hint', status: 'limit_reached', content: null, verdict: null, cached: false, siteKey: null, message: "Today's demo AI limit has been reached. Try again tomorrow.", sessionQuota: { used: 10, limit: 10, remaining: 0 } },
   });
   await page.goto('/demo');
   await expect(page.getByRole('heading', { name: 'Satzbau', level: 1 })).toBeVisible();
   await openAskLexora(page);
-  await page.getByRole('button', { name: 'Hint' }).click();
-  await expect(page.getByText(/try again later/i)).toBeVisible();
+  await expect(page.getByText("Today's demo AI limit has been reached. Try again tomorrow.")).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Hint' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Ask a question…' })).toBeDisabled();
 });
 
 test('shows the Turnstile widget when verification is required', async ({ page }) => {

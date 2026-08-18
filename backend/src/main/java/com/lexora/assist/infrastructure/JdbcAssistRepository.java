@@ -118,4 +118,15 @@ class JdbcAssistRepository implements AssistRepository {
         );
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
+
+    @Override
+    public Optional<Integer> sessionCallCount(String sessionId, LocalDate date) {
+        var rows = jdbc.query(
+            "SELECT CASE WHEN usage_date = ? THEN call_count ELSE 0 END AS call_count "
+                + "FROM assist_sessions WHERE session_id = ?",
+            (rs, rowNum) -> rs.getInt("call_count"),
+            date, sessionId
+        );
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+    }
 }

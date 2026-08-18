@@ -70,7 +70,7 @@ import {
   type ThemeMode,
 } from './state/theme';
 import { readReaderMode, writeReaderMode, type ReaderMode } from './state/readerMode';
-import { fetchAssistConfig, type ExerciseContext, type SelectionRect } from './api/assist';
+import { fetchAssistConfig, type ExerciseContext, type SelectionRect, type SessionQuota } from './api/assist';
 import { computeCanCheck, kindOrdinal } from './reader/assistContext';
 
 const PageViewer = lazy(() => import('./reader/PageViewer'));
@@ -183,6 +183,7 @@ export default function App() {
   const [correctionReveal, setCorrectionReveal] = useState<Record<string, boolean>>({});
   const [assistEnabled, setAssistEnabled] = useState(false);
   const [assistSiteKey, setAssistSiteKey] = useState<string | null>(null);
+  const [assistQuota, setAssistQuota] = useState<SessionQuota | null>(null);
   const [classicSelectionMode, setClassicSelectionMode] = useState(false);
   const [classicSelection, setClassicSelection] = useState<SelectionRect | null>(null);
   const [interactiveExercise, setInteractiveExercise] = useState<{
@@ -283,10 +284,12 @@ export default function App() {
       .then((config) => {
         setAssistEnabled(config.enabled);
         setAssistSiteKey(config.siteKey ?? null);
+        setAssistQuota(config.sessionQuota);
       })
       .catch(() => {
         setAssistEnabled(false);
         setAssistSiteKey(null);
+        setAssistQuota(null);
       });
     return () => controller.abort();
   }, []);
@@ -1258,6 +1261,8 @@ export default function App() {
             selectionHasContext,
             onStartSelection: handleStartClassicSelection,
             onClearSelection: handleClearClassicSelection,
+            sessionQuota: assistQuota,
+            onQuotaChange: setAssistQuota,
           } : null}
         />
 
@@ -1329,6 +1334,8 @@ export default function App() {
                   pageNumber: selectedPage,
                   exercise: currentExercise,
                   siteKey: assistSiteKey,
+                  sessionQuota: assistQuota,
+                  onQuotaChange: setAssistQuota,
                 } : null}
               />
             ) : readerMode === 'classic' && sourceLoadError ? (

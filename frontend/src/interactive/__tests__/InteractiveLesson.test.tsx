@@ -189,6 +189,7 @@ describe('InteractiveLesson', () => {
         bookId: 'book-1',
         pageNumber: 12,
         siteKey: null,
+        sessionQuota: { used: 0, limit: 10, remaining: 10 },
         exercise: { exerciseId: 'free-1', kind: 'free-text', answer: 'Ich schreibe eine Einladung.', canCheck: true },
       },
     })} />);

@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Set;
@@ -60,10 +61,16 @@ public class AssistService {
             configuration.enabled(), configuration.turnstileSiteKey());
     }
 
+    public AssistContract.AssistConfig config(String sessionId, Instant now) {
+        return new AssistContract.AssistConfig(
+            configuration.enabled(), configuration.turnstileSiteKey(),
+            quotaService.snapshot(sessionId, usageDate(now)));
+    }
+
     public AssistResponse assist(AssistRequest request, String sessionId, Instant now) {
         String action = request.action();
         if (!configuration.enabled()) {
-            return AssistResponse.status(action, AssistContract.STATUS_DISABLED, null);
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_DISABLED, null), sessionId, now);
         }
         if (action == null || !AssistContract.ACTIONS.contains(action)) {
             throw new IllegalArgumentException("Unsupported assist action");
@@ -79,26 +86,26 @@ public class AssistService {
 
         boolean hasSelection = request.selection() != null;
         if (hasSelection && request.exerciseId() != null) {
-            return AssistResponse.status(action, AssistContract.STATUS_INVALID_CONTEXT,
-                "Choose either an exercise or a page selection, not both.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_INVALID_CONTEXT,
+                "Choose either an exercise or a page selection, not both."), sessionId, now);
         }
         if (hasSelection && AssistContract.ACTION_HINT.equals(action)) {
-            return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
-                "Hints are available for the active exercise. Ask about the selected region instead.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                "Hints are available for the active exercise. Ask about the selected region instead."), sessionId, now);
         }
         if (hasSelection && AssistContract.ACTION_CHECK.equals(action)) {
-            return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
-                "Check with AI applies to an exercise answer, not a page selection.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                "Check with AI applies to an exercise answer, not a page selection."), sessionId, now);
         }
         if (AssistContract.ACTION_ASK.equals(action)
             && (request.question() == null || request.question().isBlank())) {
-            return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
-                "Write a question first.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                "Write a question first."), sessionId, now);
         }
         if (request.question() != null
             && request.question().length() > AssistContract.MAX_QUESTION_CHARS) {
-            return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
-                "Keep the question under 400 characters.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                "Keep the question under 400 characters."), sessionId, now);
         }
 
         var built = hasSelection
@@ -110,17 +117,17 @@ public class AssistService {
                 : contextBuilder.build(bookId, request.pageNumber(), request.exerciseId(),
                     request.answer(), targetLanguage, request.question());
         if (built == null) {
-            return AssistResponse.status(action, AssistContract.STATUS_INVALID_CONTEXT,
-                "We couldn't connect that request to the source. Try another exercise or selection.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_INVALID_CONTEXT,
+                "We couldn't connect that request to the source. Try another exercise or selection."), sessionId, now);
         }
         if (AssistContract.ACTION_CHECK.equals(action)) {
             if (request.answer() == null || request.answer().isBlank()) {
-                return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
-                    "Add an answer first.");
+                return withQuota(AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                    "Add an answer first."), sessionId, now);
             }
             if (built.sourceBacked()) {
-                return AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
-                    "This exercise has a source-backed answer, so Lexora's own grading applies.");
+                return withQuota(AssistResponse.status(action, AssistContract.STATUS_NOT_APPLICABLE,
+                    "This exercise has a source-backed answer, so Lexora's own grading applies."), sessionId, now);
             }
         }
 
@@ -130,7 +137,7 @@ public class AssistService {
             if (token == null || token.isBlank() || !turnstileVerifier.verify(token)) {
                 log.info("assist outcome=verification_required action={} provider={} model={}",
                     action, configuration.provider(), configuration.model());
-                return AssistResponse.verificationRequired(action, configuration.turnstileSiteKey());
+                return withQuota(AssistResponse.verificationRequired(action, configuration.turnstileSiteKey()), sessionId, now);
             }
             sessionService.markVerified(sessionId, now);
         }
@@ -143,18 +150,18 @@ public class AssistService {
         if (cached.isPresent()) {
             log.info("assist outcome=cache_hit action={} provider={} model={}",
                 action, configuration.provider(), configuration.model());
-            return AssistResponse.success(action, cached.get().content(),
-                cached.get().verdict(), true);
+            return withQuota(AssistResponse.success(action, cached.get().content(),
+                cached.get().verdict(), true), sessionId, now);
         }
 
-        var quota = quotaService.tryReserve(sessionId, LocalDate.now());
+        var quota = quotaService.tryReserve(sessionId, usageDate(now));
         if (quota == AssistQuotaService.Outcome.SESSION_LIMIT_REACHED) {
-            return AssistResponse.status(action, AssistContract.STATUS_LIMIT_REACHED,
-                "You've reached your daily AI help limit. Try again tomorrow.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_LIMIT_REACHED,
+                "Today's demo AI limit has been reached. Try again tomorrow."), sessionId, now);
         }
         if (quota == AssistQuotaService.Outcome.GLOBAL_LIMIT_REACHED) {
-            return AssistResponse.status(action, AssistContract.STATUS_LIMIT_REACHED,
-                "AI help is temporarily unavailable. Please try again later.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_LIMIT_REACHED,
+                "AI help has reached today's demo limit. Please try again tomorrow."), sessionId, now);
         }
 
         try {
@@ -164,13 +171,22 @@ public class AssistService {
             log.info("assist outcome=provider_call action={} provider={} model={} latency_ms={}",
                 action, configuration.provider(), configuration.model(),
                 (System.nanoTime() - started) / 1_000_000);
-            return AssistResponse.success(action, result.content(), result.verdict(), false);
+            return withQuota(AssistResponse.success(action, result.content(), result.verdict(), false), sessionId, now);
         } catch (AssistUnavailableException e) {
             log.info("assist outcome=provider_failure category=provider_unavailable action={} provider={} model={}",
                 action, configuration.provider(), configuration.model());
-            return AssistResponse.status(action, AssistContract.STATUS_UNAVAILABLE,
-                "AI help is temporarily unavailable. Please try again.");
+            return withQuota(AssistResponse.status(action, AssistContract.STATUS_UNAVAILABLE,
+                "AI help is temporarily unavailable. Please try again."), sessionId, now);
         }
+    }
+
+    private AssistResponse withQuota(AssistResponse response, String sessionId, Instant now) {
+        var snapshot = quotaService.snapshot(sessionId, usageDate(now));
+        return snapshot == null ? response : response.withSessionQuota(snapshot);
+    }
+
+    private static LocalDate usageDate(Instant now) {
+        return now.atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     private static String resolveTargetLanguage(String action, String targetLanguage) {

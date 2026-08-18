@@ -1,6 +1,7 @@
 package com.lexora.assist.application;
 
 import com.lexora.assist.infrastructure.AssistRepository;
+import com.lexora.assist.contract.AssistContract.SessionQuota;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -44,5 +45,12 @@ public class AssistQuotaService {
             return Outcome.GLOBAL_LIMIT_REACHED;
         }
         return Outcome.ALLOWED;
+    }
+
+    public SessionQuota snapshot(String sessionId, LocalDate today) {
+        int limit = Math.max(0, configuration.sessionDailyLimit());
+        int used = repository.sessionCallCount(sessionId, today).orElse(0);
+        int normalizedUsed = Math.max(0, used);
+        return new SessionQuota(normalizedUsed, limit, Math.max(0, limit - normalizedUsed));
     }
 }

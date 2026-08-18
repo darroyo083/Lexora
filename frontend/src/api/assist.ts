@@ -14,6 +14,13 @@ export type AssistVerdict = 'likely_correct' | 'likely_incorrect' | 'uncertain';
 export interface AssistConfig {
   enabled: boolean;
   siteKey: string | null;
+  sessionQuota: SessionQuota | null;
+}
+
+export interface SessionQuota {
+  used: number;
+  limit: number;
+  remaining: number;
 }
 
 export interface AssistRequestPayload {
@@ -43,6 +50,7 @@ export interface AssistResponse {
   cached: boolean;
   siteKey: string | null;
   message: string | null;
+  sessionQuota: SessionQuota | null;
 }
 
 /**
@@ -61,8 +69,13 @@ export interface ExerciseContext {
 
 export async function fetchAssistConfig(signal?: AbortSignal): Promise<AssistConfig> {
   const res = await fetch('/api/ai/assist/config', { signal });
-  if (!res.ok) return { enabled: false, siteKey: null };
-  return res.json() as Promise<AssistConfig>;
+  if (!res.ok) return { enabled: false, siteKey: null, sessionQuota: null };
+  const payload = await res.json() as Partial<AssistConfig>;
+  return {
+    enabled: payload.enabled === true,
+    siteKey: payload.siteKey ?? null,
+    sessionQuota: normalizeQuota(payload.sessionQuota),
+  };
 }
 
 export async function requestAssist(
@@ -82,5 +95,19 @@ export async function requestAssist(
   if (!res.ok) {
     throw new Error(`AI assistance failed: ${res.status}`);
   }
-  return res.json() as Promise<AssistResponse>;
+  const responsePayload = await res.json() as AssistResponse;
+  return { ...responsePayload, sessionQuota: normalizeQuota(responsePayload.sessionQuota) };
+}
+
+function normalizeQuota(value: unknown): SessionQuota | null {
+  if (!value || typeof value !== 'object') return null;
+  const quota = value as Partial<SessionQuota>;
+  if (![quota.used, quota.limit, quota.remaining].every((item) => typeof item === 'number' && Number.isFinite(item))) {
+    return null;
+  }
+  return {
+    used: Math.max(0, quota.used!),
+    limit: Math.max(0, quota.limit!),
+    remaining: Math.max(0, quota.remaining!),
+  };
 }

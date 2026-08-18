@@ -3,6 +3,7 @@ package com.lexora.assist.application;
 import com.lexora.assist.client.AssistClient;
 import com.lexora.assist.client.AssistUnavailableException;
 import com.lexora.assist.contract.AssistContext;
+import com.lexora.assist.contract.AssistContract.SessionQuota;
 import com.lexora.assist.contract.AssistContract.AssistRequest;
 import com.lexora.assist.contract.AssistContract.AssistResponse;
 import com.lexora.assist.infrastructure.AssistRepository.AssistCacheEntry;
@@ -230,6 +231,7 @@ class AssistServiceTest {
         when(contextBuilder.build(any(UUID.class), anyInt(), anyString(), any(), any())).thenReturn(built(false));
         when(cacheService.get(any(), anyBoolean(), any())).thenReturn(Optional.empty());
         when(quotaService.tryReserve(eq("session"), any())).thenReturn(AssistQuotaService.Outcome.ALLOWED);
+        when(quotaService.snapshot(eq("session"), any())).thenReturn(new SessionQuota(4, 10, 6));
         when(assistClient.assist("check", context()))
             .thenReturn(new AssistClient.AssistResult("check", "Rationale", "likely_correct"));
 
@@ -237,6 +239,7 @@ class AssistServiceTest {
 
         assertThat(response.status()).isEqualTo("success");
         assertThat(response.verdict()).isEqualTo("likely_correct");
+        assertThat(response.sessionQuota()).isEqualTo(new SessionQuota(4, 10, 6));
         verify(cacheService).put(any(), any(), any(), any());
     }
 

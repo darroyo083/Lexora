@@ -13,22 +13,30 @@ afterEach(() => {
 
 describe('fetchAssistConfig', () => {
   it('returns enabled and siteKey from the config endpoint', async () => {
-    stubFetch(() => new Response(JSON.stringify({ enabled: true, siteKey: 'site-key' })));
+    stubFetch(() => new Response(JSON.stringify({
+      enabled: true,
+      siteKey: 'site-key',
+      sessionQuota: { used: 3, limit: 10, remaining: 7 },
+    })));
     const config = await fetchAssistConfig();
-    expect(config).toEqual({ enabled: true, siteKey: 'site-key' });
+    expect(config).toEqual({
+      enabled: true,
+      siteKey: 'site-key',
+      sessionQuota: { used: 3, limit: 10, remaining: 7 },
+    });
   });
 
   it('falls back to disabled on a non-ok response', async () => {
     stubFetch(() => new Response('nope', { status: 500 }));
     const config = await fetchAssistConfig();
-    expect(config).toEqual({ enabled: false, siteKey: null });
+    expect(config).toEqual({ enabled: false, siteKey: null, sessionQuota: null });
   });
 });
 
 describe('requestAssist', () => {
   it('POSTs the strict payload to /api/ai/assist', async () => {
     const fn = stubFetch(() => new Response(
-      JSON.stringify({ action: 'hint', status: 'success', content: 'A hint', verdict: null, cached: false, siteKey: null, message: null }),
+      JSON.stringify({ action: 'hint', status: 'success', content: 'A hint', verdict: null, cached: false, siteKey: null, message: null, sessionQuota: { used: 4, limit: 10, remaining: 6 } }),
     ));
     const response = await requestAssist({
       action: 'hint',
@@ -42,6 +50,7 @@ describe('requestAssist', () => {
 
     expect(response.status).toBe('success');
     expect(response.content).toBe('A hint');
+    expect(response.sessionQuota).toEqual({ used: 4, limit: 10, remaining: 6 });
     const [url, init] = fn.mock.calls[0];
     expect(url).toBe('/api/ai/assist');
     const body = JSON.parse((init as RequestInit).body as string);

@@ -64,10 +64,16 @@ public final class AssistContract {
         String verdict,
         boolean cached,
         String siteKey,
-        String message
+        String message,
+        SessionQuota sessionQuota
     ) {
+        public AssistResponse(String action, String status, String content, String verdict,
+                              boolean cached, String siteKey, String message) {
+            this(action, status, content, verdict, cached, siteKey, message, null);
+        }
+
         public static AssistResponse status(String action, String status, String message) {
-            return new AssistResponse(action, status, null, null, false, null, message);
+            return new AssistResponse(action, status, null, null, false, null, message, null);
         }
 
         public static AssistResponse success(String action, String content,
@@ -77,10 +83,21 @@ public final class AssistContract {
 
         public static AssistResponse verificationRequired(String action, String siteKey) {
             return new AssistResponse(action, STATUS_VERIFICATION_REQUIRED, null, null,
-                false, siteKey, null);
+                false, siteKey, null, null);
+        }
+
+        public AssistResponse withSessionQuota(SessionQuota quota) {
+            return new AssistResponse(action, status, content, verdict, cached, siteKey, message, quota);
         }
     }
 
+    /** Effective per-anonymous-session daily allowance. Global operations limits stay private. */
+    public record SessionQuota(int used, int limit, int remaining) {}
+
     /** Public safe config for the frontend. Never carries secrets. */
-    public record AssistConfig(boolean enabled, String siteKey) {}
+    public record AssistConfig(boolean enabled, String siteKey, SessionQuota sessionQuota) {
+        public AssistConfig(boolean enabled, String siteKey) {
+            this(enabled, siteKey, null);
+        }
+    }
 }

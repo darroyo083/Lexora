@@ -5159,6 +5159,18 @@ html, body, #root {
   font: 650 13px/1 var(--font-sans);
 }
 
+.ask-lexora-quota {
+  margin: -2px 0 10px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ask-lexora-quota.is-exhausted {
+  color: var(--correction-err);
+  font-weight: 650;
+}
+
 .ask-lexora-close {
   display: grid;
   width: 26px;
@@ -5341,9 +5353,14 @@ html, body, #root {
   transition: border-color 150ms ease, background 150ms ease;
 }
 
-.ask-lexora-action:hover {
+.ask-lexora-action:hover:not(:disabled) {
   border-color: var(--border-focus);
   background: var(--bg-surface-subtle);
+}
+
+.ask-lexora-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .ask-lexora-result {

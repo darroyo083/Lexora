@@ -6,6 +6,7 @@ import {
   type AssistResponse,
   type ExerciseContext,
   type SelectionRect,
+  type SessionQuota,
 } from '../api/assist';
 import AiPendingState from './AiPendingState';
 import LimitedMarkdown from './LimitedMarkdown';
@@ -22,6 +23,8 @@ interface Props {
   onClearSelection?: () => void;
   assistRequest?: { action: AssistAction; nonce: number } | null;
   onAssistRequestHandled?: () => void;
+  sessionQuota?: SessionQuota | null;
+  onQuotaChange?: (quota: SessionQuota | null) => void;
 }
 
 type Phase = 'idle' | 'working' | 'verifying' | 'done';
@@ -64,7 +67,9 @@ function statusMessage(response: AssistResponse): string {
     case 'disabled':
       return 'AI help is not available right now.';
     case 'limit_reached':
-      return response.message ?? 'AI help is temporarily unavailable. Please try again later.';
+      return response.sessionQuota?.remaining === 0
+        ? "Today's demo AI limit has been reached. Try again tomorrow."
+        : response.message ?? "AI help has reached today's demo limit. Please try again tomorrow.";
     case 'unavailable':
       return 'AI help is temporarily unavailable. Please try again.';
     case 'not_applicable':
@@ -88,6 +93,8 @@ export default function AskLexora({
   onClearSelection,
   assistRequest = null,
   onAssistRequestHandled,
+  sessionQuota = null,
+  onQuotaChange,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -152,6 +159,13 @@ export default function AskLexora({
       setPhase('done');
       return;
     }
+    if (sessionQuota?.remaining === 0) {
+      setActiveAction(null);
+      setResult(null);
+      setMessage("Today's demo AI limit has been reached. Try again tomorrow.");
+      setPhase('done');
+      return;
+    }
     setPhase('working');
     setActiveAction(action);
     setResult(null);
@@ -184,6 +198,7 @@ export default function AskLexora({
         selection: mode === 'classic' ? selection : null,
         turnstileToken,
       }, controller.signal);
+      if (response.sessionQuota) onQuotaChange?.(response.sessionQuota);
       if (!isCurrentRequest()) return;
       if (response.status === 'verification_required') {
         awaitingVerification = true;
@@ -212,7 +227,7 @@ export default function AskLexora({
         pendingRef.current = null;
       }
     }
-  }, [bookId, contextKey, mode, pageNumber, exercise, selection]);
+  }, [bookId, contextKey, mode, pageNumber, exercise, selection, sessionQuota, onQuotaChange]);
 
   const onTurnstileToken = useCallback((token: string) => {
     const pending = pendingRef.current;
@@ -299,6 +314,7 @@ export default function AskLexora({
     : Boolean(bookId && exercise);
   const isOpenResponse = exercise?.kind === 'free-text';
   const canCheck = Boolean(isOpenResponse && exercise?.canCheck && exercise.answer);
+  const quotaExhausted = sessionQuota?.remaining === 0;
 
   const items: Array<{ action: AssistAction; label: string; target?: string }> = [
     ...(mode === 'interactive' ? [{ action: 'hint' as AssistAction, label: 'Hint' }] : []),
@@ -382,6 +398,14 @@ export default function AskLexora({
             </div>
           </div>
 
+          {!collapsed && sessionQuota && (
+            <p className={`ask-lexora-quota${quotaExhausted ? ' is-exhausted' : ''}`} role="status">
+              {quotaExhausted
+                ? "Today's demo AI limit has been reached. Try again tomorrow."
+                : `${sessionQuota.remaining}/${sessionQuota.limit} AI uses left today`}
+            </p>
+          )}
+
           {!collapsed && phase === 'working' && activeAction && <AiPendingState action={activeAction} />}
 
           {!collapsed && phase === 'verifying' && (
@@ -402,7 +426,7 @@ export default function AskLexora({
               <form className="ask-lexora-question" onSubmit={(event) => {
                 event.preventDefault();
                 const question = questionDraft.trim();
-                if (!question || question.length > 400) return;
+                if (!question || question.length > 400 || quotaExhausted) return;
                 void runAction('ask', null, null, question);
               }}>
                 <label htmlFor="lexora-ask-question">{mode === 'classic' ? 'Ask about this selection' : 'Ask about this exercise'}</label>
@@ -422,7 +446,7 @@ export default function AskLexora({
                 <div className="ask-lexora-question-actions">
                   <small>{questionDraft.length}/400</small>
                   <button type="button" className="ask-lexora-new" onClick={resetToMenu}>Cancel</button>
-                  <button type="submit" className="ask-lexora-action" disabled={!questionDraft.trim()}>Ask</button>
+                  <button type="submit" className="ask-lexora-action" disabled={!questionDraft.trim() || quotaExhausted}>Ask</button>
                 </div>
               </form>
             ) : (
@@ -445,7 +469,7 @@ export default function AskLexora({
                       }
                       void runAction(item.action, item.target ?? null, null);
                     }}
-                    disabled={mode === 'classic' && !selection}
+                    disabled={quotaExhausted || (mode === 'classic' && !selection)}
                   >
                     {item.label}
                   </button>

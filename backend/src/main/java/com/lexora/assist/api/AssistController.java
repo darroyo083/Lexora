@@ -39,8 +39,15 @@ public class AssistController {
     }
 
     @GetMapping("/assist/config")
-    public AssistConfig config() {
-        return service.config();
+    public AssistConfig config(HttpServletRequest httpRequest,
+                               HttpServletResponse httpResponse) {
+        var sessionId = readSessionId(httpRequest);
+        if (sessionId == null) {
+            sessionId = sessionService.newSessionId();
+        }
+        sessionService.ensureSession(sessionId);
+        setSessionCookie(httpResponse, sessionId);
+        return service.config(sessionId, Instant.now());
     }
 
     @PostMapping("/assist")

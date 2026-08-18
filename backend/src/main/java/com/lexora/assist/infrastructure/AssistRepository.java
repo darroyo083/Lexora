@@ -27,5 +27,8 @@ public interface AssistRepository {
     /** Atomically increment the session's daily count if under the cap. */
     Optional<Integer> incrementSessionCalls(String sessionId, LocalDate date, int limit);
 
+    /** Read today's session count without exposing global operational counters. */
+    Optional<Integer> sessionCallCount(String sessionId, LocalDate date);
+
     record AssistCacheEntry(String action, String content, String verdict, Instant createdAt) {}
 }

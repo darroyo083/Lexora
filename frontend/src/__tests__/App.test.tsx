@@ -141,7 +141,7 @@ describe('curated public demo entry', () => {
       const url = String(input);
       requested.push(url);
       if (url === '/api/public-demo') return Promise.resolve(jsonResponse({}, 404));
-      if (url === '/api/ai/assist/config') return Promise.resolve(jsonResponse({ enabled: false, siteKey: null }));
+      if (url === '/api/ai/assist/config') return Promise.resolve(jsonResponse({ enabled: false, siteKey: null, sessionQuota: null }));
       return Promise.reject(new Error(`Unexpected fetch: GET ${url}`));
     }));
 

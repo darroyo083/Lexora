@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import BrandMark from './BrandMark';
 import AskLexora from './AskLexora';
-import type { ExerciseContext } from '../api/assist';
-import type { SelectionRect } from '../api/assist';
+import type { ExerciseContext, SelectionRect, SessionQuota } from '../api/assist';
 import type { ThemeMode } from '../state/theme';
 import { ZOOM_OPTIONS } from '../reader/zoom';
 import type { ProcessControl, ProcessingTarget } from '../reader/processing';
@@ -50,6 +49,8 @@ interface Props {
     selectionHasContext?: boolean;
     onStartSelection?: () => void;
     onClearSelection?: () => void;
+    sessionQuota: SessionQuota | null;
+    onQuotaChange?: (quota: SessionQuota | null) => void;
   } | null;
 }
 
@@ -328,6 +329,8 @@ export default function ReaderToolbar({
             selectionHasContext={assist.selectionHasContext}
             onStartSelection={assist.onStartSelection}
             onClearSelection={assist.onClearSelection}
+            sessionQuota={assist.sessionQuota}
+            onQuotaChange={assist.onQuotaChange}
           />
         )}
 
